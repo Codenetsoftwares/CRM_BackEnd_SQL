@@ -1,0 +1,177 @@
+import mysql from 'mysql2/promise';
+import { Authorize } from '../middleware/Authorize.js';
+import BankServices from '../services/Bank.services.js';
+import WebsiteServices from '../services/WebSite.Service.js';
+
+var Pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'Himanshu@10',
+  database: 'CRM',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+
+const query = async (sql, values) => {
+  try {
+    const [rows, fields] = await Pool.execute(sql, values);
+    return rows;
+  } catch (error) {
+    throw error; // Rethrow the error to be caught by the calling function
+  }
+};
+
+const EditAPIRoute = (app) => {
+  //   API To Edit Bank Detail
+  app.put('/api/bank-edit/:id', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
+    try {
+      const bankId = req.params.id;
+      const id = await query(`SELECT * FROM Bank WHERE (id) = (?)`, [bankId]);
+      const updateResult = await BankServices.updateBank(id, req.body);
+      console.log('update', updateResult);
+      if (updateResult) {
+        res.status(201).send("Bank Detail's edit request sent to Super Admin for Approval");
+      }
+    } catch (e) {
+      console.error(e);
+      res.status(e.code).send({ message: e.message });
+    }
+  });
+
+  //   API For Bank Detail Edit Approval
+  app.post(
+    '/api/admin/approve-bank-detail-edit-request/:requestId',
+    Authorize(['superAdmin', 'RequestAdmin']),
+    async (req, res) => {
+      try {
+        const editRequest = await query(`SELECT * FROM EditBankRequest WHERE id = ?`, [req.params.requestId]);
+
+        if (!editRequest || editRequest.length === 0) {
+          return res.status(404).send({ message: 'Edit request not found' });
+        }
+
+        const { isApproved } = req.body;
+        if (typeof isApproved !== 'boolean') {
+          return res.status(400).send({ message: 'isApproved field must be a boolean value' });
+        }
+
+        if (!editRequest[0].isApproved) {
+          if (isApproved) {
+            const bankExists = await query(`SELECT * FROM Bank WHERE bankName = ? AND id != ?`, [
+              editRequest[0].bankName,
+              req.params.requestId,
+            ]);
+
+            if (bankExists && bankExists.length > 0) {
+              return res.status(400).send({ message: 'Bank with the same name already exists' });
+            }
+            await query(
+              `UPDATE Bank SET accountHolderName = ?, bankName = ?, accountNumber = ?, ifscCode = ?, upiId = ?, upiAppName = ?,
+            upiNumber = ? WHERE id = ?`,
+              [
+                editRequest[0].accountHolderName,
+                editRequest[0].bankName,
+                editRequest[0].accountNumber,
+                editRequest[0].ifscCode,
+                editRequest[0].upiId,
+                editRequest[0].upiAppName,
+                editRequest[0].upiNumber,
+                req.params.requestId,
+              ],
+            );
+
+            await query(`UPDATE EditBankRequest SET isApproved = TRUE WHERE id = ?`, [req.params.requestId]);
+
+            await query(`DELETE FROM EditBankRequest WHERE id = ?`, [req.params.requestId]);
+
+            return res.status(200).send({ message: 'Edit request approved and data updated' });
+          } else {
+            return res.status(200).send({ message: 'Edit request rejected' });
+          }
+        } else {
+          return res.status(200).send({ message: 'Edit request is already approved' });
+        }
+      } catch (e) {
+        console.error(e);
+        res.status(500).send({ message: 'Internal server error' });
+      }
+    },
+  );
+
+  // API To Edit Website Detail
+  app.put('/api/website-edit/:id', Authorize(['superAdmin', 'Transaction-View', 'Website-View']), async (req, res) => {
+    try {
+      const id = req.params.id;
+      const editWebsite = await query(`SELECT * FROM Website WHERE (id) = (?)`, [id]);
+      if (!editWebsite) {
+        throw { code: 404, message: 'Website not found for Editing' };
+      }
+      const updateResult = await WebsiteServices.updateWebsite(id, req.body);
+      console.log(updateResult);
+      if (updateResult) {
+        res.status(201).send("Website Detail's Sent to Super Admin For Approval");
+      }
+    } catch (e) {
+      console.error(e);
+      res.status(e.code).send({ message: e.message });
+    }
+  });
+
+  //   API For Website Detail Edit Approval
+  app.post(
+    '/api/admin/approve-website-detail-edit-request/:requestId',
+    Authorize(['superAdmin', 'RequestAdmin']),
+    async (req, res) => {
+      try {
+        const editRequest = await query(`SELECT * FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+
+        if (!editRequest || editRequest.length === 0) {
+          return res.status(404).send({ message: 'Edit request not found' });
+        }
+
+        const { isApproved } = req.body;
+
+        if (typeof isApproved !== 'boolean') {
+          return res.status(400).send({ message: 'isApproved field must be a boolean value' });
+        }
+
+        if (!editRequest[0].isApproved) {
+          if (isApproved) {
+            const websiteExists = await query(`SELECT * FROM Website WHERE websiteName = ? AND id != ?`, [
+              editRequest[0].websiteName,
+              req.params.requestId,
+            ]);
+
+            console.log('websiteExists', websiteExists);
+
+            if (websiteExists && websiteExists.length > 0) {
+              return res.status(400).send({ message: 'Website with the same name already exists' });
+            }
+
+            await query(`UPDATE Website SET websiteName = ? WHERE id = ?`, [
+              editRequest[0].websiteName,
+              req.params.requestId,
+            ]);
+
+            await query(`UPDATE EditWebsiteRequest SET isApproved = TRUE WHERE id = ?`, [req.params.requestId]);
+
+            await query(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+
+            return res.status(200).send({ message: 'Edit request approved and data updated' });
+          } else {
+            await query(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+            return res.status(200).send({ message: 'Edit request rejected' });
+          }
+        } else {
+          return res.status(400).send({ message: 'Edit request has already been processed' });
+        }
+      } catch (e) {
+        console.error(e);
+        res.status(e.code || 500).send({ message: e.message || 'Internal server error' });
+      }
+    },
+  );
+};
+
+export default EditAPIRoute;
