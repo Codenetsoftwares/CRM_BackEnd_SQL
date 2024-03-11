@@ -24,18 +24,18 @@ const WebisteRoutes = (app) => {
         pool.execute('SELECT * FROM Website WHERE LOWER(websiteName) = LOWER(?)', [websiteName]),
       ]);
 
-      if (existingWebsiteRequests.length > 0 || existingWebsites.length > 0) {
+      if (existingWebsiteRequests[0].length > 0 || existingWebsites[0].length > 0) {
         throw { code: 400, message: 'Website name already exists' };
       }
 
       const website_id = uuidv4();
-      const insertWebsiteQuery = `INSERT INTO WebsiteRequest (websiteName, subAdminId, subAdminName, website_id) 
+      const insertWebsiteQuery = `INSERT INTO WebsiteRequest (website_id, websiteName, subAdminId, subAdminName) 
         VALUES (?, ?, ?, ?)`;
-      const result = await pool.execute(insertWebsiteQuery, [
-        websiteName,
-        userData ? userData.userName : null,
-        userData ? userData.firstname : null,
+      const [result] = await pool.execute(insertWebsiteQuery, [
         website_id,
+        websiteName,
+        (userData && userData[0].firstname) ? userData[0].firstname : null,
+        (userData && userData[0].userName) ? userData[0].userName : null
       ]);
       res.status(200).send({ message: 'Website name sent for approval!' });
     } catch (e) {
@@ -49,7 +49,8 @@ const WebisteRoutes = (app) => {
     try {
       const { isApproved, subAdminId, isWithdraw, isDeposit } = req.body;
       const websiteId = req.params.website_id;
-      const approvedWebsiteRequest = await pool.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId]);
+      const approvedWebsiteRequest = (await pool.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId]))[0];
+      console.log("approvedWebsiteRequest", approvedWebsiteRequest);
       if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
         throw { code: 404, message: 'Website not found in the approval requests!' };
       }
@@ -79,7 +80,7 @@ const WebisteRoutes = (app) => {
   app.get('/api/superadmin/view-website-requests', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const resultArray = await pool.execute('SELECT * FROM WebsiteRequest');
+      const [resultArray] = await pool.execute('SELECT * FROM WebsiteRequest');
       res.status(200).send(resultArray);
     } catch (error) {
       console.log(error);
@@ -94,7 +95,7 @@ const WebisteRoutes = (app) => {
       // Construct SQL DELETE query
       const deleteQuery = 'DELETE FROM WebsiteRequest WHERE website_id = ?';
       // Execute the query
-      const result = await pool.execute(deleteQuery, [id]);
+      const [result] = await pool.execute(deleteQuery, [id]);
       // Check if any rows were affected
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
@@ -114,7 +115,7 @@ const WebisteRoutes = (app) => {
       // Construct SQL DELETE query
       const deleteQuery = 'DELETE FROM WebsiteRequest WHERE website_id = ?';
       // Execute the query
-      const result = await pool.execute(deleteQuery, [id]);
+      const [result] = await pool.execute(deleteQuery, [id]);
       // Check if any rows were affected
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
@@ -134,7 +135,7 @@ const WebisteRoutes = (app) => {
       // Construct SQL DELETE query
       const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE id = ?';
       // Execute the query
-      const result = await pool.execute(deleteQuery, [id]);
+      const [result] = await pool.execute(deleteQuery, [id]);
       // Check if any rows were affected
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
@@ -161,7 +162,7 @@ const WebisteRoutes = (app) => {
       const pool = await connectToDB();
       try {
         const sqlQuery = `SELECT websiteName, isActive FROM Website WHERE isActive = true`;
-        const dbBankData = await pool.execute(sqlQuery);
+        const [dbBankData] = await pool.execute(sqlQuery);
         return res.status(200).send(dbBankData);
       } catch (e) {
         console.error(e);
@@ -186,16 +187,16 @@ const WebisteRoutes = (app) => {
       const { page, itemsPerPage } = req.query;
       try {
         const WebsiteQuery = `SELECT * FROM Website`;
-        const WebsiteData = await query(WebsiteQuery);
+        const [WebsiteData] = await pool.execute(WebsiteQuery);
         console.log('WebsiteData', WebsiteData);
         for (let index = 0; index < WebsiteData.length; index++) {
           WebsiteData[index].balance = await WebsiteServices.getWebsiteBalance(WebsiteData[index].website_id);
-          const user = req.user.userName;
-          const subAdmins = pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE subAdminId = (?)`, [user]);
+          const user = req.user[0].userName;
+          const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE subAdminId = (?)`, [user]);
           console.log('subAdmins', subAdmins);
-          if (subAdmins) {
-            WebsiteData[index].isDeposit = subAdmins.isDeposit;
-            WebsiteData[index].isWithdraw = subAdmins.isWithdraw;
+          if (subAdmins && subAdmins.length > 0) {
+            WebsiteData[index].isDeposit = subAdmins[0].isDeposit;
+            WebsiteData[index].isWithdraw = subAdmins[0].isWithdraw;
           }
         }
         WebsiteData.sort((a, b) => b.created_at - a.created_at);
@@ -221,7 +222,7 @@ const WebisteRoutes = (app) => {
         }
         // Remove the subAdmin with the specified subAdminId
         const deleteSubAdminQuery = `DELETE FROM WebsiteSubAdmins WHERE websiteId = ? AND subadminid = ?`;
-        await query(deleteSubAdminQuery, [websiteId, subAdminId]);
+        await pool.execute(deleteSubAdminQuery, [websiteId, subAdminId]);
         res.status(200).send({ message: 'SubAdmin removed successfully' });
       } catch (error) {
         res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
@@ -236,7 +237,7 @@ const WebisteRoutes = (app) => {
       const pool = await connectToDB();
       try {
         const id = req.params.website_id;
-        const dbWebsiteData = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
+        const [dbWebsiteData] = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
         if (!dbWebsiteData) {
           return res.status(404).send({ message: 'Website not found' });
         }
@@ -249,7 +250,7 @@ const WebisteRoutes = (app) => {
           subAdminName: dbWebsiteData[0].subAdminName,
           balance: websiteBalance,
         };
-        res.status(200).send(response);
+        res.status(200).send([response]);
       } catch (e) {
         console.error(e);
         res.status(500).send({ message: 'Internal server error' });
@@ -275,7 +276,7 @@ const WebisteRoutes = (app) => {
         if (!remarks) {
           throw { code: 400, message: 'Remark is required' };
         }
-        const website = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
+        const [website] = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
         if (!website) {
           return res.status(404).send({ message: 'Website  not found' });
         }
@@ -285,25 +286,25 @@ const WebisteRoutes = (app) => {
           remarks: remarks,
           transactionType: transactionType,
           depositAmount: parseFloat(amount),
-          subAdminId: userName.userName,
-          subAdminName: userName.firstname,
+          subAdminId: userName[0].userName,
+          subAdminName: userName[0].firstname,
           createdAt: new Date(),
         };
         const WebsiteTransaction_Id = uuidv4();
         const insertWebsiteRequestQuery = `
-      INSERT INTO websiteTransaction 
-      (websiteId, websiteName, remarks, transactionType, depositAmount, subAdminId, subAdminName, createdAt, WebsiteTransaction_Id) 
+      INSERT INTO WebsiteTransaction 
+      (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, depositAmount, subAdminId, subAdminName, createdAt) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(insertWebsiteRequestQuery, [
           websiteTransaction.websiteId,
+          WebsiteTransaction_Id,
           websiteTransaction.websiteName,
           websiteTransaction.remarks,
           websiteTransaction.transactionType,
           websiteTransaction.depositAmount,
           websiteTransaction.subAdminId,
           websiteTransaction.subAdminName,
-          websiteTransaction.createdAt,
-          WebsiteTransaction_Id,
+          websiteTransaction.createdAt
         ]);
         res.status(200).send({ message: 'Wallet Balance Added to Your Website' });
       } catch (e) {
@@ -332,7 +333,7 @@ const WebisteRoutes = (app) => {
         if (!remarks) {
           throw { code: 400, message: 'Remark is required' };
         }
-        const website = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
+        const [website] = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
         console.log('website........', website);
         if (!website) {
           return res.status(404).send({ message: 'Websitet not found' });
@@ -345,18 +346,19 @@ const WebisteRoutes = (app) => {
           websiteName: website[0].websiteName,
           transactionType: transactionType,
           withdrawAmount: parseFloat(amount),
-          subAdminId: userName.userName,
-          subAdminName: userName.firstname,
+          subAdminId: userName[0].userName,
+          subAdminName: userName[0].firstname,
           remarks: remarks,
           createdAt: new Date(),
         };
         const WebsiteTransaction_Id = uuidv4();
         const insertWebsiteRequestQuery = `
-      INSERT INTO websiteTransaction 
-      (websiteId, websiteName, remarks, transactionType, withdrawAmount, subAdminId, subAdminName, createdAt, WebsiteTransaction_Id) 
+      INSERT INTO WebsiteTransaction 
+      (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, withdrawAmount, subAdminId, subAdminName, createdAt) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(insertWebsiteRequestQuery, [
           websiteTransaction.websiteId,
+          WebsiteTransaction_Id,
           websiteTransaction.websiteName,
           websiteTransaction.remarks,
           websiteTransaction.transactionType,
@@ -364,7 +366,6 @@ const WebisteRoutes = (app) => {
           websiteTransaction.subAdminId,
           websiteTransaction.subAdminName,
           websiteTransaction.createdAt,
-          WebsiteTransaction_Id,
         ]);
         res.status(200).send({ message: 'Wallet Balance Deducted from your Website' });
       } catch (e) {
@@ -386,7 +387,7 @@ const WebisteRoutes = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const websiteName = await pool.execute('SELECT websiteName FROM Website');
+        const [websiteName] = await pool.execute('SELECT websiteName FROM Website');
         res.status(200).send(websiteName);
       } catch (e) {
         console.error(e);
@@ -405,11 +406,11 @@ const WebisteRoutes = (app) => {
         const websiteId = req.params.websiteId;
 
         const websiteSummaryQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ? ORDER BY createdAt DESC`;
-        const websiteSummaryRows = await pool.execute(websiteSummaryQuery, [websiteId]);
+        const [websiteSummaryRows] = await pool.execute(websiteSummaryQuery, [websiteId]);
         const websiteSummary = websiteSummaryRows;
 
         const accountSummaryQuery = `SELECT * FROM Transaction WHERE websiteId = ? ORDER BY createdAt DESC`;
-        const accountSummaryRows = await pool.execute(accountSummaryQuery, [websiteId]);
+        const [accountSummaryRows] = await pool.execute(accountSummaryQuery, [websiteId]);
         const accountSummary = accountSummaryRows;
 
         const allTransactions = [...accountSummary, ...websiteSummary];
@@ -457,7 +458,7 @@ const WebisteRoutes = (app) => {
     try {
       const pool = await connectToDB();
       const editRequestsQuery = `SELECT * FROM EditWebsiteRequest`;
-      const editRequestsRows = await pool.execute(editRequestsQuery);
+      const [editRequestsRows] = await pool.execute(editRequestsQuery);
       const resultArray = editRequestsRows;
       res.status(200).send(resultArray);
     } catch (error) {
@@ -492,7 +493,7 @@ const WebisteRoutes = (app) => {
         const subadminId = req.params.subadminId;
         const dbWebsiteData = `SELECT Website.websiteName FROM Website INNER JOIN WebsiteSubAdmins ON Website.website_id = 
         WebsiteSubAdmins.websiteId WHERE WebsiteSubAdmins.subAdminId = ?`;
-        const websiteData = await pool.execute(dbWebsiteData, [subadminId]);
+        const [websiteData] = await pool.execute(dbWebsiteData, [subadminId]);
         res.status(200).send(websiteData);
       } catch (e) {
         console.error(e);
@@ -511,7 +512,7 @@ const WebisteRoutes = (app) => {
         const websiteId = req.params.websiteId;
 
         // Check if the bank exists
-        const subAdminWebsiteEdit = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = ?`, [websiteId]);
+        const [subAdminWebsiteEdit] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = ?`, [websiteId]);
         if (!subAdminWebsiteEdit.length) {
           throw { code: 404, message: 'Website SubAdmins not found for Editing' };
         }

@@ -492,7 +492,7 @@ const BankRoutes = (app) => {
                 SET isDeposit = ?, isWithdraw = ?, isEdit = ?, isRenew = ?, isDelete = ?
                 WHERE bankId = ? AND subAdminId = ?
             `;
-        await query(updateSubAdminQuery, [
+        await pool.execute(updateSubAdminQuery, [
           isDeposit,
           isWithdraw,
           isEdit,
@@ -556,6 +556,22 @@ const BankRoutes = (app) => {
       res.status(500).send({ message: 'Internal Server Error' });
     }
   });
+
+  app.get(
+    '/api/get-activeBank-name',
+    Authorize(["superAdmin", "Bank-View", "Transaction-View", "Create-Transaction", "Create-Deposit-Transaction", "Create-Withdraw-Transaction"]),
+    async (req, res) => {
+      const pool = await connectToDB();
+      try {
+        const sqlQuery = `SELECT bankName, isActive FROM Bank WHERE isActive = true`;
+        const [dbBankData] = await pool.execute(sqlQuery);
+        return res.status(200).send(dbBankData);
+      } catch (e) {
+        console.error(e);
+        res.status(e.code).send({ message: e.message });
+      }
+    },
+  );
 };
 
 export default BankRoutes;
