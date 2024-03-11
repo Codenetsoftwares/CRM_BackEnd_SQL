@@ -1,4 +1,4 @@
-import mysql from 'mysql2/promise';
+import connectToDB from '../db/db.js';
 import bcrypt from 'bcrypt';
 import AccountServices from '../services/Account.Services.js';
 import { introducerUser } from '../services/introducer.services.js';
@@ -6,27 +6,9 @@ import { Authorize } from '../middleware/Authorize.js';
 import UserServices from '../services/User.services.js';
 import TransactionServices from '../services/Transaction.services.js';
 
-var Pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, values) => {
-  try {
-    const [rows, fields] = await Pool.execute(sql, values);
-    return rows;
-  } catch (error) {
-    throw error; // Rethrow the error to be caught by the calling function
-  }
-};
-
 const AccountRoute = (app) => {
   app.post('/admin/login', async (req, res) => {
+    const pool = await connectToDB();
     try {
       const { userName, password } = req.body;
       if (!userName) {
@@ -37,14 +19,13 @@ const AccountRoute = (app) => {
         throw { code: 400, message: 'Password is required' };
       }
 
-      const admin = await query('SELECT * FROM Admin WHERE userName = ?', [userName]);
+      const [admin] = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [userName]);
 
       if (admin.length === 0) {
         throw { code: 404, message: 'User not found' };
       }
 
       const user = admin[0];
-      console.log('user', user);
       const passwordMatch = await bcrypt.compare(password, user.password);
 
       if (!passwordMatch) {
@@ -56,11 +37,7 @@ const AccountRoute = (app) => {
       if (!accessToken) {
         throw { code: 500, message: 'Failed to generate access token' };
       }
-
-      res.status(200).send({
-        token: accessToken,
-        user: user,
-      });
+      res.status(200).send({ code: 200, message: 'Login Successfully', token: accessToken });
     } catch (e) {
       console.error(e);
       res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
@@ -73,7 +50,7 @@ const AccountRoute = (app) => {
       res.status(200).send({ code: 200, message: 'Admin registered successfully!' });
     } catch (e) {
       console.error(e);
-      res.status(e.code).send({ message: e.message });
+      res.status(e.code || 500).json({ message: e.message || 'Internal Server Error' });
     }
   });
 
