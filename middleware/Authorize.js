@@ -1,20 +1,10 @@
 import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
-
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-});
-
-const query = async (sql, values) => {
-  const [rows, fields] = await pool.execute(sql, values);
-  return rows;
-};
+import connectToDB from '../db/db.js';
 
 export const Authorize = (roles) => {
   return async (req, res, next) => {
+    const pool = await connectToDB();
     try {
       const authToken = req.headers.authorization;
       if (!authToken) {
@@ -37,7 +27,7 @@ export const Authorize = (roles) => {
         return res.status(401).send({ code: 401, message: 'Invalid login attempt (4)' });
       }
 
-      const existingUser = await query('SELECT * FROM Admin WHERE userName = ?', [user.userName]);
+      const existingUser = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [user.userName]);
       if (!existingUser || existingUser.length === 0) {
         return res.status(401).send({ code: 401, message: 'Invalid login attempt (5)' });
       }
