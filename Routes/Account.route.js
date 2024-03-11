@@ -231,7 +231,7 @@ const AccountRoute = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const superAdmin = await pool.execute(`SELECT userName FROM Admin WHERE FIND_IN_SET('Website-View', roles) > 0;`);
+        const superAdmin = await pool.execute(`SELECT userName FROM Admin WHERE roles LIKE '%Website-View%'`);
         console.log('superAdmin', superAdmin);
         res.status(200).send(superAdmin);
       } catch (e) {
