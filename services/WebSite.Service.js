@@ -1,33 +1,15 @@
-import mysql from 'mysql2/promise';
-
-var Pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, values) => {
-  try {
-    const [rows, fields] = await Pool.execute(sql, values);
-    return rows;
-  } catch (error) {
-    throw error; // Rethrow the error to be caught by the calling function
-  }
-};
+import connectToDB from '../db/db.js';
 
 const WebsiteServices = {
   approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdminId, isDeposit, isWithdraw) => {
     try {
+      const pool = await connectToDB();
       const insertWebsiteDetails = `INSERT INTO Website(websiteName, subAdminName, isActive, website_id) 
             VALUES (?, ?, ?, ?)`;
       const insertSubadminQuery = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw ) VALUES (?, ?, ?, ?)`;
       const promises = approvedWebsiteRequest.map(async (row) => {
         // Insert bank details
-        const result = await query(insertWebsiteDetails, [row.websiteName, row.subAdminName, true, row.website_id]);
+        const result = await pool.execute(insertWebsiteDetails, [row.websiteName, row.subAdminName, true, row.website_id]);
 
         // Insert entry into BankSubAdmins table with correct bankId
         await query(insertSubadminQuery, [row.website_id, subAdminId, isDeposit, isWithdraw]);
@@ -41,15 +23,17 @@ const WebsiteServices = {
   },
 
   deleteWebsiteRequest: async (websiteId) => {
+    const pool = await connectToDB();
     const deleteWebsiteRequestQuery = `DELETE FROM WebsiteRequest WHERE website_id = ?`;
-    const result = await query(deleteWebsiteRequestQuery, [websiteId]);
+    const result = await pool.execute(deleteWebsiteRequestQuery, [websiteId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {
+    const pool = await connectToDB();
     try {
       const sql = 'SELECT * FROM BankRequest';
-      const result = await query(sql);
+      const result = await pool.execute(sql);
       return result;
     } catch (error) {
       console.error(error);
@@ -59,11 +43,12 @@ const WebsiteServices = {
 
   getWebsiteBalance: async (websiteId) => {
     try {
+      const pool = await connectToDB();
       const websiteTransactionsQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ?`;
-      const websiteTransactions = await query(websiteTransactionsQuery, [websiteId]);
+      const websiteTransactions = await pool.execute(websiteTransactionsQuery, [websiteId]);
 
       const transactionsQuery = `SELECT * FROM Transaction WHERE websiteId = ?`;
-      const transactions = await query(transactionsQuery, [websiteId]);
+      const transactions = await pool.execute(transactionsQuery, [websiteId]);
 
       // const editTransactionQuery = `SELECT * FROM editwebsiterequest WHERE websiteId = ?`;
       // const editTransaction = await query(editTransactionQuery, [websiteId]);
@@ -94,6 +79,7 @@ const WebsiteServices = {
   },
 
   updateWebsite: async (response, data) => {
+    const pool = await connectToDB();
     const existingRequest = response[0];
 
     if (!existingRequest) {
@@ -101,7 +87,7 @@ const WebsiteServices = {
     }
 
     // Check if the website has already been edited
-    const editHistory = await query(`SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [
+    const editHistory = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [
       existingRequest,
     ]);
     if (editHistory.length > 0) {
@@ -116,14 +102,14 @@ const WebsiteServices = {
     }
 
     // Check if the new website name already exists (case-insensitive)
-    const duplicateWebsite = await query(`SELECT * FROM Website WHERE LOWER(websiteName) = LOWER(?)`, [
+    const duplicateWebsite = await pool.execute(`SELECT * FROM Website WHERE LOWER(websiteName) = LOWER(?)`, [
       data.websiteName,
     ]);
     if (duplicateWebsite.length > 0) {
       throw { code: 400, message: 'Website name already exists in Website' };
     }
 
-    const duplicateEditWebsite = await query(`SELECT * FROM EditWebsiteRequest WHERE LOWER(websiteName) = LOWER(?)`, [
+    const duplicateEditWebsite = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE LOWER(websiteName) = LOWER(?)`, [
       data.websiteName,
     ]);
     if (duplicateEditWebsite.length > 0) {
@@ -149,7 +135,7 @@ const WebsiteServices = {
     INSERT INTO EditWebsiteRequest (websiteTransactionId, websiteName, message, type, changedFields, isApproved) 
     VALUES (?, ?, ?, ?, ?, ?)`;
 
-    await query(editRequestQuery, [
+    await pool.execute(editRequestQuery, [
       updatedTransactionData.id,
       updatedTransactionData.websiteName,
       "Website Detail's has been edited",
