@@ -9,6 +9,7 @@ const BankRoutes = (app) => {
     const pool = await connectToDB();
     try {
       const userName = req.user;
+      console.log("userName", userName);
       const {
         accountHolderName = '',
         bankName,
@@ -47,8 +48,8 @@ const BankRoutes = (app) => {
             upiId || null,
             upiAppName || null,
             upiNumber || null,
-            (userName && userName.firstname) ? userName.firstname : null,
-            (userName && userName.userName) ? userName.userName : null
+            (userName && userName[0].firstname) ? userName[0].firstname : null,
+            (userName && userName[0].userName) ? userName[0].userName : null
         ]);
       res.status(200).send({ message: 'Bank name sent for approval!' });
     } catch (e) {
@@ -62,7 +63,7 @@ const BankRoutes = (app) => {
     try {
       const { isApproved, subAdminId, isWithdraw, isDeposit } = req.body;
       const bankId = req.params.bank_id;
-      const approvedBankRequest = await pool.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]);
+      const approvedBankRequest = (await pool.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]))[0];
       if (!approvedBankRequest || approvedBankRequest.length === 0) {
         throw { code: 404, message: 'Bank not found in the approval requests!' };
       }
@@ -127,40 +128,44 @@ const BankRoutes = (app) => {
     ]),
     async (req, res) => {
       const { page, itemsPerPage } = req.query;
+      const pool = await connectToDB();
       try {
         const banksQuery = `SELECT * FROM Bank`;
-        const bankData = await query(banksQuery);
+        const [bankData] = await pool.execute(banksQuery);
         for (let index = 0; index < bankData.length; index++) {
           bankData[index].balance = await BankServices.getBankBalance(bankData[index].bank_id);
-          const user = req.user.userName;
-          const subAdmins = query(`SELECT * FROM BankSubAdmins WHERE subAdminId = (?)`, [user]);
-          if (subAdmins) {
-            bankData[index].isDeposit = subAdmins.isDeposit;
-            bankData[index].isWithdraw = subAdmins.isWithdraw;
+          const user =  req.user[0].userName;
+          console.log("user", req.user);
+          const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE subAdminId = (?)`, [user]);
+          if (subAdmins && subAdmins.length > 0) {
+            bankData[index].isDeposit = subAdmins[0].isDeposit;
+            bankData[index].isWithdraw = subAdmins[0].isWithdraw;
           }
         }
         bankData.sort((a, b) => b.created_at - a.created_at);
         return res.status(200).send(bankData);
       } catch (e) {
         console.error(e);
-        res.status(e.code).send({ message: e.message });
+        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
       }
     },
   );
+
 
   app.get(
     '/api/get-single-bank-name/:bank_id',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.bank_id;
         console.log('id', id);
-        const dbBankData = await query(`SELECT * FROM BANK WHERE bank_id = (?)`, [id]);
+        const [dbBankData] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
         console.log('bankdata', dbBankData);
         if (!dbBankData) {
           return res.status(404).send({ message: 'Bank not found' });
         }
-        const bankId = dbBankData[0].bank_id;
+        const [bankId] = dbBankData[0].bank_id;
         const bankBalance = await BankServices.getBankBalance(bankId);
         const response = {
           bank_id: dbBankData[0].bank_id,
@@ -169,7 +174,7 @@ const BankRoutes = (app) => {
           balance: bankBalance,
         };
 
-        res.status(200).send(response);
+        res.status(200).send([response]);
       } catch (e) {
         console.error(e);
         res.status(500).send({ message: 'Internal server error' });
@@ -181,6 +186,7 @@ const BankRoutes = (app) => {
     '/api/admin/add-bank-balance/:bank_id',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.bank_id;
         const userName = req.user;
@@ -195,11 +201,12 @@ const BankRoutes = (app) => {
           throw { code: 400, message: 'Remark is required' };
         }
 
-        const bank = await query(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
+        const [bank] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id]);
+        console.log("bank", bank);
         if (!bank) {
           return res.status(404).send({ message: 'Bank account not found' });
         }
-        console.log('bank', bank);
+        
         const bankTransaction = {
           bankId: bank[0].bank_id,
           accountHolderName: bank[0].accountHolderName,
@@ -211,19 +218,22 @@ const BankRoutes = (app) => {
           upiAppName: bank[0].upiAppName,
           upiNumber: bank[0].upiNumber,
           depositAmount: parseFloat(amount),
-          subAdminId: userName.userName,
-          subAdminName: userName.firstname,
+          subAdminId: userName[0].userName,
+          subAdminName: userName[0].firstname,
           remarks: remarks,
           createdAt: new Date(),
         };
-
+        console.log("bankTransaction", bankTransaction);
+        const BankTransaction_Id = uuidv4();
         const insertBankRequestQuery = `
           INSERT INTO BankTransaction 
-          (bankId, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, upiAppName, upiNumber, 
+          (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, upiAppName, upiNumber, 
           depositAmount, subAdminId, subAdminName, createdAt) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        await query(insertBankRequestQuery, [
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        
+        await pool.execute(insertBankRequestQuery, [
           bankTransaction.bankId,
+          BankTransaction_Id,
           bankTransaction.accountHolderName,
           bankTransaction.bankName,
           bankTransaction.accountNumber,
@@ -238,18 +248,21 @@ const BankRoutes = (app) => {
           bankTransaction.subAdminName,
           bankTransaction.createdAt,
         ]);
+        
         res.status(200).send({ message: 'Wallet Balance Added to Your Bank Account' });
       } catch (e) {
         console.error(e);
-        res.status(e.code).send({ message: e.message });
+        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
       }
     },
-  );
+);
+
 
   app.post(
     '/api/admin/withdraw-bank-balance/:bank_id',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.bank_id;
         const userName = req.user;
@@ -264,7 +277,7 @@ const BankRoutes = (app) => {
           throw { code: 400, message: 'Remark is required' };
         }
 
-        const bank = await query(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
+        const [bank] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
         if (!bank) {
           return res.status(404).send({ message: 'Bank account not found' });
         }
@@ -283,19 +296,21 @@ const BankRoutes = (app) => {
           upiAppName: bank[0].upiAppName,
           upiNumber: bank[0].upiNumber,
           withdrawAmount: parseFloat(amount),
-          subAdminId: userName.userName,
-          subAdminName: userName.firstname,
+          subAdminId: userName[0].userName,
+          subAdminName: userName[0].firstname,
           remarks: remarks,
           createdAt: new Date(),
         };
-
+        const BankTransaction_Id = uuidv4();
         const insertBankRequestQuery = `
-          INSERT INTO bankTransaction 
-          (bankId, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, upiAppName, upiNumber, withdrawAmount, subAdminId, subAdminName, createdAt) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+          INSERT INTO BankTransaction 
+          (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, 
+          upiAppName, upiNumber, withdrawAmount, subAdminId, subAdminName, createdAt) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        await query(insertBankRequestQuery, [
+        await pool.execute(insertBankRequestQuery, [
           bankTransaction.bankId,
+          BankTransaction_Id,
           bankTransaction.accountHolderName,
           bankTransaction.bankName,
           bankTransaction.accountNumber,
@@ -331,8 +346,9 @@ const BankRoutes = (app) => {
       'Transaction-Delete-Request',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const bankName = await query(`SELECT bankName FROM Bank `);
+        const [bankName] = await pool.execute(`SELECT bankName FROM Bank `);
         res.status(200).send(bankName);
       } catch (e) {
         console.error(e);
@@ -345,18 +361,19 @@ const BankRoutes = (app) => {
     '/api/admin/manual-user-bank-account-summary/:bankId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         let balances = 0;
         const bankId = req.params.bankId;
 
         // Fetch bank transactions from the database for the specified bankId
         const bankSummaryQuery = `SELECT * FROM BankTransaction WHERE bankId = ? ORDER BY createdAt DESC`;
-        const bankSummaryRows = await query(bankSummaryQuery, [bankId]);
+        const [bankSummaryRows] = await pool.execute(bankSummaryQuery, [bankId]);
         const bankSummary = bankSummaryRows;
 
         // Fetch account transactions from the database for the specified bankId
         const accountSummaryQuery = `SELECT * FROM Transaction WHERE bankId = ? ORDER BY createdAt DESC`;
-        const accountSummaryRows = await query(accountSummaryQuery, [bankId]);
+        const [accountSummaryRows] = await pool.execute(accountSummaryQuery, [bankId]);
         const accountSummary = accountSummaryRows;
 
         // Combine bank and account transactions
@@ -404,9 +421,10 @@ const BankRoutes = (app) => {
   );
 
   app.get('/api/superadmin/view-bank-edit-requests', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const editRequestsQuery = `SELECT * FROM EditBankRequest`;
-      const editRequestsRows = await query(editRequestsQuery);
+      const [editRequestsRows] = await pool.execute(editRequestsQuery);
       const resultArray = editRequestsRows;
       res.status(200).send(resultArray);
     } catch (error) {
@@ -416,6 +434,7 @@ const BankRoutes = (app) => {
   });
 
   app.post('/api/admin/bank/isactive/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const bankId = req.params.bank_id;
       const { isActive } = req.body;
@@ -424,7 +443,7 @@ const BankRoutes = (app) => {
       }
       // Update bank's isActive status in the database
       const updateBankQuery = `UPDATE Bank SET isActive = ? WHERE bank_id = ?`;
-      await query(updateBankQuery, [isActive, bankId]);
+      await pool.execute(updateBankQuery, [isActive, bankId]);
       res.status(200).send({ message: 'Bank status updated successfully' });
     } catch (e) {
       console.error(e);
@@ -433,11 +452,12 @@ const BankRoutes = (app) => {
   });
 
   app.get('/api/admin/bank/view-subadmin/:subadminId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const subadminId = req.params.subadminId;
       const dbBankData = `SELECT Bank.bankName FROM Bank INNER JOIN BankSubAdmins ON Bank.bank_id = BankSubAdmins.bankId
         WHERE BankSubAdmins.subAdminId = ?`;
-      const bankData = await query(dbBankData, [subadminId]);
+      const [bankData] = await pool.execute(dbBankData, [subadminId]);
       res.status(200).send(bankData);
     } catch (e) {
       console.error(e);
@@ -446,12 +466,13 @@ const BankRoutes = (app) => {
   });
 
   app.put('/api/bank/edit-request/:bankId', Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const { subAdminId, isDeposit, isWithdraw, isDelete, isRenew, isEdit } = req.body;
       const bankId = req.params.bankId;
 
       // Check if the bank exists
-      const subAdminBankEdit = await query(`SELECT * FROM BankSubAdmins WHERE bankId = ?`, [bankId]);
+      const [subAdminBankEdit] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = ?`, [bankId]);
       if (!subAdminBankEdit.length) {
         throw { code: 404, message: 'Bank SubAdmins not found for Editing' };
       }
@@ -493,6 +514,7 @@ const BankRoutes = (app) => {
     '/api/bank/delete-subadmin/:bankId/:subAdminId',
     Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const { bankId, subAdminId } = req.params;
         // Check if the bank exists
@@ -503,7 +525,7 @@ const BankRoutes = (app) => {
         }
         // Remove the subAdmin with the specified subAdminId
         const deleteSubAdminQuery = `DELETE FROM BankSubAdmins WHERE bankid = ? AND subadminid = ?`;
-        await query(deleteSubAdminQuery, [bankId, subAdminId]);
+        await pool.execute(deleteSubAdminQuery, [bankId, subAdminId]);
         res.status(200).send({ message: 'SubAdmin removed successfully' });
       } catch (error) {
         console.error(error);
@@ -513,13 +535,14 @@ const BankRoutes = (app) => {
   );
 
   app.get('/api/active-visible-bank', Authorize(['superAdmin', 'RequstAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       // Retrieve active banks from the database
       const activeBanksQuery = `SELECT bankName FROM Bank WHERE isActive = true`;
-      const bankNames = await query(activeBanksQuery);
+      const bankNames = await pool.execute(activeBanksQuery);
       // Retrieve active websites from the database
       const activeWebsitesQuery = `SELECT websiteName FROM Website WHERE isActive = true`;
-      const websiteNames = await query(activeWebsitesQuery);
+      const websiteNames = await pool.execute(activeWebsitesQuery);
       // Check if active banks and websites exist
       if (bankNames.length === 0) {
         return res.status(404).send({ message: 'No bank found' });

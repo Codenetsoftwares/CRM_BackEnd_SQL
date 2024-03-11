@@ -4,12 +4,14 @@ const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequest, subAdminId, isDeposit, isWithdraw) => {
     const pool = await connectToDB();
     try {
-      const insertBankDetails = `INSERT INTO Bank(bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, 
-      upiNumber, subAdminName, isActive, bank_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      console.log("approvedBankRequest", approvedBankRequest);
+      const insertBankDetails = `INSERT INTO Bank(bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, 
+      upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw) VALUES (?, ?, ?, ?)`;
       const promises = approvedBankRequest.map(async (row) => {
         // Insert bank details
-        const result = await pool.execute(insertBankDetails, [
+        const [result] = await pool.execute(insertBankDetails, [
+          row.bank_id,
           row.bankName,
           row.accountHolderName,
           row.accountNumber,
@@ -19,11 +21,10 @@ const BankServices = {
           row.upiNumber,
           row.subAdminName,
           true,
-          row.bank_id,
         ]);
 
         // Insert entry into BankSubAdmins table with correct bankId
-        await pool.execute(insertSubadmin, [row.bank_id, subAdminId, isDeposit, isWithdraw]);
+        await pool.execute(insertSubadmin, [approvedBankRequest[0].bank_id, subAdminId, isDeposit, isWithdraw]);
       });
       // Execute all promises concurrently
       await Promise.all(promises);
@@ -36,7 +37,7 @@ const BankServices = {
   deleteBankRequest: async (bankId) => {
     const pool = await connectToDB();
     const deleteBankRequestQuery = `DELETE FROM BankRequest WHERE bank_id = ?`;
-    const result = await pool.execute(deleteBankRequestQuery, [bankId]);
+    const [result] = await pool.execute(deleteBankRequestQuery, [bankId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
@@ -44,7 +45,7 @@ const BankServices = {
     const pool = await connectToDB();
     try {
       const sql = 'SELECT * FROM BankRequest';
-      const result = await pool.execute(sql);
+      const [result] = await pool.execute(sql);
       return result;
     } catch (error) {
       console.error(error);
@@ -119,13 +120,13 @@ const BankServices = {
     const pool = await connectToDB();
     try {
       const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;
-      const bankTransactions = await pool.execute(bankTransactionsQuery, [bankId]);
+      const [bankTransactions] = await pool.execute(bankTransactionsQuery, [bankId]);
 
       const transactionsQuery = `SELECT * FROM Transaction WHERE bankId = ?`;
-      const transactions = await pool.execute(transactionsQuery, [bankId]);
+      const [transactions] = await pool.execute(transactionsQuery, [bankId]);
 
       const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
-      const editTransaction = await pool.execute(editTransactionQuery, [bankId]);
+      const [editTransaction] = await pool.execute(editTransactionQuery, [bankId]);
 
       let balance = 0;
 
