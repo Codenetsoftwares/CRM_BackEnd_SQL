@@ -96,13 +96,14 @@ const AccountServices = {
   },
 
   IntroducerBalance: async (introUserId) => {
+    const pool = await connectToDB();
     try {
       // connection.connect();
       // Fetch Introducer Transactions
       const selectIntroTransactionsQuery = `SELECT * FROM IntroducerTransactions WHERE introUser_id = ?`;
       const selectIntroTransactionsValues = [introUserId];
       const introTransactions = await new Promise((resolve, reject) => {
-        connection.query(selectIntroTransactionsQuery, selectIntroTransactionsValues, (error, results) => {
+        pool.execute(selectIntroTransactionsQuery, selectIntroTransactionsValues, (error, results) => {
           if (error) {
             reject(error);
           } else {
@@ -129,9 +130,10 @@ const AccountServices = {
   },
 
   updateUserProfile: async (id, data) => {
+    const pool = await connectToDB();
     try {
       // Fetch existing user data from the database
-      const [existingUser] = await query(`SELECT * FROM User WHERE id = ?`, [id[0].id]);
+      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE id = ?`, [id[0].id]);
       console.log('existingUser', existingUser.id);
 
       // Check if the user exists
@@ -189,9 +191,10 @@ const AccountServices = {
   },
 
   SubAdminPasswordResetCode: async (userName, password) => {
+    const pool = await connectToDB();
     try {
       // Check if the user exists
-      const existingUser = await query(`SELECT * FROM Admin WHERE userName = '${userName}';`);
+      const existingUser = await pool.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
       if (existingUser.length === 0) {
         throw {
           code: 404,
@@ -221,9 +224,10 @@ const AccountServices = {
   },
 
   SuperAdminPasswordResetCode: async (userName, oldPassword, password) => {
+    const pool = await connectToDB();
     try {
       // Check if the user exists
-      const existingUser = await query(`SELECT * FROM Admin WHERE userName = '${userName}';`);
+      const existingUser = await pool.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
       if (existingUser.length === 0) {
         throw {
           code: 404,
@@ -253,9 +257,10 @@ const AccountServices = {
   },
 
   updateSubAdminProfile: async (id, data) => {
+    const pool = await connectToDB();
     try {
       const userId = id[0].id;
-      const existingUser = await query(`SELECT * FROM Admin WHERE id = ?`, [userId]);
+      const existingUser = await pool.execute(`SELECT * FROM Admin WHERE id = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
