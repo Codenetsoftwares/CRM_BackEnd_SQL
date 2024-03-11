@@ -1,30 +1,12 @@
-import mysql from 'mysql2/promise';
 import { Authorize } from '../middleware/Authorize.js';
 import BankServices from '../services/Bank.services.js';
 import AccountServices from '../services/Account.Services.js';
+import connectToDB from '../db/db.js';
 import { v4 as uuidv4 } from 'uuid';
-
-var Pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, values) => {
-  try {
-    const [rows, fields] = await Pool.execute(sql, values);
-    return rows;
-  } catch (error) {
-    throw error; // Rethrow the error to be caught by the calling function
-  }
-};
 
 const BankRoutes = (app) => {
   app.post('/api/add-bank-name', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const userName = req.user;
       const {
@@ -36,37 +18,38 @@ const BankRoutes = (app) => {
         upiAppName = '',
         upiNumber = '',
       } = req.body;
-
+  
       const trimmedBankName = bankName.replace(/\s+/g, '');
       if (!trimmedBankName) {
         throw { code: 400, message: 'Please provide a bank name to add' };
       }
-
+  
       // Check if the bank name already exists in Bank or BankRequest tables
       const [existingBank, existingBankRequest] = await Promise.all([
-        query('SELECT * FROM Bank WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
-        query('SELECT * FROM BankRequest WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
+        pool.execute('SELECT * FROM Bank WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
+        pool.execute('SELECT * FROM BankRequest WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
       ]);
-
-      if (existingBank.length > 0 || existingBankRequest.length > 0) {
+  
+      if (existingBank[0].length > 0 || existingBankRequest[0].length > 0) {
         throw { code: 400, message: 'Bank name already exists!' };
       }
-
+  
       const bank_id = uuidv4();
       // Insert new bank name
-      const insertBankQuery = `INSERT INTO BankRequest (bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, 
-        subAdminName, bank_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      const result = await query(insertBankQuery, [
-        trimmedBankName,
-        accountHolderName || null,
-        accountNumber || null,
-        ifscCode || null,
-        upiId || null,
-        upiAppName || null,
-        upiNumber || null,
-        userName ? userName.firstname : null,
-        bank_id || null,
-      ]);
+      const insertBankQuery = `INSERT INTO BankRequest (bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, 
+        subAdminName, subAdminId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const [result] = await pool.execute(insertBankQuery, [
+            bank_id,
+            trimmedBankName,
+            accountHolderName || null,
+            accountNumber || null,
+            ifscCode || null,
+            upiId || null,
+            upiAppName || null,
+            upiNumber || null,
+            (userName && userName.firstname) ? userName.firstname : null,
+            (userName && userName.userName) ? userName.userName : null
+        ]);
       res.status(200).send({ message: 'Bank name sent for approval!' });
     } catch (e) {
       console.error(e);
@@ -75,10 +58,11 @@ const BankRoutes = (app) => {
   });
 
   app.post('/api/approve-bank/:bank_id', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const { isApproved, subAdminId, isWithdraw, isDeposit } = req.body;
       const bankId = req.params.bank_id;
-      const approvedBankRequest = await query(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]);
+      const approvedBankRequest = await pool.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]);
       if (!approvedBankRequest || approvedBankRequest.length === 0) {
         throw { code: 404, message: 'Bank not found in the approval requests!' };
       }
