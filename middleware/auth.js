@@ -1,31 +1,11 @@
 import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
-
-// Define the pool outside the middleware function
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-// Define the query function separately
-const query = async (sql, values) => {
-  try {
-    const [rows, fields] = await pool.execute(sql, values);
-    return rows;
-  } catch (error) {
-    console.error('Error executing query:', error);
-    throw error; // Rethrow the error to be caught by the calling function
-  }
-};
+import connectToDB from '../db/db.js';
 
 // Export the middleware function
 export const AuthorizeRole = (roles) => {
   return async (req, res, next) => {
+    const pool = await connectToDB();
     try {
       const authToken = req.headers.authorization;
       if (!authToken) {
@@ -45,7 +25,7 @@ export const AuthorizeRole = (roles) => {
 
       // If no introducer user found, fetch user with other roles
       if (!introducerUser || introducerUser.length === 0) {
-        const [otherUser] = await query('SELECT * FROM User WHERE userName = ?', [decodedToken.userName]);
+        const [otherUser] = await pool.execute('SELECT * FROM User WHERE userName = ?', [decodedToken.userName]);
         if (!otherUser || otherUser.length === 0) {
           return res.status(401).send({ code: 401, message: 'Invalid login attempt (4)' });
         }

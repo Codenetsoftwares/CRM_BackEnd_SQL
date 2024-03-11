@@ -78,6 +78,7 @@ const AccountRoute = (app) => {
     '/api/user-profile/:page',
     Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       const page = req.params.page;
       const searchQuery = req.query.search;
       try {
@@ -86,7 +87,7 @@ const AccountRoute = (app) => {
         if (searchQuery) {
           console.log('first');
           // Perform SQL query to search users based on the search query
-          const users = await query(`SELECT * FROM User WHERE userName LIKE ?`, [`%${searchQuery}%`]);
+          const users = await pool.execute(`SELECT * FROM User WHERE userName LIKE ?`, [`%${searchQuery}%`]);
 
           const SecondArray = users.map((user) => {
             return {
@@ -102,7 +103,7 @@ const AccountRoute = (app) => {
         } else {
           console.log('second');
           // Retrieve all users
-          const introducerUser = await query(`SELECT * FROM User`);
+          const introducerUser = await pool.execute(`SELECT * FROM User`);
 
           const introData = introducerUser.map((user) => {
             return {
@@ -147,8 +148,9 @@ const AccountRoute = (app) => {
     '/api/admin/user-profile-edit/:id',
     Authorize(['superAdmin', 'User-Profile-View', 'Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const id = await query(`SELECT * FROM User WHERE id = (?)`, [req.params.id]);
+        const id = await pool.execute(`SELECT * FROM User WHERE id = (?)`, [req.params.id]);
         // console.log("id", id);
         const updateResult = await AccountServices.updateUserProfile(id, req.body);
         console.log(updateResult);
@@ -176,8 +178,9 @@ const AccountRoute = (app) => {
       'Introducer-Profile-View',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const result = await query(`SELECT userName FROM Admin WHERE FIND_IN_SET('Bank-View', roles) > 0;`);
+        const result = await pool.execute(`SELECT userName FROM Admin WHERE FIND_IN_SET('Bank-View', roles) > 0;`);
         res.status(200).send(result);
       } catch (e) {
         console.error(e);
@@ -200,8 +203,9 @@ const AccountRoute = (app) => {
       'Introducer-Profile-View',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const superAdmin = await query(`SELECT userName FROM Admin`);
+        const superAdmin = await pool.execute(`SELECT userName FROM Admin`);
         console.log('superAdmin', superAdmin);
         res.status(200).send(superAdmin);
       } catch (e) {
@@ -225,8 +229,9 @@ const AccountRoute = (app) => {
       'Introducer-Profile-View',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const superAdmin = await query(`SELECT userName FROM Admin WHERE FIND_IN_SET('Website-View', roles) > 0;`);
+        const superAdmin = await pool.execute(`SELECT userName FROM Admin WHERE FIND_IN_SET('Website-View', roles) > 0;`);
         console.log('superAdmin', superAdmin);
         res.status(200).send(superAdmin);
       } catch (e) {
@@ -248,12 +253,13 @@ const AccountRoute = (app) => {
       'Bank-View',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const transactions = await query(`SELECT * FROM Transaction ORDER BY createdAt DESC`);
+        const transactions = await pool.execute(`SELECT * FROM Transaction ORDER BY createdAt DESC`);
 
-        const websiteTransactions = await query(`SELECT * FROM WebsiteTransaction ORDER BY createdAt DESC`);
+        const websiteTransactions = await pool.execute(`SELECT * FROM WebsiteTransaction ORDER BY createdAt DESC`);
 
-        const bankTransactions = await query(`SELECT * FROM BankTransaction ORDER BY createdAt DESC`);
+        const bankTransactions = await pool.execute(`SELECT * FROM BankTransaction ORDER BY createdAt DESC`);
 
         const allTransactions = [...transactions, ...websiteTransactions, ...bankTransactions];
         allTransactions.sort((a, b) => {
@@ -312,8 +318,9 @@ const AccountRoute = (app) => {
     '/api/admin/intoducer-profile-edit/:id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const id = await query(`SELECT * FROM IntroducerUser WHERE id = (?)`, [req.params.id]);
+        const id = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = (?)`, [req.params.id]);
         const updateResult = await introducerUser.updateIntroducerProfile(id, req.body);
         console.log(updateResult);
         if (updateResult) {
@@ -330,10 +337,11 @@ const AccountRoute = (app) => {
     '/api/introducer-profile/:page',
     Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View', 'Create-Introducer']),
     async (req, res) => {
+      const pool = await connectToDB();
       const page = req.params.page;
       const userName = req.query.search;
       try {
-        let introducerUser = await query(`SELECT * FROM IntroducerUser`);
+        let introducerUser = await pool.execute(`SELECT * FROM IntroducerUser`);
         // let introducerUser = await queryExecutor(query);
 
         let introData = introducerUser;
@@ -377,11 +385,12 @@ const AccountRoute = (app) => {
     '/api/introducer/client-data/:id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.id;
-        const intoducer = await query(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
+        const intoducer = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
         const introducerId = intoducer[0].userName;
-        const introducerUserQuery = await query(`SELECT * FROM User WHERE introducersUserName = '${introducerId}';`);
+        const introducerUserQuery = await pool.execute(`SELECT * FROM User WHERE introducersUserName = '${introducerId}';`);
         res.send(introducerUserQuery);
       } catch (e) {
         console.error(e);
@@ -394,10 +403,11 @@ const AccountRoute = (app) => {
     '/api/get-single-Introducer/:id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.id;
         // Assuming 'IntroducerUser' is a table in a relational database
-        const result = await query(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
+        const result = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
         if (result.length === 0) {
           res.status(404).send({ message: 'Introducer not found' });
         } else {
@@ -420,8 +430,9 @@ const AccountRoute = (app) => {
       'Create-Transaction',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const result = await query(`SELECT userName FROM User;`);
+        const result = await pool.execute(`SELECT userName FROM User;`);
         res.status(200).send(result);
       } catch (error) {
         console.log(error);
@@ -447,8 +458,9 @@ const AccountRoute = (app) => {
       'Transaction-Delete-Request',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const result = await query(`SELECT userName FROM IntroducerUser;`);
+        const result = await pool.execute(`SELECT userName FROM IntroducerUser;`);
         res.status(200).send(result);
       } catch (error) {
         console.log(error);
@@ -470,17 +482,18 @@ const AccountRoute = (app) => {
   app.get('/api/admin/view-sub-admins/:page', Authorize(['superAdmin']), async (req, res) => {
     const page = req.params.page;
     const searchQuery = req.query.search;
+    const pool = await connectToDB();
     try {
       let allIntroDataLength;
       if (searchQuery) {
         console.log('first');
-        const users = await query(`SELECT * FROM Admin WHERE userName LIKE '%${searchQuery}%';`);
+        const users = await pool.execute(`SELECT * FROM Admin WHERE userName LIKE '%${searchQuery}%';`);
         allIntroDataLength = users.length;
         const pageNumber = Math.ceil(allIntroDataLength / 10);
         res.status(200).json({ users, pageNumber, allIntroDataLength });
       } else {
         console.log('second');
-        const introducerUser = await query(`SELECT * FROM Admin WHERE roles NOT IN ('superAdmin');`);
+        const introducerUser = await pool.execute(`SELECT * FROM Admin WHERE roles NOT IN ('superAdmin');`);
         const introData = introducerUser.slice((page - 1) * 10, page * 10);
         console.log('introData', introData.length);
 
@@ -500,12 +513,13 @@ const AccountRoute = (app) => {
   });
 
   app.post('/api/admin/single-sub-admin/:id', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       if (!req.params.id) {
         throw { code: 400, message: "Sub Admin's Id not present" };
       }
       const subAdminId = req.params.id;
-      const subAdmin = await query(`SELECT * FROM Admin WHERE id = ${subAdminId}`);
+      const subAdmin = await pool.execute(`SELECT * FROM Admin WHERE id = ${subAdminId}`);
       if (!subAdmin) {
         throw { code: 500, message: 'Sub Admin not found with the given Id' };
       }
@@ -517,13 +531,14 @@ const AccountRoute = (app) => {
   });
 
   app.put('/api/admin/edit-subadmin-roles/:id', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const subAdminId = req.params.id;
       const { roles } = req.body;
       if (!subAdminId) {
         throw { code: 400, message: 'Id not found' };
       }
-      const result = await query(`UPDATE Admin SET roles = '${roles}' WHERE id = ${subAdminId};`);
+      const result = await pool.execute(`UPDATE Admin SET roles = '${roles}' WHERE id = ${subAdminId};`);
       res.status(200).send(`Sub admin roles updated with ${roles}`);
     } catch (e) {
       console.error(e);
@@ -535,13 +550,14 @@ const AccountRoute = (app) => {
     '/introducer-user-single-data/:id',
     Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.id;
-        const introducerUserResult = await query(`SELECT userName FROM IntroducerUser WHERE id = '${id}';`);
+        const introducerUserResult = await pool.execute(`SELECT userName FROM IntroducerUser WHERE id = '${id}';`);
         const introducerUserName = introducerUserResult[0].userName;
 
         // Find users with introducersUserName matching introducerUser.userName
-        const usersResult = await query(`
+        const usersResult = await pool.execute(`
       SELECT *
       FROM User
       WHERE introducersUserName = '${introducerUserName}'
@@ -650,6 +666,7 @@ const AccountRoute = (app) => {
       'report-all-txn',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const { page, itemsPerPage } = req.query;
         const {
@@ -699,11 +716,11 @@ const AccountRoute = (app) => {
           }
         });
 
-        const filteredWebsiteTransactions = await query(
+        const filteredWebsiteTransactions = await pool.execute(
           `SELECT * FROM WebsiteTransaction WHERE withdrawAmount >= ${minAmount} AND withdrawAmount <= ${maxAmount} OR depositAmount >= ${minAmount} AND depositAmount <= ${maxAmount}`,
         );
 
-        const filteredBankTransactions = await query(
+        const filteredBankTransactions = await pool.execute(
           `SELECT * FROM BankTransaction WHERE withdrawAmount >= ${minAmount} AND withdrawAmount <= ${maxAmount} OR depositAmount >= ${minAmount} AND depositAmount <= ${maxAmount}`,
         );
 
@@ -766,10 +783,11 @@ const AccountRoute = (app) => {
     '/api/admin/introducer-account-summary/:id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.id;
         // Query to retrieve introducer transactions for the specified user ID
-        const introSummary = await query(
+        const introSummary = await pool.execute(
           `SELECT * FROM IntroducerTransaction WHERE introUserId = '${id}' ORDER BY createdAt DESC;`,
         );
         let balances = 0;
@@ -831,9 +849,10 @@ const AccountRoute = (app) => {
     '/api/single-user-profile/:id',
     Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const id = req.params.id;
-        const userProfile = await query(`SELECT * FROM User WHERE id = '${id}';`);
+        const userProfile = await pool.execute(`SELECT * FROM User WHERE id = '${id}';`);
         res.status(200).send(userProfile);
       } catch (e) {
         console.error(e);
@@ -843,8 +862,9 @@ const AccountRoute = (app) => {
   );
 
   app.put('/api/admin/subAdmin-profile-edit/:id', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
-      const id = await query(`SELECT * FROM Admin WHERE id = '${req.params.id}'`);
+      const id = await pool.execute(`SELECT * FROM Admin WHERE id = '${req.params.id}'`);
       const updateResult = await AccountServices.updateSubAdminProfile(id, req.body);
       console.log(updateResult);
       if (updateResult) {
@@ -860,18 +880,19 @@ const AccountRoute = (app) => {
     '/api/view-subadmin-transaction/:subadminId',
     Authorize(['superAdmin', 'report-my-txn']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
         const userId = req.params.subadminId;
 
-        const transaction = await query(
+        const transaction = await pool.execute(
           `SELECT * FROM Transaction WHERE subAdminId = '${userId}' ORDER BY createdAt DESC;`,
         );
 
-        const bankTransaction = await query(
+        const bankTransaction = await pool.execute(
           `SELECT * FROM BankTransaction WHERE subAdminId = '${userId}' ORDER BY createdAt DESC;`,
         );
 
-        const webisteTransaction = await query(
+        const webisteTransaction = await pool.execute(
           `SELECT * FROM WebsiteTransaction WHERE subAdminId = '${userId}' ORDER BY createdAt DESC;`,
         );
 
