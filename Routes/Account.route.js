@@ -180,7 +180,7 @@ const AccountRoute = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const result = await pool.execute(`SELECT userName FROM Admin WHERE FIND_IN_SET('Bank-View', roles) > 0;`);
+        const [result] = await pool.execute(`SELECT userName FROM Admin WHERE roles LIKE '%Bank-View%'`);
         res.status(200).send(result);
       } catch (e) {
         console.error(e);
@@ -188,7 +188,7 @@ const AccountRoute = (app) => {
       }
     },
   );
-
+  
   app.get(
     '/api/admin/sub-admin-name',
     Authorize([
