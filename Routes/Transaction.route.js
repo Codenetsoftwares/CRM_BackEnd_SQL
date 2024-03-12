@@ -1,27 +1,6 @@
-import mysql from 'mysql2/promise';
 import TransactionServices from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 
-var connection = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, params) => {
-  try {
-    const filteredParams = params.map((param) => (param !== undefined ? param : null));
-    const [rows, fields] = await connection.execute(sql, filteredParams);
-    return rows;
-  } catch (error) {
-    console.error('Error executing query:', error);
-    throw error;
-  }
-};
 
 const TransactionRoutes = (app) => {
   app.post(

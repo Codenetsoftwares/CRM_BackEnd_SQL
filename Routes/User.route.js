@@ -1,32 +1,11 @@
 import { AuthorizeRole } from '../middleware/auth.js';
 import { Authorize } from '../middleware/Authorize.js';
 import UserServices from '../services/User.services.js';
-import mysql from 'mysql2/promise';
-
-var connection = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, params) => {
-  try {
-    // Filter out undefined parameters and replace them with null
-    const filteredParams = params.map((param) => (param !== undefined ? param : null));
-    const [rows, fields] = await connection.execute(sql, filteredParams);
-    return rows;
-  } catch (error) {
-    console.error('Error executing query:', error);
-    throw error;
-  }
-};
+import connectToDB from '../db/db.js';
 
 export const UserRoutes = (app) => {
   app.post('/api/accounts/user/login', async (req, res) => {
+    const pool = await connectToDB();
     try {
       const { userName, password } = req.body;
       if (!userName) {
@@ -41,7 +20,7 @@ export const UserRoutes = (app) => {
       if (!accessToken) {
         throw { code: 500, message: 'Failed to generate access token' };
       }
-      const [user] = await connection.execute('SELECT * FROM User WHERE userName = ? LIMIT 1', [userName]);
+      const [user] = await pool.execute('SELECT * FROM User WHERE userName = ? LIMIT 1', [userName]);
       if (!user) {
         throw { code: 404, message: 'User not found' };
       }
@@ -74,16 +53,17 @@ export const UserRoutes = (app) => {
   // API To Add Bank Name
 
   app.post('/api/user/add-bank-name', AuthorizeRole(['user']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const userData = req.body;
       const user = req.user;
-      const [existingData] = await connection.query('SELECT * FROM user_bank_details WHERE account_number = ?', [
+      const [existingData] = await pool.query('SELECT * FROM user_bank_details WHERE account_number = ?', [
         userData.account_number,
       ]);
       if (existingData.length > 0) {
         return res.status(400).send({ message: 'Bank details already exist for this account number' });
       }
-      const [result] = await connection.query(
+      const [result] = await pool.query(
         'INSERT INTO user_bank_details (user_id, account_holder_name, bank_name, ifsc_code, account_number) VALUES (?, ?, ?, ?, ?)',
         [user.id, userData.account_holder_name, userData.bank_name, userData.ifsc_code, userData.account_number],
       );
@@ -101,17 +81,18 @@ export const UserRoutes = (app) => {
   // API To Add Website Name
 
   app.post('/api/user/add-website-name', AuthorizeRole(['user']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const userData = req.body;
       const user = req.user;
-      const [existingData] = await connection.query(
+      const [existingData] = await pool.query(
         'SELECT * FROM user_websites_details WHERE user_id = ? AND website_name = ?',
         [user.id, userData.website_name],
       );
       if (existingData.length > 0) {
         return res.status(400).send({ message: 'Website details already exist for this user' });
       }
-      const [result] = await connection.query(
+      const [result] = await pool.query(
         'INSERT INTO user_websites_details (user_id, website_name) VALUES (?, ?)',
         [user.id, userData.website_name],
       );
@@ -129,17 +110,18 @@ export const UserRoutes = (app) => {
   // API To Add UPI Details
 
   app.post('/api/user/add-upi-name', AuthorizeRole(['user']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const userData = req.body;
       const user = req.user;
-      const [existingData] = await connection.query('SELECT * FROM user_upi_details WHERE user_id = ? AND upi_id = ?', [
+      const [existingData] = await pool.query('SELECT * FROM user_upi_details WHERE user_id = ? AND upi_id = ?', [
         user.id,
         userData.upi_id,
       ]);
       if (existingData.length > 0) {
         return res.status(400).send({ message: 'UPI details already exist for this user' });
       }
-      const [result] = await connection.query(
+      const [result] = await pool.query(
         'INSERT INTO user_upi_details (user_id, upi_id, upi_app, upi_number) VALUES (?, ?, ?, ?)',
         [user.id, userData.upi_id, userData.upi_app, userData.upi_number],
       );
@@ -157,9 +139,10 @@ export const UserRoutes = (app) => {
   // API To Edit User Profiles
 
   app.put('/api/user-profile-edit/:id', AuthorizeRole(['user']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const userId = req.params.id;
-      const userDetails = await query(`SELECT * FROM User WHERE id = (?)`, [userId]);
+      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE id = (?)`, [userId]);
       const updateResult = await UserServices.updateUserProfile(userDetails, req.body);
       console.log(updateResult);
       if (updateResult) {
@@ -174,9 +157,10 @@ export const UserRoutes = (app) => {
   // API To View User Profiles
 
   app.get('/api/user-profile-data/:id', AuthorizeRole(['user']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const userId = req.params.id;
-      const userDetails = await query(`SELECT * FROM User WHERE id = (?)`, [userId]);
+      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE id = (?)`, [userId]);
       if (!userDetails) {
         return res.status(404).send({ message: 'User not found' });
       }
@@ -201,6 +185,7 @@ export const UserRoutes = (app) => {
   app.get('/api/super-admin/user-profile/:page', Authorize(['superAdmin']), async (req, res) => {
     const page = req.params.page;
     const searchQuery = req.query.search;
+    const pool = await connectToDB();
     try {
       if (searchQuery) {
         console.log('first');
@@ -218,7 +203,7 @@ export const UserRoutes = (app) => {
         const selectAllQuery = `
           SELECT *
           FROM User`;
-        const results = await query(selectAllQuery);
+        const [results] = await pool.execute(selectAllQuery);
         const introData = results;
         const SecondArray = [];
         const Limit = page * 10;

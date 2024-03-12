@@ -1,31 +1,11 @@
 import AccountServices from '../services/Account.Services.js';
 import WebsiteServices from '../services/WebSite.Service.js';
 import BankServices from '../services/Bank.services.js';
-import mysql from 'mysql2/promise';
-
-var connection = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, params) => {
-  try {
-    const filteredParams = params.map((param) => (param !== undefined ? param : null));
-    const [rows, fields] = await connection.execute(sql, filteredParams);
-    return rows;
-  } catch (error) {
-    console.error('Error executing query:', error);
-    throw error;
-  }
-};
+import connectToDB from '../db/db.js';
 
 const TransactionServices = {
   createTransaction: async (req, res, subAdminName) => {
+    const pool = await connectToDB();
     try {
       const {
         transactionID,
@@ -54,7 +34,7 @@ const TransactionServices = {
       }
 
       // Checking if transactionId is reusable or not
-      const existingTransaction = await query(
+      const [existingTransaction] = await pool.execute(
         `SELECT * FROM Transaction WHERE transactionID = ? AND createdAt >= NOW() - INTERVAL 2 DAY;`,
         [transactionID],
       );
@@ -66,7 +46,7 @@ const TransactionServices = {
       }
 
       // Website
-      const dbWebsiteData = await query('SELECT * FROM Website WHERE websiteName = ?', [websiteName]);
+      const [dbWebsiteData] = await pool.execute('SELECT * FROM Website WHERE websiteName = ?', [websiteName]);
 
       if (!dbWebsiteData) {
         throw { code: 404, message: 'Website data not found' };
@@ -80,7 +60,7 @@ const TransactionServices = {
       }
 
       // Bank
-      const dbBankData = await query('SELECT * FROM Bank WHERE bankName = ?', [bankName]);
+      const [dbBankData] = await pool.execute('SELECT * FROM Bank WHERE bankName = ?', [bankName]);
       if (!dbWebsiteData) {
         throw { code: 404, message: 'Bank data not found' };
       }
@@ -92,7 +72,7 @@ const TransactionServices = {
       }
 
       // User
-      const user = await query('SELECT * FROM User WHERE userName = ?', [userName]);
+      const [user] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
       if (!user) {
         return res.status(404).send('User not found');
       }
@@ -123,7 +103,7 @@ const TransactionServices = {
         const incertData = `INSERT INTO Transaction (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, 
         amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, 
         createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        await query(incertData, [
+        await pool.execute(incertData, [
           newTransaction.bankId,
           newTransaction.websiteId,
           newTransaction.subAdminId,
@@ -144,7 +124,7 @@ const TransactionServices = {
         ]);
 
         //  Incert Data into User
-        const user = await query('SELECT * FROM User WHERE userName = ?', [userName]);
+        const [user] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
 
         if (!user) {
           return res.status(404).json({ status: false, message: 'User not found' });
@@ -154,7 +134,7 @@ const TransactionServices = {
         const incertUserData = `INSERT INTO UserTransactionDetail (UID, bankId, websiteId, subAdminName, transactionID,
         transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
         websiteName, createdAt, Transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        await query(incertUserData, [
+        await pool.execute(incertUserData, [
           UID,
           newTransaction.bankId,
           newTransaction.websiteId,
@@ -199,7 +179,7 @@ const TransactionServices = {
         const incertData = `INSERT INTO Transaction (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, 
           amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, 
           createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const result = await query(incertData, [
+        const [result] = await pool.execute(incertData, [
           newTransaction.bankId,
           newTransaction.websiteId,
           newTransaction.subAdminId,
@@ -220,7 +200,7 @@ const TransactionServices = {
         ]);
 
         //  Incert Data into User
-        const user = await query('SELECT * FROM User WHERE userName = ?', [userName]);
+        const [user] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
 
         if (!user) {
           return res.status(404).json({ status: false, message: 'User not found' });
@@ -230,7 +210,7 @@ const TransactionServices = {
         const incertUserData = `INSERT INTO UserTransactionDetail (UID, bankId, websiteId, subAdminName, transactionID,
           transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
           websiteName, createdAt, Transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        await query(incertUserData, [
+        await pool.execute(incertUserData, [
           UID,
           newTransaction.bankId,
           newTransaction.websiteId,
@@ -259,8 +239,9 @@ const TransactionServices = {
   },
 
   withdrawView: async (req, res) => {
+    const pool = await connectToDB();
     try {
-      const withdraws = await query('SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC', [
+      const [withdraws] = await pool.execute('SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC', [
         'Withdraw',
       ]);
       let sum = 0;
@@ -274,8 +255,9 @@ const TransactionServices = {
   },
 
   depositView: async (req, res) => {
+    const pool = await connectToDB();
     try {
-      const deposits = await query('SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC', [
+      const [deposits] = await pool.execute('SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC', [
         'Deposit',
       ]);
       let sum = 0;
@@ -290,13 +272,14 @@ const TransactionServices = {
   },
 
   createIntroducerDepositTransaction: async (req, res, subAdminDetail) => {
+    const pool = await connectToDB();
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
       console.log('subAdminDetail', subAdminDetail);
       const name = subAdminDetail.firstname;
       const id = subAdminDetail.id;
       // const introId = await IntroducerUser.findOne({ userName: introducerUserName }).exec();
-      const introId = await query('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
+      const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
       console.log('introId', introId);
       if (transactionType === 'Deposit') {
         const NewIntroducerTransaction = {
@@ -311,7 +294,7 @@ const TransactionServices = {
         };
         const incertData = `INSERT INTO IntroducerTransaction (introUserId, amount, transactionType, remarks, subAdminId, subAdminName, 
           introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await query(incertData, [
+        await pool.execute(incertData, [
           NewIntroducerTransaction.introUserId,
           NewIntroducerTransaction.amount,
           NewIntroducerTransaction.transactionType,
@@ -329,11 +312,12 @@ const TransactionServices = {
   },
 
   createIntroducerWithdrawTransaction: async (req, res, subAdminDetail) => {
+    const pool = await connectToDB();
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
       const name = subAdminDetail.firstname;
       const id = subAdminDetail.id;
-      const introId = await query('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
+      const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
       if (transactionType === 'Withdraw') {
         const NewIntroducerTransaction = {
           introUserId: introId[0].id,
@@ -347,7 +331,7 @@ const TransactionServices = {
         };
         const incertData = `INSERT INTO IntroducerTransaction (introUserId, amount, transactionType, remarks, subAdminId, subAdminName, 
           introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await query(incertData, [
+        await pool.execute(incertData, [
           NewIntroducerTransaction.introUserId,
           NewIntroducerTransaction.amount,
           NewIntroducerTransaction.transactionType,
