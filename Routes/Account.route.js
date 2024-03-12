@@ -60,6 +60,7 @@ const AccountRoute = (app) => {
     async (req, res) => {
       try {
         const user = req.user;
+        console.log("user", user);
         await introducerUser.createintroducerUser(req.body, user);
         res.status(200).send({
           code: 200,

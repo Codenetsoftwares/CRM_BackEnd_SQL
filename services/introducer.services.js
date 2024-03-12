@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import connectToDB from '../db/db.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export const introducerUser = {
   generateIntroducerAccessToken: async (userName, password, persist) => {
@@ -79,19 +80,19 @@ export const introducerUser = {
 
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
-
+      const intro_id = uuidv4();
       const [result] = await pool.execute(
-        'INSERT INTO IntroducerUser (firstname, lastname, password, introducerId, userName) VALUES (?, ?, ?, ?, ?)',
-        [data.firstname, data.lastname, encryptedPassword, user.userName, data.userName],
+        'INSERT INTO IntroducerUser (intro_id, firstname, lastname, password, introducerId, userName) VALUES (?, ?, ?, ?, ?, ?)',
+        [intro_id, data.firstname, data.lastname, encryptedPassword, user[0].userName, data.userName],
       );
       if (result.affectedRows === 1) {
         return { code: 201, message: 'Introducer User created successfully' };
       } else {
         throw { code: 500, message: 'Failed to create new Introducer User' };
       }
-    } catch (err) {
-      console.error(err);
-      throw { code: 500, message: 'Internal Server Error' };
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   },
 
