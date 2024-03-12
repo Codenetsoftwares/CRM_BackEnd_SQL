@@ -2,32 +2,15 @@ import mysql from 'mysql2/promise';
 import { Authorize } from '../middleware/Authorize.js';
 import BankServices from '../services/Bank.services.js';
 import WebsiteServices from '../services/WebSite.Service.js';
-
-var Pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, values) => {
-  try {
-    const [rows, fields] = await Pool.execute(sql, values);
-    return rows;
-  } catch (error) {
-    throw error; // Rethrow the error to be caught by the calling function
-  }
-};
+import connectToDB from '../db/db.js';
 
 const EditAPIRoute = (app) => {
   //   API To Edit Bank Detail
   app.put('/api/bank-edit/:id', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const bankId = req.params.id;
-      const id = await query(`SELECT * FROM Bank WHERE (id) = (?)`, [bankId]);
+      const [id] = await pool.execute(`SELECT * FROM Bank WHERE (id) = (?)`, [bankId]);
       const updateResult = await BankServices.updateBank(id, req.body);
       console.log('update', updateResult);
       if (updateResult) {
@@ -44,8 +27,9 @@ const EditAPIRoute = (app) => {
     '/api/admin/approve-bank-detail-edit-request/:requestId',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const editRequest = await query(`SELECT * FROM EditBankRequest WHERE id = ?`, [req.params.requestId]);
+        const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE id = ?`, [req.params.requestId]);
 
         if (!editRequest || editRequest.length === 0) {
           return res.status(404).send({ message: 'Edit request not found' });
@@ -66,7 +50,7 @@ const EditAPIRoute = (app) => {
             if (bankExists && bankExists.length > 0) {
               return res.status(400).send({ message: 'Bank with the same name already exists' });
             }
-            await query(
+            await pool.execute(
               `UPDATE Bank SET accountHolderName = ?, bankName = ?, accountNumber = ?, ifscCode = ?, upiId = ?, upiAppName = ?,
             upiNumber = ? WHERE id = ?`,
               [
@@ -81,9 +65,9 @@ const EditAPIRoute = (app) => {
               ],
             );
 
-            await query(`UPDATE EditBankRequest SET isApproved = TRUE WHERE id = ?`, [req.params.requestId]);
+            await pool.execute(`UPDATE EditBankRequest SET isApproved = TRUE WHERE id = ?`, [req.params.requestId]);
 
-            await query(`DELETE FROM EditBankRequest WHERE id = ?`, [req.params.requestId]);
+            await pool.execute(`DELETE FROM EditBankRequest WHERE id = ?`, [req.params.requestId]);
 
             return res.status(200).send({ message: 'Edit request approved and data updated' });
           } else {
@@ -101,9 +85,10 @@ const EditAPIRoute = (app) => {
 
   // API To Edit Website Detail
   app.put('/api/website-edit/:id', Authorize(['superAdmin', 'Transaction-View', 'Website-View']), async (req, res) => {
+    const pool = await connectToDB();
     try {
       const id = req.params.id;
-      const editWebsite = await query(`SELECT * FROM Website WHERE (id) = (?)`, [id]);
+      const [editWebsite] = await pool.execute(`SELECT * FROM Website WHERE (id) = (?)`, [id]);
       if (!editWebsite) {
         throw { code: 404, message: 'Website not found for Editing' };
       }
@@ -123,8 +108,9 @@ const EditAPIRoute = (app) => {
     '/api/admin/approve-website-detail-edit-request/:requestId',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const editRequest = await query(`SELECT * FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+        const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
 
         if (!editRequest || editRequest.length === 0) {
           return res.status(404).send({ message: 'Edit request not found' });
@@ -149,18 +135,18 @@ const EditAPIRoute = (app) => {
               return res.status(400).send({ message: 'Website with the same name already exists' });
             }
 
-            await query(`UPDATE Website SET websiteName = ? WHERE id = ?`, [
+            await pool.execute(`UPDATE Website SET websiteName = ? WHERE id = ?`, [
               editRequest[0].websiteName,
               req.params.requestId,
             ]);
 
-            await query(`UPDATE EditWebsiteRequest SET isApproved = TRUE WHERE id = ?`, [req.params.requestId]);
+            await pool.execute(`UPDATE EditWebsiteRequest SET isApproved = TRUE WHERE id = ?`, [req.params.requestId]);
 
-            await query(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+            await pool.execute(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
 
             return res.status(200).send({ message: 'Edit request approved and data updated' });
           } else {
-            await query(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+            await pool.execute(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
             return res.status(200).send({ message: 'Edit request rejected' });
           }
         } else {

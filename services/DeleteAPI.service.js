@@ -1,36 +1,17 @@
-import mysql from 'mysql2/promise';
-
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-async function query(sql, values) {
-  try {
-    const [rows, fields] = await pool.execute(sql, values);
-    return rows;
-  } catch (error) {
-    console.error('Error executing query:', error.sqlMessage || error.message);
-    throw error; // rethrow the error to be caught by the caller
-  }
-}
+import connectToDB from '../db/db.js';
 
 const DeleteApiService = {
   // Functions For Moveing The Transaction Into Trash
 
   deleteBankTransaction: async (transaction, user) => {
-    const existingTransaction = await query(`SELECT * FROM BankTransaction WHERE id = ?`, [transaction.id]);
+    const pool = await connectToDB();
+    const [existingTransaction] = await pool.execute(`SELECT * FROM BankTransaction WHERE id = ?`, [transaction.id]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction.id}` };
     }
 
-    const existingEditRequest = await query(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
+    const [existingEditRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
       transaction.id,
     ]);
 
@@ -64,13 +45,13 @@ const DeleteApiService = {
       }
     });
 
-    const name = user.firstname;
+    const name = user[0].firstname;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (bankId, transactionType, requesteduserName, subAdminId, subAdminName, 
         depositAmount, withdrawAmount, remarks, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, message, 
         type, Nametype, transId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    await query(createEditRequestQuery, [
+    await pool.execute(createEditRequestQuery, [
       updatedTransactionData.bankId,
       updatedTransactionData.transactionType,
       name,
@@ -95,13 +76,14 @@ const DeleteApiService = {
   },
 
   deleteWebsiteTransaction: async (transaction, user) => {
-    const existingTransaction = await query(`SELECT * FROM WebsiteTransaction WHERE id = ?`, [transaction.id]);
+    const pool = await connectToDB();
+    const [existingTransaction] = await pool.execute(`SELECT * FROM WebsiteTransaction WHERE id = ?`, [transaction.id]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Website Transaction not found with id: ${transaction.id}` };
     }
 
-    const existingEditRequest = await query(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
+    const [existingEditRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
       transaction.id,
     ]);
 
@@ -128,13 +110,13 @@ const DeleteApiService = {
       }
     });
 
-    const name = user.firstname;
+    const name = user[0].firstname;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
         depositAmount, withdrawAmount, remarks, websiteName, message, type, Nametype, transId) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    await query(createEditRequestQuery, [
+    await pool.execute(createEditRequestQuery, [
       updatedTransactionData.websiteId,
       updatedTransactionData.transactionType,
       name,
@@ -153,13 +135,14 @@ const DeleteApiService = {
   },
 
   deleteTransaction: async (transaction, user) => {
-    const existingTransaction = await query(`SELECT * FROM Transaction WHERE id = ?`, [transaction.id]);
+    const pool = await connectToDB();
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Transaction WHERE id = ?`, [transaction.id]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction.id}` };
     }
 
-    const existingEditRequest = await query(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
+    const [existingEditRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
       transaction.id,
     ]);
 
@@ -194,13 +177,13 @@ const DeleteApiService = {
       }
     });
 
-    const name = user.firstname;
+    const name = user[0].firstname;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (bankId, websiteId, transactionID, transactionType, amount, paymentMethod, userId, userName,
         requesteduserName, subAdminId, subAdminName, bonus, bankCharges, remarks, bankName, websiteName, message, type, Nametype, transId, introducerUserName) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    await query(createEditRequestQuery, [
+    await pool.execute(createEditRequestQuery, [
       updatedTransactionData.bankId,
       updatedTransactionData.websiteId,
       updatedTransactionData.transactionID,
@@ -228,12 +211,13 @@ const DeleteApiService = {
 
   //   Need to test
   deleteIntroducerTransaction: async (transaction, user) => {
-    const existingTransaction = await query(`SELECT * FROM IntroducerTransaction WHERE id = ?`, [transaction.id]);
+    const pool = await connectToDB();
+    const [existingTransaction] = await pool.execute(`SELECT * FROM IntroducerTransaction WHERE id = ?`, [transaction.id]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction}` };
     }
-    const existingEditRequest = await query(
+    const [existingEditRequest] = await pool.execute(
       `SELECT * FROM IntroducerEditRequest WHERE transId = ? AND type = 'Delete'`,
       [transaction.id],
     );
@@ -253,12 +237,12 @@ const DeleteApiService = {
       createdAt: transaction.createdAt,
     };
 
-    const name = user.firstname;
+    const name = user[0].firstname;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO IntroducerEditRequest (transId, amount, requesteduserName, transactionType, remarks, subAdminId, subAdminName, 
         introducerUserName, message, type, Nametype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    await query(createEditRequestQuery, [
+    await pool.execute(createEditRequestQuery, [
       transaction.id,
       updatedTransactionData.amount,
       name,
@@ -277,14 +261,15 @@ const DeleteApiService = {
   // Functions To Delete Bank Detail's
 
   deleteBank: async (id) => {
-    const existingTransaction = await query(`SELECT * FROM Bank WHERE id = ?`, [id.id]);
+    const pool = await connectToDB();
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Bank WHERE id = ?`, [id.id]);
     console.log('existingTransaction', existingTransaction);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Bank not found with id: ${id}` };
     }
 
-    const existingEditRequest = await query(
+    const [existingEditRequest] = await pool.execute(
       `SELECT * FROM EditBankRequest WHERE bankTransactionId = ? AND type = 'Delete'`,
       [id.id],
     );
@@ -313,7 +298,7 @@ const DeleteApiService = {
     const createEditRequestQuery = `INSERT INTO EditBankRequest (bankTransactionId, accountHolderName, bankName, accountNumber, ifscCode, upiId, 
     upiAppName, upiNumber, message, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    await query(createEditRequestQuery, [
+    await pool.execute(createEditRequestQuery, [
       id.id,
       updatedTransactionData.accountHolderName,
       updatedTransactionData.bankName,
@@ -329,13 +314,14 @@ const DeleteApiService = {
   },
 
   deleteWebsite: async (id) => {
-    const existingTransaction = await query(`SELECT * FROM Website WHERE id = ?`, [id.id]);
+    const pool = await connectToDB();
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Website WHERE id = ?`, [id.id]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Website not found with id: ${id}` };
     }
 
-    const existingEditRequest = await query(
+    const [existingEditRequest] = await pool.execute(
       `SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ? AND type = 'Delete'`,
       [id.id],
     );
@@ -358,7 +344,7 @@ const DeleteApiService = {
     const createEditRequestQuery = `INSERT INTO EditWebsiteRequest (websiteTransactionId, websiteName, message, type) 
     VALUES (?, ?, ?, ?)`;
 
-    await query(createEditRequestQuery, [id.id, updatedTransactionData.websiteName, editMessage, 'Delete']);
+    await pool.execute(createEditRequestQuery, [id.id, updatedTransactionData.websiteName, editMessage, 'Delete']);
     return true;
   },
 };

@@ -1,31 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import mysql from 'mysql2/promise';
-
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'Himanshu@10',
-  database: 'CRM',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-const query = async (sql, params) => {
-  try {
-    // Filter out undefined parameters and replace them with null
-    const filteredParams = params.map((param) => (param !== undefined ? param : null));
-    const [rows, fields] = await pool.execute(sql, filteredParams);
-    return rows;
-  } catch (error) {
-    console.error('Error executing query:', error);
-    throw error;
-  }
-};
+import connectToDB from '../db/db.js';
 
 export const introducerUser = {
   generateIntroducerAccessToken: async (userName, password, persist) => {
+    const pool = await connectToDB();
     if (!userName) {
       throw { code: 400, message: 'Invalid value for: User Name' };
     }
@@ -72,6 +51,7 @@ export const introducerUser = {
   },
 
   createintroducerUser: async (data, user) => {
+    const pool = await connectToDB();
     if (!data.firstname) {
       throw { code: 400, message: 'Firstname is required' };
     }
@@ -86,19 +66,10 @@ export const introducerUser = {
     }
 
     try {
-      const connection = await mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password: 'Himanshu@10',
-        database: 'CRM',
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-      });
       if (!data.firstname || !data.lastname || !data.userName || !data.password) {
         throw { code: 400, message: 'Invalid data provided' };
       }
-      const [existingUsers] = await connection.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
+      const [existingUsers] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
         data.userName,
       ]);
 
@@ -109,7 +80,7 @@ export const introducerUser = {
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
 
-      const [result] = await connection.execute(
+      const [result] = await pool.execute(
         'INSERT INTO IntroducerUser (firstname, lastname, password, introducerId, userName) VALUES (?, ?, ?, ?, ?)',
         [data.firstname, data.lastname, encryptedPassword, user.userName, data.userName],
       );
@@ -125,8 +96,9 @@ export const introducerUser = {
   },
 
   introducerLiveBalance: async (id) => {
+    const pool = await connectToDB();
     try {
-      const introUser = await query(`SELECT * FROM IntroducerUser WHERE id = ?`, [id]);
+      const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ?`, [id]);
       if (introUser.length === 0) {
         throw {
           code: 404,
@@ -135,7 +107,7 @@ export const introducerUser = {
       }
 
       const introducerUserName = introUser[0].userName;
-      const userIntroId = await query(`SELECT * FROM IntroducedUsers WHERE introducerUserName = ?`, [
+      const [userIntroId] = await pool.execute(`SELECT * FROM IntroducedUsers WHERE introducerUserName = ?`, [
         introducerUserName,
       ]);
 
@@ -174,13 +146,14 @@ export const introducerUser = {
   },
 
   updateIntroducerProfile: async (introUserId, data) => {
+    const pool = await connectToDB();
     try {
       console.log('idqqqqqq', introUserId);
       // Ensure introUserId is of the correct type
       const userId = introUserId[0].id;
       console.log('iddddd', userId);
       // Query the existing user
-      const existingUser = await query(`SELECT * FROM IntroducerUser WHERE id = ?`, [userId]);
+      const [existingUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ?`, [userId]);
       console.log('existingUser', existingUser);
 
       // Check if the user exists
@@ -199,7 +172,7 @@ export const introducerUser = {
       user.lastname = data.lastname || user.lastname;
 
       // Update user data in the database
-      await query(`UPDATE IntroducerUser SET firstname = ?, lastname = ? WHERE id = ?`, [
+      await pool.execute(`UPDATE IntroducerUser SET firstname = ?, lastname = ? WHERE id = ?`, [
         user.firstname,
         user.lastname,
         userId,
@@ -216,6 +189,7 @@ export const introducerUser = {
   },
 
   introducerPasswordResetCode: async (userName, oldPassword, newPassword) => {
+    const pool = await connectToDB();
     try {
       // Fetch user from the database
       const [existingUser] = await pool.query('SELECT * FROM IntroducerUser WHERE userName = ?', [userName]);
