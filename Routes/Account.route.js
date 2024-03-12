@@ -846,20 +846,33 @@ const AccountRoute = (app) => {
   );
 
   app.get(
-    '/api/single-user-profile/:id',
+    '/api/single-user-profile/:user_id',
     Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
     async (req, res) => {
-      const pool = await connectToDB();
-      try {
-        const id = req.params.id;
-        const [userProfile] = await pool.execute(`SELECT * FROM User WHERE id = '${id}';`);
-        res.status(200).send(userProfile);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
+        const pool = await connectToDB();
+        try {
+            const id = req.params.user_id;
+            const [userProfile] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id]);
+            
+            if (userProfile.length === 0) {
+                return res.status(404).send({ message: "User not found" });
+            }
+            
+            // Fetch UserTransactionDetail for the user
+            const [userTransactionDetail] = await pool.execute(
+                `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
+                [id]
+            );
+            userProfile[0].UserTransactionDetail = userTransactionDetail;
+            
+            res.status(200).send(userProfile);
+        } catch (e) {
+            console.error(e);
+            res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+        }
+    }
+);
+
 
   app.put('/api/admin/subAdmin-profile-edit/:id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
