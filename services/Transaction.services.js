@@ -2,6 +2,7 @@ import AccountServices from '../services/Account.Services.js';
 import WebsiteServices from '../services/WebSite.Service.js';
 import BankServices from '../services/Bank.services.js';
 import connectToDB from '../db/db.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const TransactionServices = {
   createTransaction: async (req, res, subAdminName) => {
@@ -51,8 +52,8 @@ const TransactionServices = {
       if (!dbWebsiteData) {
         throw { code: 404, message: 'Website data not found' };
       }
-      const websiteId = dbWebsiteData[0].id;
-
+      const websiteId = dbWebsiteData[0].website_id;
+     
       const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
       const totalBalance = bonus + amount;
       if (websiteBalance < totalBalance) {
@@ -64,7 +65,7 @@ const TransactionServices = {
       if (!dbWebsiteData) {
         throw { code: 404, message: 'Bank data not found' };
       }
-      const bankId = dbBankData[0].id;
+      const bankId = dbBankData[0].bank_id;
       const bankBalance = await BankServices.getBankBalance(bankId);
       const totalBankBalance = bankCharges + parseFloat(amount);
       if (bankBalance < totalBankBalance) {
@@ -78,7 +79,7 @@ const TransactionServices = {
       }
 
       // Introducer
-      const introducersUserName = user.introducersUserName;
+      const introducersUserName = user[0].introducersUserName;
 
       // Calculation of Deposit---- Amount will transfer from Website to Bank (Bonus)
       if (transactionType === 'Deposit') {
@@ -89,8 +90,8 @@ const TransactionServices = {
           transactionType: transactionType,
           amount: amount,
           paymentMethod: paymentMethod,
-          subAdminId: subAdminName.userName,
-          subAdminName: subAdminName.firstname,
+          subAdminId: subAdminName[0].userName,
+          subAdminName: subAdminName[0].firstname,
           userName: userName,
           accountNumber: accountNumber,
           bankName: bankName,
@@ -100,28 +101,30 @@ const TransactionServices = {
           introducerUserName: introducersUserName,
           createdAt: new Date(),
         };
+        const Transaction_Id = uuidv4();
         const incertData = `INSERT INTO Transaction (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, 
-        amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, 
-        createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        await pool.execute(incertData, [
-          newTransaction.bankId,
-          newTransaction.websiteId,
-          newTransaction.subAdminId,
-          newTransaction.subAdminName,
-          newTransaction.transactionID,
-          newTransaction.transactionType,
-          newTransaction.amount,
-          newTransaction.paymentMethod,
-          newTransaction.userName,
-          newTransaction.introducerUserName,
-          newTransaction.bonus,
-          newTransaction.bankCharges,
-          newTransaction.remarks,
-          newTransaction.accountNumber,
-          newTransaction.bankName,
-          newTransaction.websiteName,
-          newTransaction.createdAt,
-        ]);
+          amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, 
+          createdAt, Transaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+          await pool.execute(incertData, [
+            newTransaction.bankId,
+            newTransaction.websiteId,
+            newTransaction.subAdminId,
+            newTransaction.subAdminName,
+            newTransaction.transactionID,
+            newTransaction.transactionType,
+            newTransaction.amount,
+            newTransaction.paymentMethod,
+            newTransaction.userName,
+            newTransaction.introducerUserName,
+            newTransaction.bonus,
+            newTransaction.bankCharges || null,
+            newTransaction.remarks,
+            newTransaction.accountNumber || null,
+            newTransaction.bankName,
+            newTransaction.websiteName,
+            newTransaction.createdAt,
+            Transaction_Id || null
+          ]);
 
         //  Incert Data into User
         const [user] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
@@ -129,13 +132,14 @@ const TransactionServices = {
         if (!user) {
           return res.status(404).json({ status: false, message: 'User not found' });
         }
-        const UID = user[0].id;
-        const Id = result.insertId;
-        const incertUserData = `INSERT INTO UserTransactionDetail (UID, bankId, websiteId, subAdminName, transactionID,
+        const user_ID = user[0].user_id;
+        const Id = Transaction_Id;
+        const incertUserData = `INSERT INTO UserTransactionDetail (user_ID, Transaction_id ,bankId, websiteId, subAdminName, transactionID,
         transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
-        websiteName, createdAt, Transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        websiteName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(incertUserData, [
-          UID,
+          user_ID,
+          Id,
           newTransaction.bankId,
           newTransaction.websiteId,
           newTransaction.subAdminName,
@@ -146,13 +150,12 @@ const TransactionServices = {
           newTransaction.userName,
           newTransaction.introducerUserName,
           newTransaction.bonus,
-          newTransaction.bankCharges,
+          newTransaction.bankCharges || null,
           newTransaction.remarks,
-          newTransaction.accountNumber,
+          newTransaction.accountNumber || null,
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
-          Id,
         ]);
       }
       // Calculation of Withdraw---- Amount will transfer from Bank to Website (Bank Charge)
@@ -164,8 +167,8 @@ const TransactionServices = {
           transactionType: transactionType,
           amount: amount,
           paymentMethod: paymentMethod,
-          subAdminId: subAdminName.userName,
-          subAdminName: subAdminName.firstname,
+          subAdminId: subAdminName[0].userName,
+          subAdminName: subAdminName[0].firstname,
           userName: userName,
           accountNumber: accountNumber,
           bankName: bankName,
@@ -176,9 +179,10 @@ const TransactionServices = {
           createdAt: new Date(),
           isSubmit: false,
         };
+        const Transaction_Id = uuidv4();
         const incertData = `INSERT INTO Transaction (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, 
           amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, 
-          createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+          createdAt, Transaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const [result] = await pool.execute(incertData, [
           newTransaction.bankId,
           newTransaction.websiteId,
@@ -190,13 +194,14 @@ const TransactionServices = {
           newTransaction.paymentMethod,
           newTransaction.userName,
           newTransaction.introducerUserName,
-          newTransaction.bonus,
+          newTransaction.bonus || null,
           newTransaction.bankCharges,
           newTransaction.remarks,
-          newTransaction.accountNumber,
+          newTransaction.accountNumber || null,
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
+          Transaction_Id || null
         ]);
 
         //  Incert Data into User
@@ -205,13 +210,14 @@ const TransactionServices = {
         if (!user) {
           return res.status(404).json({ status: false, message: 'User not found' });
         }
-        const UID = user[0].id;
-        const Id = result.insertId; // Get the ID of the inserted bank
-        const incertUserData = `INSERT INTO UserTransactionDetail (UID, bankId, websiteId, subAdminName, transactionID,
-          transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
-          websiteName, createdAt, Transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const user_ID = user[0].user_id;
+        const Id = Transaction_Id;
+        const incertUserData = `INSERT INTO UserTransactionDetail (user_ID, Transaction_id ,bankId, websiteId, subAdminName, transactionID,
+        transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
+        websiteName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(incertUserData, [
-          UID,
+          user_ID,
+          Id,
           newTransaction.bankId,
           newTransaction.websiteId,
           newTransaction.subAdminName,
@@ -221,14 +227,13 @@ const TransactionServices = {
           newTransaction.paymentMethod,
           newTransaction.userName,
           newTransaction.introducerUserName,
-          newTransaction.bonus,
+          newTransaction.bonus || null,
           newTransaction.bankCharges,
           newTransaction.remarks,
-          newTransaction.accountNumber,
+          newTransaction.accountNumber || null,
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
-          Id,
         ]);
       }
       return res.status(200).json({ status: true, message: 'Transaction created successfully' });
