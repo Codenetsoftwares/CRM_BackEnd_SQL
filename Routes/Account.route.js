@@ -84,64 +84,34 @@ const AccountRoute = (app) => {
       const searchQuery = req.query.search;
       try {
         let allIntroDataLength;
-
+        let introData;
+  
         if (searchQuery) {
-          console.log('first');
+          console.log('Searching for:', searchQuery);
           // Perform SQL query to search users based on the search query
           const [users] = await pool.execute(`SELECT * FROM User WHERE userName LIKE ?`, [`%${searchQuery}%`]);
-
-          const SecondArray = users.map((user) => {
-            return {
-              // Map the fields you need to return
-              userName: user.userName,
-              // Add more fields as needed
-            };
-          });
-
-          allIntroDataLength = SecondArray.length;
-          const pageNumber = Math.ceil(allIntroDataLength / 10);
-          res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
+          introData = users.map((user) => ({ userName: user.userName }));
         } else {
-          console.log('second');
           // Retrieve all users
-          const introducerUser = await pool.execute(`SELECT * FROM User`);
-
-          const introData = introducerUser.map((user) => {
-            return {
-              // Map the fields you need to return
-              userName: user.userName,
-              // Add more fields as needed
-            };
-          });
-
-          console.log('introData', introData.length);
-
-          const SecondArray = [];
-          const Limit = page * 10;
-          console.log('Limit', Limit);
-
-          for (let j = Limit - 10; j < Limit; j++) {
-            if (introData[j]) {
-              SecondArray.push(introData[j]);
-            }
-            console.log('lenth', SecondArray.length);
-          }
-
-          allIntroDataLength = introData.length;
-
-          if (SecondArray.length === 0) {
-            return res.status(404).json({ message: 'No data found for the selected criteria.' });
-          }
-
-          const pageNumber = Math.ceil(allIntroDataLength / 10);
-          res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
+          const [introducerUser] = await pool.execute(`SELECT * FROM User`);
+          introData = introducerUser.map((user) => ({ userName: user.userName }));
         }
+  
+        allIntroDataLength = introData.length;
+        const pageNumber = Math.ceil(allIntroDataLength / 10);
+  
+        const startIndex = (page - 1) * 10;
+        const endIndex = Math.min(startIndex + 10, allIntroDataLength);
+        const SecondArray = introData.slice(startIndex, endIndex);
+  
+        res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
       } catch (e) {
         console.error(e);
         res.status(500).send({ message: 'Internal Server Error' });
       }
-    },
+    }
   );
+  
 
   // API To Edit User Profile
 

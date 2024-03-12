@@ -1,7 +1,7 @@
-import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import connectToDB from '../db/db.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export const UserServices = {
   createUser: async (data) => {
@@ -18,20 +18,20 @@ export const UserServices = {
       // Generate salt and hash the password
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
-      console.log('data', data.firstname, data.lastname, data.userName, encryptedPassword, data.roles);
+      const user_id = uuidv4();
       // Insert new admin into the Admin table
       const [result] = await pool.execute(
-        'INSERT INTO User (firstname, lastname, userName, password) VALUES (?, ?, ?, ?)',
-        [data.firstname, data.lastname, data.userName, encryptedPassword],
+        'INSERT INTO User (user_id, firstname, lastname, userName, password) VALUES (?, ?, ?, ?, ?)',
+        [user_id, data.firstname, data.lastname, data.userName, encryptedPassword],
       );
       if (result.affectedRows === 1) {
         return { code: 201, message: 'User created successfully' };
       } else {
         throw { code: 500, message: 'Failed to create new admin' };
       }
-    } catch (err) {
-      console.error(err);
-      throw { code: 500, message: 'Internal Server Error' };
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   },
 
