@@ -191,12 +191,10 @@ const WebisteRoutes = (app) => {
         console.log('WebsiteData', WebsiteData);
         for (let index = 0; index < WebsiteData.length; index++) {
           WebsiteData[index].balance = await WebsiteServices.getWebsiteBalance(WebsiteData[index].website_id);
-          const user = req.user[0].userName;
-          const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE subAdminId = (?)`, [user]);
-          console.log('subAdmins', subAdmins);
+          const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [WebsiteData[index].website_id]);
           if (subAdmins && subAdmins.length > 0) {
-            WebsiteData[index].isDeposit = subAdmins[0].isDeposit;
-            WebsiteData[index].isWithdraw = subAdmins[0].isWithdraw;
+            // Add BankSubAdmins array to the bank object
+            WebsiteData[index].subAdmins = subAdmins;
           }
         }
         WebsiteData.sort((a, b) => b.created_at - a.created_at);
