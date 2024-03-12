@@ -110,7 +110,9 @@ const EditAPIRoute = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE id = ?`, [req.params.requestId]);
+        const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE id = ?`, [
+          req.params.requestId,
+        ]);
 
         if (!editRequest || editRequest.length === 0) {
           return res.status(404).send({ message: 'Edit request not found' });

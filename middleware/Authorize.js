@@ -28,7 +28,7 @@ export const Authorize = (roles) => {
       }
 
       const [existingUser] = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [user.userName]);
-      console.log("existingUser", existingUser);
+      console.log('existingUser', existingUser);
       if (!existingUser || existingUser.length === 0) {
         return res.status(401).send({ code: 401, message: 'Invalid login attempt (5)' });
       }
@@ -37,7 +37,7 @@ export const Authorize = (roles) => {
         let userHasRequiredRole = false;
         roles.forEach((role) => {
           const rolesArray = existingUser[0].roles;
-          console.log("rolesArray", rolesArray);
+          console.log('rolesArray', rolesArray);
           if (rolesArray && rolesArray.includes(role)) {
             userHasRequiredRole = true;
           }

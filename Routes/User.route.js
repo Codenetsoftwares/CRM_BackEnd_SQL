@@ -92,10 +92,10 @@ export const UserRoutes = (app) => {
       if (existingData.length > 0) {
         return res.status(400).send({ message: 'Website details already exist for this user' });
       }
-      const [result] = await pool.query(
-        'INSERT INTO user_websites_details (user_id, website_name) VALUES (?, ?)',
-        [user.id, userData.website_name],
-      );
+      const [result] = await pool.query('INSERT INTO user_websites_details (user_id, website_name) VALUES (?, ?)', [
+        user.id,
+        userData.website_name,
+      ]);
       if (result.affectedRows === 1) {
         return res.status(201).send({ message: 'User website details added successfully' });
       } else {

@@ -60,7 +60,7 @@ const AccountRoute = (app) => {
     async (req, res) => {
       try {
         const user = req.user;
-        console.log("user", user);
+        console.log('user', user);
         await introducerUser.createintroducerUser(req.body, user);
         res.status(200).send({
           code: 200,
@@ -76,71 +76,70 @@ const AccountRoute = (app) => {
   // API To View User Profile
 
   app.get(
-    "/api/user-profile/:page",
-    Authorize(["superAdmin", "Profile-View", "User-Profile-View"]),
+    '/api/user-profile/:page',
+    Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
     async (req, res) => {
-        const pool = await connectToDB();
-        const page = req.params.page;
-        const searchQuery = req.query.search;
-        try {
-            let allIntroDataLength;
-            if (searchQuery) {
-                console.log('first')
-                let SecondArray = [];
-                const [users] = await pool.execute(`SELECT * FROM User WHERE userName LIKE ?`, [`%${searchQuery}%`]);
+      const pool = await connectToDB();
+      const page = req.params.page;
+      const searchQuery = req.query.search;
+      try {
+        let allIntroDataLength;
+        if (searchQuery) {
+          console.log('first');
+          let SecondArray = [];
+          const [users] = await pool.execute(`SELECT * FROM User WHERE userName LIKE ?`, [`%${searchQuery}%`]);
 
-                // Loop through users and fetch UserTransactionDetail for each user
-                for (const user of users) {
-                    const [userTransactionDetail] = await pool.execute(
-                        `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
-                        [user.user_id]
-                    );
-                    user.UserTransactionDetail = userTransactionDetail;
-                    SecondArray.push(user);
-                }
+          // Loop through users and fetch UserTransactionDetail for each user
+          for (const user of users) {
+            const [userTransactionDetail] = await pool.execute(
+              `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
+              [user.user_id],
+            );
+            user.UserTransactionDetail = userTransactionDetail;
+            SecondArray.push(user);
+          }
 
-                allIntroDataLength = SecondArray.length;
-                const pageNumber = Math.ceil(allIntroDataLength / 10);
-                res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
-            } else {
-                console.log('second')
-                let [introducerUser] = await pool.execute(`SELECT * FROM User`);
-                let introData = JSON.parse(JSON.stringify(introducerUser));
-                console.log('introData', introData.length)
+          allIntroDataLength = SecondArray.length;
+          const pageNumber = Math.ceil(allIntroDataLength / 10);
+          res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
+        } else {
+          console.log('second');
+          let [introducerUser] = await pool.execute(`SELECT * FROM User`);
+          let introData = JSON.parse(JSON.stringify(introducerUser));
+          console.log('introData', introData.length);
 
-                const SecondArray = [];
-                const Limit = page * 10;
-                console.log("Limit", Limit);
+          const SecondArray = [];
+          const Limit = page * 10;
+          console.log('Limit', Limit);
 
-                for (let j = Limit - 10; j < Limit && j < introData.length; j++) {
-                    const user = introData[j];
+          for (let j = Limit - 10; j < Limit && j < introData.length; j++) {
+            const user = introData[j];
 
-                    // Fetch UserTransactionDetail for each user
-                    const [userTransactionDetail] = await pool.execute(
-                        `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
-                        [user.user_id]
-                    );
-                    user.UserTransactionDetail = userTransactionDetail;
+            // Fetch UserTransactionDetail for each user
+            const [userTransactionDetail] = await pool.execute(
+              `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
+              [user.user_id],
+            );
+            user.UserTransactionDetail = userTransactionDetail;
 
-                    SecondArray.push(user);
-                    console.log('length', SecondArray.length);
-                }
-                allIntroDataLength = introData.length;
+            SecondArray.push(user);
+            console.log('length', SecondArray.length);
+          }
+          allIntroDataLength = introData.length;
 
-                if (SecondArray.length === 0) {
-                    return res.status(404).json({ message: "No data found for the selected criteria." });
-                }
+          if (SecondArray.length === 0) {
+            return res.status(404).json({ message: 'No data found for the selected criteria.' });
+          }
 
-                const pageNumber = Math.ceil(allIntroDataLength / 10);
-                res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
-            }
-        } catch (e) {
-          console.error(e);
-          res.status(e.code).send({ message: e.message });
+          const pageNumber = Math.ceil(allIntroDataLength / 10);
+          res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
         }
-    }
-);
-
+      } catch (e) {
+        console.error(e);
+        res.status(e.code).send({ message: e.message });
+      }
+    },
+  );
 
   // API To Edit User Profile
 
@@ -188,7 +187,7 @@ const AccountRoute = (app) => {
       }
     },
   );
-  
+
   app.get(
     '/api/admin/sub-admin-name',
     Authorize([
@@ -390,7 +389,9 @@ const AccountRoute = (app) => {
         const id = req.params.id;
         const [intoducer] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
         const introducerId = intoducer[0].userName;
-        const introducerUserQuery = await pool.execute(`SELECT * FROM User WHERE introducersUserName = '${introducerId}';`);
+        const introducerUserQuery = await pool.execute(
+          `SELECT * FROM User WHERE introducersUserName = '${introducerId}';`,
+        );
         res.send(introducerUserQuery);
       } catch (e) {
         console.error(e);
@@ -654,21 +655,24 @@ const AccountRoute = (app) => {
   );
 
   app.post(
-    '/api/admin/filter-data',
+    "/api/admin/filter-data",
     Authorize([
-      'superAdmin',
-      'Dashboard-View',
-      'Transaction-View',
-      'Transaction-Edit-Request',
-      'Transaction-Delete-Request',
-      'Website-View',
-      'Bank-View',
-      'report-all-txn',
+      "superAdmin",
+      "Dashboard-View",
+      "Transaction-View",
+      "Transaction-Edit-Request",
+      "Transaction-Delete-Request",
+      "Website-View",
+      "Bank-View",
+      "report-all-txn"
     ]),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const { page, itemsPerPage } = req.query;
+        const {
+          page,
+          itemsPerPage
+        } = req.query;
         const {
           transactionType,
           introducerList,
@@ -678,77 +682,96 @@ const AccountRoute = (app) => {
           sdate,
           edate,
           minAmount,
-          maxAmount,
+          maxAmount
         } = req.body;
-
-        let filterQuery = 'SELECT * FROM Transaction WHERE 1=1';
-
+  
+        const filterConditions = [];
+        const filterParams = [];
+  
         if (transactionType) {
-          filterQuery += ` AND transactionType = '${transactionType}'`;
+          filterConditions.push("transactionType = ?");
+          filterParams.push(transactionType);
         }
         if (introducerList) {
-          filterQuery += ` AND introducerUserName IN (${introducerList.map((userName) => `'${userName}'`).join(',')})`;
+          filterConditions.push("introducerUserName = ?");
+          filterParams.push(introducerList);
         }
         if (subAdminList) {
-          filterQuery += ` AND subAdminName IN (${subAdminList.map((subAdminName) => `'${subAdminName}'`).join(',')})`;
+          filterConditions.push("subAdminName = ?");
+          filterParams.push(subAdminList);
         }
         if (BankList) {
-          filterQuery += ` AND bankName IN (${BankList.map((bankName) => `'${bankName}'`).join(',')})`;
+          filterConditions.push("bankName = ?");
+          filterParams.push(BankList);
         }
         if (WebsiteList) {
-          filterQuery += ` AND websiteName IN (${WebsiteList.map((websiteName) => `'${websiteName}'`).join(',')})`;
+          filterConditions.push("websiteName = ?");
+          filterParams.push(WebsiteList);
         }
         if (sdate && edate) {
-          filterQuery += ` AND createdAt >= '${sdate}' AND createdAt <= '${edate}'`;
+          filterConditions.push("createdAt BETWEEN ? AND ?");
+          filterParams.push(sdate, edate);
         } else if (sdate) {
-          filterQuery += ` AND createdAt >= '${sdate}'`;
+          filterConditions.push("createdAt >= ?");
+          filterParams.push(sdate);
         } else if (edate) {
-          filterQuery += ` AND createdAt <= '${edate}'`;
+          filterConditions.push("createdAt <= ?");
+          filterParams.push(edate);
         }
-
-        const transactions = await query(filterQuery);
-
-        const filteredTransactions = transactions.filter((transaction) => {
-          if (minAmount && maxAmount) {
-            return transaction.amount >= minAmount && transaction.amount <= maxAmount;
-          } else {
-            return true;
-          }
-        });
-
-        const [filteredWebsiteTransactions] = await pool.execute(
-          `SELECT * FROM WebsiteTransaction WHERE withdrawAmount >= ${minAmount} AND withdrawAmount <= ${maxAmount} OR depositAmount >= ${minAmount} AND depositAmount <= ${maxAmount}`,
-        );
-
-        const [filteredBankTransactions] = await pool.execute(
-          `SELECT * FROM BankTransaction WHERE withdrawAmount >= ${minAmount} AND withdrawAmount <= ${maxAmount} OR depositAmount >= ${minAmount} AND depositAmount <= ${maxAmount}`,
-        );
-
-        const alltrans = [...filteredTransactions, ...filteredWebsiteTransactions, ...filteredBankTransactions];
-        alltrans.sort((a, b) => b.createdAt - a.createdAt);
-
-        const totalItems = alltrans.length;
+        if (minAmount) {
+          filterConditions.push("amount >= ?");
+          filterParams.push(minAmount);
+        }
+        if (maxAmount) {
+          filterConditions.push("amount <= ?");
+          filterParams.push(maxAmount);
+        }
+  
+        const filterClause = filterConditions.length > 0 ? "WHERE " + filterConditions.join(" AND ") : "";
+  
+        const query = `
+          SELECT *
+          FROM (
+            SELECT *
+            FROM Transaction
+            ${filterClause}
+            UNION ALL
+            SELECT *
+            FROM WebsiteTransaction
+            ${filterClause}
+            UNION ALL
+            SELECT *
+            FROM BankTransaction
+            ${filterClause}
+          ) AS alltrans
+        `;
+  
+        const [result] = await pool.execute(query, filterParams);
+  
+        const totalItems = result.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage);
-        const currentPage = parseInt(page) || 1;
-
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-
-        const paginatedResults = alltrans.slice(startIndex, endIndex);
-
+  
+        let pageNumber = parseInt(page) || 1;
+        pageNumber = Math.min(Math.max(1, pageNumber), totalPages);
+  
+        const skip = (pageNumber - 1) * itemsPerPage;
+        const limit = Math.min(itemsPerPage, totalItems - skip);
+  
+        const paginatedResults = result.slice(skip, skip + limit);
+  
         return res.status(200).json({
           paginatedResults,
-          pageNumber: currentPage,
+          pageNumber,
           totalPages,
-          allIntroDataLength: totalItems,
+          totalItems
         });
       } catch (e) {
         console.error(e);
-        res.status(e.code || 500).send({
-          message: e.message,
+        res.status(500).send({
+          message: e.message
         });
       }
-    },
+    }
   );
 
   app.post(
@@ -849,30 +872,28 @@ const AccountRoute = (app) => {
     '/api/single-user-profile/:user_id',
     Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
     async (req, res) => {
-        const pool = await connectToDB();
-        try {
-            const id = req.params.user_id;
-            const [userProfile] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id]);
-            
-            if (userProfile.length === 0) {
-                return res.status(404).send({ message: "User not found" });
-            }
-            
-            // Fetch UserTransactionDetail for the user
-            const [userTransactionDetail] = await pool.execute(
-                `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
-                [id]
-            );
-            userProfile[0].UserTransactionDetail = userTransactionDetail;
-            
-            res.status(200).send(userProfile);
-        } catch (e) {
-            console.error(e);
-            res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-        }
-    }
-);
+      const pool = await connectToDB();
+      try {
+        const id = req.params.user_id;
+        const [userProfile] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id]);
 
+        if (userProfile.length === 0) {
+          return res.status(404).send({ message: 'User not found' });
+        }
+
+        // Fetch UserTransactionDetail for the user
+        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
+          id,
+        ]);
+        userProfile[0].UserTransactionDetail = userTransactionDetail;
+
+        res.status(200).send(userProfile);
+      } catch (e) {
+        console.error(e);
+        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+      }
+    },
+  );
 
   app.put('/api/admin/subAdmin-profile-edit/:id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();

@@ -70,9 +70,7 @@ export const introducerUser = {
       if (!data.firstname || !data.lastname || !data.userName || !data.password) {
         throw { code: 400, message: 'Invalid data provided' };
       }
-      const [existingUsers] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
-        data.userName,
-      ]);
+      const [existingUsers] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [data.userName]);
 
       if (existingUsers.length > 0) {
         throw { code: 409, message: `User already exists: ${data.userName}` };
