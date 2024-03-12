@@ -460,7 +460,7 @@ const AccountRoute = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const [result] = await pool.execute(`SELECT userName FROM IntroducerUser;`);
+        const [result] = await pool.execute(`SELECT userName,intro_id FROM IntroducerUser;`);
         res.status(200).send(result);
       } catch (error) {
         console.log(error);
