@@ -1,7 +1,6 @@
 import TransactionServices from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 
-
 const TransactionRoutes = (app) => {
   app.post(
     '/api/admin/create/transaction',

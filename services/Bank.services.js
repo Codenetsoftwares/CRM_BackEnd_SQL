@@ -1,33 +1,59 @@
 import connectToDB from '../db/db.js';
 
 const BankServices = {
-  approveBankAndAssignSubadmin: async (approvedBankRequest, subAdminId, isDeposit, isWithdraw) => {
+  approveBankAndAssignSubadmin: async (
+    approvedBankRequest,
+    subAdminId,
+    isDeposit,
+    isWithdraw,
+    isEdit,
+    isRenew,
+    isDelete,
+  ) => {
     const pool = await connectToDB();
     try {
-      console.log("approvedBankRequest", approvedBankRequest);
-      const insertBankDetails = `INSERT INTO Bank(bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, 
-      upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw) VALUES (?, ?, ?, ?)`;
-      const promises = approvedBankRequest.map(async (row) => {
-        // Insert bank details
-        const [result] = await pool.execute(insertBankDetails, [
-          row.bank_id,
-          row.bankName,
-          row.accountHolderName,
-          row.accountNumber,
-          row.ifscCode,
-          row.upiId,
-          row.upiAppName,
-          row.upiNumber,
-          row.subAdminName,
+      const bankDetails = approvedBankRequest[0]; // Take bank details from the first approved bank request
+
+      // Check if the bank already exists
+      const [existingBank] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [bankDetails.bank_id]);
+
+      if (!existingBank || existingBank.length === 0) {
+        // Insert bank details only if it doesn't exist
+        const insertBankDetails = `INSERT INTO Bank(bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, 
+            upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        await pool.execute(insertBankDetails, [
+          bankDetails.bank_id,
+          bankDetails.bankName,
+          bankDetails.accountHolderName,
+          bankDetails.accountNumber,
+          bankDetails.ifscCode,
+          bankDetails.upiId,
+          bankDetails.upiAppName,
+          bankDetails.upiNumber,
+          bankDetails.subAdminName,
           true,
         ]);
+      }
 
-        // Insert entry into BankSubAdmins table with correct bankId
-        await pool.execute(insertSubadmin, [approvedBankRequest[0].bank_id, subAdminId, isDeposit, isWithdraw]);
+      // Insert entry into BankSubAdmins table for each subadmin
+      const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit,
+        isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+      const promises = approvedBankRequest.map(async (row) => {
+        await pool.execute(insertSubadmin, [
+          bankDetails.bank_id,
+          subAdminId,
+          Boolean(isDeposit),
+          Boolean(isWithdraw),
+          Boolean(isEdit),
+          Boolean(isRenew),
+          Boolean(isDelete),
+        ]);
       });
+
       // Execute all promises concurrently
       await Promise.all(promises);
+
       return approvedBankRequest.length; // Return the number of rows inserted for further verification
     } catch (error) {
       throw error; // Propagate error to the caller

@@ -1,20 +1,48 @@
 import connectToDB from '../db/db.js';
 
 const WebsiteServices = {
-  approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdminId, isDeposit, isWithdraw) => {
+  approveWebsiteAndAssignSubadmin: async (
+    approvedWebsiteRequest,
+    subAdminId,
+    isDeposit,
+    isWithdraw,
+    isEdit,
+    isRenew,
+    isDelete,
+  ) => {
+    const pool = await connectToDB();
     try {
-      console.log("approvedWebsiteRequest", approvedWebsiteRequest);
-      const pool = await connectToDB();
-      const insertWebsiteDetails = `INSERT INTO Website(website_id, websiteName, subAdminName, isActive) 
-            VALUES (?, ?, ?, ?)`;
-      const insertSubadminQuery = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw ) VALUES (?, ?, ?, ?)`;
-      const promises = approvedWebsiteRequest.map(async (row) => {
-        // Insert bank details
-        const [result] = await pool.execute(insertWebsiteDetails, [row.website_id, row.websiteName, row.subAdminName, true]);
+      const websiteDetails = approvedWebsiteRequest[0];
+      const [existingWebsite] = await pool.execute(`SELECT * FROM Website WHERE website_id = ?`, [
+        websiteDetails.website_id,
+      ]);
 
-        // Insert entry into BankSubAdmins table with correct bankId
-        await pool.execute(insertSubadminQuery, [approvedWebsiteRequest[0].website_id, subAdminId, isDeposit, isWithdraw]);
+      if (!existingWebsite || existingWebsite.length === 0) {
+        const insertWebsiteDetails = `INSERT INTO Website(website_id, websiteName, subAdminName, isActive) 
+        VALUES (?, ?, ?, ?)`;
+        await pool.execute(insertWebsiteDetails, [
+          websiteDetails.website_id,
+          websiteDetails.websiteName,
+          websiteDetails.subAdminName,
+          true,
+        ]);
+      }
+
+      const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit,
+      isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+      const promises = approvedWebsiteRequest.map(async (row) => {
+        await pool.execute(insertSubadmin, [
+          websiteDetails.website_id,
+          subAdminId,
+          Boolean(isDeposit),
+          Boolean(isWithdraw),
+          Boolean(isEdit),
+          Boolean(isRenew),
+          Boolean(isDelete),
+        ]);
       });
+
       // Execute all promises concurrently
       await Promise.all(promises);
       return approvedWebsiteRequest.length; // Return the number of rows inserted for further verification
@@ -110,9 +138,10 @@ const WebsiteServices = {
       throw { code: 400, message: 'Website name already exists in Website' };
     }
 
-    const [duplicateEditWebsite] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE LOWER(websiteName) = LOWER(?)`, [
-      data.websiteName,
-    ]);
+    const [duplicateEditWebsite] = await pool.execute(
+      `SELECT * FROM EditWebsiteRequest WHERE LOWER(websiteName) = LOWER(?)`,
+      [data.websiteName],
+    );
     if (duplicateEditWebsite.length > 0) {
       throw { code: 400, message: 'Website name already exists in Edit Request' };
     }

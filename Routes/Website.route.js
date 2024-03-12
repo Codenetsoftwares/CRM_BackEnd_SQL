@@ -3,7 +3,6 @@ import { Authorize } from '../middleware/Authorize.js';
 import WebsiteServices from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';
 
-
 const WebisteRoutes = (app) => {
   app.post('/api/add-website-name', Authorize(['superAdmin', 'Transaction-View', 'Website-View']), async (req, res) => {
     const pool = await connectToDB();
@@ -34,8 +33,8 @@ const WebisteRoutes = (app) => {
       const [result] = await pool.execute(insertWebsiteQuery, [
         website_id,
         websiteName,
-        (userData && userData[0].firstname) ? userData[0].firstname : null,
-        (userData && userData[0].userName) ? userData[0].userName : null
+        userData && userData[0].firstname ? userData[0].firstname : null,
+        userData && userData[0].userName ? userData[0].userName : null,
       ]);
       res.status(200).send({ message: 'Website name sent for approval!' });
     } catch (e) {
@@ -47,27 +46,40 @@ const WebisteRoutes = (app) => {
   app.post('/api/approve-website/:website_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const { isApproved, subAdminId, isWithdraw, isDeposit } = req.body;
+      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = req.body;
       const websiteId = req.params.website_id;
-      const approvedWebsiteRequest = (await pool.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId]))[0];
-      console.log("approvedWebsiteRequest", approvedWebsiteRequest);
+      // Ensure req.body is an array
+      if (!Array.isArray(req.body)) {
+        throw { code: 400, message: 'Request body should be an array of objects.' };
+      }
+      const approvedWebsiteRequest = (
+        await pool.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId])
+      )[0];
+      console.log('approvedWebsiteRequest', approvedWebsiteRequest);
       if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
         throw { code: 404, message: 'Website not found in the approval requests!' };
       }
-      if (isApproved) {
-        const rowsInserted = await WebsiteServices.approveWebsiteAndAssignSubadmin(
-          approvedWebsiteRequest,
-          subAdminId,
-          isDeposit,
-          isWithdraw,
-        );
-        if (rowsInserted > 0) {
-          await WebsiteServices.deleteWebsiteRequest(websiteId);
+      for (const request of req.body) {
+        // Process each bank approval request
+        if (request.isApproved) {
+          const rowsInserted = await WebsiteServices.approveWebsiteAndAssignSubadmin(
+            approvedWebsiteRequest,
+            request.subAdminId,
+            request.isDeposit,
+            request.isWithdraw,
+            request.isEdit,
+            request.isRenew,
+            request.isDelete,
+          );
+
+          if (rowsInserted > 0) {
+            await WebsiteServices.deleteWebsiteRequest(websiteId);
+          } else {
+            throw { code: 500, message: 'Failed to insert rows into Website table.' };
+          }
         } else {
-          throw { code: 500, message: 'Failed to insert rows into Website table.' };
+          throw { code: 400, message: 'Website approval was not granted.' };
         }
-      } else {
-        throw { code: 400, message: 'Website approval was not granted.' };
       }
       res.status(200).send({ message: 'Website approved successfully & Subadmin Assigned' });
     } catch (e) {
@@ -191,7 +203,9 @@ const WebisteRoutes = (app) => {
         console.log('WebsiteData', WebsiteData);
         for (let index = 0; index < WebsiteData.length; index++) {
           WebsiteData[index].balance = await WebsiteServices.getWebsiteBalance(WebsiteData[index].website_id);
-          const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [WebsiteData[index].website_id]);
+          const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
+            WebsiteData[index].website_id,
+          ]);
           if (subAdmins && subAdmins.length > 0) {
             // Add BankSubAdmins array to the bank object
             WebsiteData[index].subAdmins = subAdmins;
@@ -302,7 +316,7 @@ const WebisteRoutes = (app) => {
           websiteTransaction.depositAmount,
           websiteTransaction.subAdminId,
           websiteTransaction.subAdminName,
-          websiteTransaction.createdAt
+          websiteTransaction.createdAt,
         ]);
         res.status(200).send({ message: 'Wallet Balance Added to Your Website' });
       } catch (e) {
@@ -510,7 +524,9 @@ const WebisteRoutes = (app) => {
         const websiteId = req.params.websiteId;
 
         // Check if the bank exists
-        const [subAdminWebsiteEdit] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = ?`, [websiteId]);
+        const [subAdminWebsiteEdit] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = ?`, [
+          websiteId,
+        ]);
         if (!subAdminWebsiteEdit.length) {
           throw { code: 404, message: 'Website SubAdmins not found for Editing' };
         }

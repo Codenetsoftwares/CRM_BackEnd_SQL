@@ -273,7 +273,11 @@ const AccountServices = {
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
       // Update user data in the database
-      await pool.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE id = ?`, [user.firstname, user.lastname, userId]);
+      await pool.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE id = ?`, [
+        user.firstname,
+        user.lastname,
+        userId,
+      ]);
 
       return true; // Return true on successful update
     } catch (err) {

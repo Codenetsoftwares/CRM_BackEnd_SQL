@@ -11,9 +11,10 @@ const DeleteApiService = {
       throw { code: 404, message: `Transaction not found with id: ${transaction.id}` };
     }
 
-    const [existingEditRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
-      transaction.id,
-    ]);
+    const [existingEditRequest] = await pool.execute(
+      `SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`,
+      [transaction.id],
+    );
 
     if (existingEditRequest.length) {
       throw { code: 409, message: 'Request Already Sent For Approval' };
@@ -83,9 +84,10 @@ const DeleteApiService = {
       throw { code: 404, message: `Website Transaction not found with id: ${transaction.id}` };
     }
 
-    const [existingEditRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
-      transaction.id,
-    ]);
+    const [existingEditRequest] = await pool.execute(
+      `SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`,
+      [transaction.id],
+    );
 
     if (existingEditRequest.length) {
       throw { code: 409, message: 'Request Already Sent For Approval' };
@@ -142,9 +144,10 @@ const DeleteApiService = {
       throw { code: 404, message: `Transaction not found with id: ${transaction.id}` };
     }
 
-    const [existingEditRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`, [
-      transaction.id,
-    ]);
+    const [existingEditRequest] = await pool.execute(
+      `SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`,
+      [transaction.id],
+    );
 
     if (existingEditRequest.length) {
       throw { code: 409, message: 'Request Already Sent For Approval' };
@@ -212,7 +215,9 @@ const DeleteApiService = {
   //   Need to test
   deleteIntroducerTransaction: async (transaction, user) => {
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM IntroducerTransaction WHERE id = ?`, [transaction.id]);
+    const [existingTransaction] = await pool.execute(`SELECT * FROM IntroducerTransaction WHERE id = ?`, [
+      transaction.id,
+    ]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction}` };

@@ -53,7 +53,7 @@ const TransactionServices = {
         throw { code: 404, message: 'Website data not found' };
       }
       const websiteId = dbWebsiteData[0].website_id;
-     
+
       const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
       const totalBalance = bonus + amount;
       if (websiteBalance < totalBalance) {
@@ -105,26 +105,26 @@ const TransactionServices = {
         const incertData = `INSERT INTO Transaction (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, 
           amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, 
           createdAt, Transaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-          await pool.execute(incertData, [
-            newTransaction.bankId,
-            newTransaction.websiteId,
-            newTransaction.subAdminId,
-            newTransaction.subAdminName,
-            newTransaction.transactionID,
-            newTransaction.transactionType,
-            newTransaction.amount,
-            newTransaction.paymentMethod,
-            newTransaction.userName,
-            newTransaction.introducerUserName,
-            newTransaction.bonus,
-            newTransaction.bankCharges || null,
-            newTransaction.remarks,
-            newTransaction.accountNumber || null,
-            newTransaction.bankName,
-            newTransaction.websiteName,
-            newTransaction.createdAt,
-            Transaction_Id || null
-          ]);
+        await pool.execute(incertData, [
+          newTransaction.bankId,
+          newTransaction.websiteId,
+          newTransaction.subAdminId,
+          newTransaction.subAdminName,
+          newTransaction.transactionID,
+          newTransaction.transactionType,
+          newTransaction.amount,
+          newTransaction.paymentMethod,
+          newTransaction.userName,
+          newTransaction.introducerUserName,
+          newTransaction.bonus,
+          newTransaction.bankCharges || null,
+          newTransaction.remarks,
+          newTransaction.accountNumber || null,
+          newTransaction.bankName,
+          newTransaction.websiteName,
+          newTransaction.createdAt,
+          Transaction_Id || null,
+        ]);
 
         //  Incert Data into User
         const [user] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
@@ -201,7 +201,7 @@ const TransactionServices = {
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
-          Transaction_Id || null
+          Transaction_Id || null,
         ]);
 
         //  Incert Data into User
@@ -246,9 +246,10 @@ const TransactionServices = {
   withdrawView: async (req, res) => {
     const pool = await connectToDB();
     try {
-      const [withdraws] = await pool.execute('SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC', [
-        'Withdraw',
-      ]);
+      const [withdraws] = await pool.execute(
+        'SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC',
+        ['Withdraw'],
+      );
       let sum = 0;
       for (let i = 0; i < withdraws.length; i++) {
         sum = sum + parseFloat(withdraws[i].amount);
@@ -262,9 +263,10 @@ const TransactionServices = {
   depositView: async (req, res) => {
     const pool = await connectToDB();
     try {
-      const [deposits] = await pool.execute('SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC', [
-        'Deposit',
-      ]);
+      const [deposits] = await pool.execute(
+        'SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC',
+        ['Deposit'],
+      );
       let sum = 0;
       for (let i = 0; i < deposits.length; i++) {
         sum += parseFloat(deposits[i].amount);
