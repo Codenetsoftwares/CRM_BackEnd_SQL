@@ -134,12 +134,12 @@ const BankRoutes = (app) => {
         const [bankData] = await pool.execute(banksQuery);
         for (let index = 0; index < bankData.length; index++) {
           bankData[index].balance = await BankServices.getBankBalance(bankData[index].bank_id);
-          const user =  req.user[0].userName;
-          console.log("user", req.user);
-          const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE subAdminId = (?)`, [user]);
+          
+          // Fetch BankSubAdmins for each bank
+          const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bankData[index].bank_id]);
           if (subAdmins && subAdmins.length > 0) {
-            bankData[index].isDeposit = subAdmins[0].isDeposit;
-            bankData[index].isWithdraw = subAdmins[0].isWithdraw;
+            // Add BankSubAdmins array to the bank object
+            bankData[index].subAdmins = subAdmins;
           }
         }
         bankData.sort((a, b) => b.created_at - a.created_at);
@@ -150,6 +150,7 @@ const BankRoutes = (app) => {
       }
     },
   );
+
 
 
   app.get(
