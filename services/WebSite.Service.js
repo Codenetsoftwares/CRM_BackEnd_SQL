@@ -6,7 +6,7 @@ const WebsiteServices = {
     try {
       const insertWebsiteDetails = `INSERT INTO Website (website_id, websiteName, subAdminName, isActive) 
       VALUES (?, ?, ?, ?)`;
-      const insertSubadmin = `INSERT INTO BankSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
+      const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
       isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       await pool.query(insertWebsiteDetails,[
         approvedWebsiteRequest[0].website_id,
