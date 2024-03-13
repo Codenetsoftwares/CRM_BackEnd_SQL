@@ -1,51 +1,33 @@
 import connectToDB from '../db/db.js';
 
 const WebsiteServices = {
-  approveWebsiteAndAssignSubadmin: async (
-    approvedWebsiteRequest,
-    subAdminId,
-    isDeposit,
-    isWithdraw,
-    isEdit,
-    isRenew,
-    isDelete,
-  ) => {
+  approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdmins) => {
     const pool = await connectToDB();
     try {
-      const websiteDetails = approvedWebsiteRequest[0];
-      const [existingWebsite] = await pool.execute(`SELECT * FROM Website WHERE website_id = ?`, [
-        websiteDetails.website_id,
-      ]);
-
-      if (!existingWebsite || existingWebsite.length === 0) {
-        const insertWebsiteDetails = `INSERT INTO Website(website_id, websiteName, subAdminName, isActive) 
-        VALUES (?, ?, ?, ?)`;
-        await pool.execute(insertWebsiteDetails, [
-          websiteDetails.website_id,
-          websiteDetails.websiteName,
-          websiteDetails.subAdminName,
-          true,
-        ]);
-      }
-
-      const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit,
+      const insertWebsiteDetails = `INSERT INTO Website (website_id, websiteName, subAdminName, isActive) 
+      VALUES (?, ?, ?, ?)`;
+      const insertSubadmin = `INSERT INTO BankSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
       isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-
-      const promises = approvedWebsiteRequest.map(async (row) => {
-        await pool.execute(insertSubadmin, [
-          websiteDetails.website_id,
-          subAdminId,
-          Boolean(isDeposit),
-          Boolean(isWithdraw),
-          Boolean(isEdit),
-          Boolean(isRenew),
-          Boolean(isDelete),
+      await pool.query(insertWebsiteDetails,[
+        approvedWebsiteRequest[0].website_id,
+        approvedWebsiteRequest[0].websiteName,
+        approvedWebsiteRequest[0].subAdminName,
+        true
+      ])
+      await Promise.all(subAdmins.map(async (subAdmin) => {
+        const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+        // Insert subadmin details
+        await pool.query(insertSubadmin, [
+          approvedWebsiteRequest[0].website_id,
+            subAdminId,
+            isDeposit,
+            isWithdraw,
+            isEdit,
+            isRenew,
+            isDelete
         ]);
-      });
-
-      // Execute all promises concurrently
-      await Promise.all(promises);
-      return approvedWebsiteRequest.length; // Return the number of rows inserted for further verification
+    }));
+    return subAdmins.length;
     } catch (error) {
       throw error; // Propagate error to the caller
     }

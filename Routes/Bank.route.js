@@ -63,46 +63,26 @@ const BankRoutes = (app) => {
   app.post('/api/approve-bank/:bank_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = req.body;
+      const { isApproved, subAdmins } = req.body;
+      
       const bankId = req.params.bank_id;
-
-      // Ensure req.body is an array
-      if (!Array.isArray(req.body)) {
-        throw { code: 400, message: 'Request body should be an array of objects.' };
-      }
-
-      // Query database for bank approval requests
+      
       const approvedBankRequests = (await pool.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]))[0];
 
-      // Check if any bank requests are found
       if (!approvedBankRequests || approvedBankRequests.length === 0) {
         throw { code: 404, message: 'Bank not found in the approval requests!' };
       }
 
-      // Loop through each request in the array
-      for (const request of req.body) {
-        // Process each bank approval request
-        if (request.isApproved) {
-          const rowsInserted = await BankServices.approveBankAndAssignSubadmin(
-            approvedBankRequests,
-            request.subAdminId,
-            request.isDeposit,
-            request.isWithdraw,
-            request.isEdit,
-            request.isRenew,
-            request.isDelete,
-          );
-
-          if (rowsInserted > 0) {
-            await BankServices.deleteBankRequest(bankId);
-          } else {
-            throw { code: 500, message: 'Failed to insert rows into Bank table.' };
-          }
+      if (isApproved) {
+        const rowsInserted = await BankServices.approveBankAndAssignSubadmin(approvedBankRequests,subAdmins);
+        if (rowsInserted > 0) {
+          await BankServices.deleteBankRequest(bankId);
         } else {
-          throw { code: 400, message: 'Bank approval was not granted.' };
+          throw { code: 500, message: 'Failed to insert rows into Bank table.' };
         }
+      } else {
+        throw { code: 400, message: 'Bank approval was not granted.' };
       }
-
       res.status(200).send({ message: 'Bank approved successfully & Subadmin Assigned' });
     } catch (e) {
       console.error(e);
