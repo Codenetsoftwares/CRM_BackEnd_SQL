@@ -46,40 +46,24 @@ const WebisteRoutes = (app) => {
   app.post('/api/approve-website/:website_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = req.body;
+      const { isApproved, subAdmins } = req.body;
+
       const websiteId = req.params.website_id;
-      // Ensure req.body is an array
-      if (!Array.isArray(req.body)) {
-        throw { code: 400, message: 'Request body should be an array of objects.' };
-      }
-      const approvedWebsiteRequest = (
-        await pool.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId])
-      )[0];
-      console.log('approvedWebsiteRequest', approvedWebsiteRequest);
+      
+      const approvedWebsiteRequest = (await pool.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId]))[0];
+      
       if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
         throw { code: 404, message: 'Website not found in the approval requests!' };
       }
-      for (const request of req.body) {
-        // Process each bank approval request
-        if (request.isApproved) {
-          const rowsInserted = await WebsiteServices.approveWebsiteAndAssignSubadmin(
-            approvedWebsiteRequest,
-            request.subAdminId,
-            request.isDeposit,
-            request.isWithdraw,
-            request.isEdit,
-            request.isRenew,
-            request.isDelete,
-          );
-
-          if (rowsInserted > 0) {
-            await WebsiteServices.deleteWebsiteRequest(websiteId);
-          } else {
-            throw { code: 500, message: 'Failed to insert rows into Website table.' };
-          }
+      if (isApproved) {
+        const rowsInserted = await WebsiteServices.approveWebsiteAndAssignSubadmin(approvedWebsiteRequest,subAdmins);
+        if (rowsInserted > 0) {
+          await WebsiteServices.deleteWebsiteRequest(websiteId);
         } else {
-          throw { code: 400, message: 'Website approval was not granted.' };
+          throw { code: 500, message: 'Failed to insert rows into Website table.' };
         }
+      } else {
+        throw { code: 400, message: 'Website approval was not granted.' };
       }
       res.status(200).send({ message: 'Website approved successfully & Subadmin Assigned' });
     } catch (e) {
