@@ -487,8 +487,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await query(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].websiteTransactionId]);
-        await query(`DELETE FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [id]);
+        await pool.execute(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].websiteTransactionId]);
+        await pool.execute(`DELETE FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [id]);
         res.status(200).send({ message: 'Website deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });
