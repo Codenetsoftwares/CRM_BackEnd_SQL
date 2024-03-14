@@ -131,7 +131,7 @@ const WebisteRoutes = (app) => {
     try {
       const id = req.params.id;
       // Construct SQL DELETE query
-      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE id = ?';
+      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE websiteTransactionId = ?';
       // Execute the query
       const [result] = await pool.execute(deleteQuery, [id]);
       // Check if any rows were affected
