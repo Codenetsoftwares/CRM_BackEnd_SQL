@@ -175,10 +175,12 @@ const BankServices = {
       });
 
       return balance;
-    } catch (error) {
-      console.error('Error in getBankBalance:', error);
-      throw error;
-    }
+    } catch (e) {
+      console.error(e);
+      throw e; // Rethrow the error to handle it at the calling site
+  } finally {
+      pool.end(); // Release the connection after use
+  }
   },
 };
 

@@ -128,9 +128,8 @@ const BankRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const pool = await connectToDB();
-
         // Fetch bank data
         const banksQuery = `SELECT * FROM Bank`;
         let [bankData] = await pool.execute(banksQuery);
@@ -198,6 +197,8 @@ const BankRoutes = (app) => {
       } catch (e) {
         console.error(e);
         res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+      } finally {
+        pool.end();
       }
     },
   );

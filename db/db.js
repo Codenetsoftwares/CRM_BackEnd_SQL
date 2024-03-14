@@ -15,6 +15,7 @@ const connectToDB = async () => {
       connectionLimit: 10,
       queueLimit: 0,
     });
+
     console.log('Database connection successful');
     return pool;
   } catch (error) {
