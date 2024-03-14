@@ -65,8 +65,9 @@ const BankServices = {
 
   updateBank: async (responese, data) => {
     const pool = await connectToDB();
-    const existingTransaction = responese[0];
-    console.log('ext', existingTransaction);
+
+    const existingTransaction = responese;
+
     let changedFields = {};
     // Compare each field in the data object with the existingTransaction
     if (data.accountHolderName !== existingTransaction.accountHolderName) {
@@ -91,17 +92,20 @@ const BankServices = {
       changedFields.upiNumber = data.upiNumber;
     }
 
-    const duplicateBank = await pool.execute(`SELECT * FROM Bank WHERE (bankName) = (?)`, [data.bankName]);
-    console.log('duplicateBank', duplicateBank);
+    const [duplicateBank] = await pool.execute(`SELECT * FROM Bank WHERE (bankName) = (?)`, [data.bankName]);
+
     if (duplicateBank.length > 0) {
       throw { code: 400, message: 'Bank name already exists!' };
     }
     // Create updatedTransactionData using a ternary operator
     const updatedTransactionData = {
-      id: existingTransaction.id,
+      id: existingTransaction.bank_id,
       accountHolderName:
         data.accountHolderName !== undefined ? data.accountHolderName : existingTransaction.accountHolderName,
-      bankName: data.bankName !== undefined ? data.bankName : existingTransaction.bankName,
+      bankName:
+        data.bankName !== undefined
+          ? data.bankName.replace(/\s+/g, '')
+          : existingTransaction.bankName.replace(/\s+/g, ''),
       accountNumber: data.accountNumber !== undefined ? data.accountNumber : existingTransaction.accountNumber,
       ifscCode: data.ifscCode !== undefined ? data.ifscCode : existingTransaction.ifscCode,
       upiId: data.upiId !== undefined ? data.upiId : existingTransaction.upiId,

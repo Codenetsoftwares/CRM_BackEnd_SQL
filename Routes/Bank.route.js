@@ -584,14 +584,14 @@ const BankRoutes = (app) => {
         const { bankId, subAdminId } = req.params;
         // Check if the bank exists
         const bankExistQuery = `SELECT * FROM BankSubAdmins WHERE bankid = ?`;
-        const [bank] = await query(bankExistQuery, [bankId]);
+        const [bank] = await pool.execute(bankExistQuery, [bankId]);
         if (!bank) {
           throw { code: 404, message: 'Bank not found!' };
         }
         // Remove the subAdmin with the specified subAdminId
         const deleteSubAdminQuery = `DELETE FROM BankSubAdmins WHERE bankid = ? AND subadminid = ?`;
         await pool.execute(deleteSubAdminQuery, [bankId, subAdminId]);
-        res.status(200).send({ message: 'SubAdmin removed successfully' });
+        res.status(200).send({ message: 'SubAdmin Permission removed successfully' });
       } catch (error) {
         console.error(error);
         res.status(error.code || 500).send({ message: error.message || 'An error occurred' });

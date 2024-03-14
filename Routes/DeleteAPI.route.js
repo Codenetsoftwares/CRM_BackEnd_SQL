@@ -399,7 +399,7 @@ const DeleteAPIRoute = (app) => {
       try {
         const { requestId } = req.body;
         console.log(requestId);
-        const transactionQuery = `SELECT * FROM Bank WHERE id = ?`;
+        const transactionQuery = `SELECT * FROM Bank WHERE bank_id = ?`;
         const [transaction] = await pool.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Bank not found');
@@ -419,11 +419,11 @@ const DeleteAPIRoute = (app) => {
 
   // API For Bank Delete Request
 
-  app.post('/api/delete-bank/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/delete-bank/:bankTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE id = ?`, [id]);
+      const id = req.params.bankTransactionId;
+      const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bankTransactionId = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Bank Request not found' });
@@ -432,8 +432,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await pool.execute(`DELETE FROM Bank WHERE id = ?`, [editRequest[0].bankTransactionId]);
-        await pool.execute(`DELETE FROM EditBankRequest WHERE id = ?`, [id]);
+        await pool.execute(`DELETE FROM Bank WHERE bank_id = ?`, [editRequest[0].bankTransactionId]);
+        await pool.execute(`DELETE FROM EditBankRequest WHERE bankTransactionId = ?`, [id]);
         res.status(200).send({ message: 'Bank deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });
@@ -454,12 +454,12 @@ const DeleteAPIRoute = (app) => {
       try {
         const { requestId } = req.body;
         console.log(requestId);
-        const transactionQuery = `SELECT * FROM Website WHERE id = ?`;
+        const transactionQuery = `SELECT * FROM Website WHERE website_id = ?`;
         const [transaction] = await pool.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Website not found');
         }
-        console.log('Transaction found', transaction);
+        // console.log('Transaction found', transaction);
         const updateResult = await DeleteApiService.deleteWebsite(transaction[0], req.body);
         console.log(updateResult);
         if (updateResult) {
@@ -474,11 +474,11 @@ const DeleteAPIRoute = (app) => {
 
   // API For Website Delet Request
 
-  app.post('/api/delete-website/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/delete-website/:websiteTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE id = ?`, [id]);
+      const id = req.params.websiteTransactionId;
+      const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Website Request not found' });
@@ -487,8 +487,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await query(`DELETE FROM Website WHERE id = ?`, [editRequest[0].websiteTransactionId]);
-        await query(`DELETE FROM EditWebsiteRequest WHERE id = ?`, [id]);
+        await query(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].websiteTransactionId]);
+        await query(`DELETE FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [id]);
         res.status(200).send({ message: 'Website deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });

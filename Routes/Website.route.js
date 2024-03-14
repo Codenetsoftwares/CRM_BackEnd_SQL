@@ -261,7 +261,7 @@ const WebisteRoutes = (app) => {
         // Remove the subAdmin with the specified subAdminId
         const deleteSubAdminQuery = `DELETE FROM WebsiteSubAdmins WHERE websiteId = ? AND subadminid = ?`;
         await pool.execute(deleteSubAdminQuery, [websiteId, subAdminId]);
-        res.status(200).send({ message: 'SubAdmin removed successfully' });
+        res.status(200).send({ message: 'SubAdmin Permission removed successfully' });
       } catch (error) {
         res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
       }
