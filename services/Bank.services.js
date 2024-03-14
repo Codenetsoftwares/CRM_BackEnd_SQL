@@ -140,47 +140,49 @@ const BankServices = {
 
       let balance = 0;
 
-      bankTransactions.forEach((transaction) => {
+      for (const transaction of bankTransactions) {
         if (transaction.depositAmount) {
           balance += parseFloat(transaction.depositAmount);
         }
         if (transaction.withdrawAmount) {
           balance -= parseFloat(transaction.withdrawAmount);
         }
-      });
+      }
 
-      transactions.forEach((transaction) => {
+      for (const transaction of transactions) {
         if (transaction.transactionType === 'Deposit') {
           balance += parseFloat(transaction.amount);
         } else {
-          const totalBalance = balance - parseFloat(transaction.bankCharges) - parseFloat(transaction.amount);
-          balance = totalBalance;
+          balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
         }
-      });
+      }
 
-      editTransaction.forEach((data) => {
-        if (data.transactionType === 'Manual-Bank-Deposit') {
-          balance += parseFloat(data.depositAmount);
+      for (const data of editTransaction) {
+        switch (data.transactionType) {
+          case 'Manual-Bank-Deposit':
+            balance += parseFloat(data.depositAmount);
+            break;
+          case 'Manual-Bank-Withdraw':
+            balance -= parseFloat(data.withdrawAmount);
+            break;
+          case 'Deposit':
+            balance += parseFloat(data.amount);
+            break;
+          case 'Withdraw':
+            balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
+            break;
+          default:
+            break;
         }
-        if (data.transactionType === 'Manual-Bank-Withdraw') {
-          balance -= parseFloat(data.withdrawAmount);
-        }
-        if (data.transactionType === 'Deposit') {
-          balance += parseFloat(data.amount);
-        }
-        if (data.transactionType === 'Withdraw') {
-          const netAmount = balance - parseFloat(data.bankCharges) - data.bankCharges;
-          balance = netAmount;
-        }
-      });
+      }
 
       return balance;
     } catch (e) {
       console.error(e);
       throw e; // Rethrow the error to handle it at the calling site
-  } finally {
+    } finally {
       pool.end(); // Release the connection after use
-  }
+    }
   },
 };
 

@@ -655,24 +655,21 @@ const AccountRoute = (app) => {
   );
 
   app.post(
-    "/api/admin/filter-data",
+    '/api/admin/filter-data',
     Authorize([
-      "superAdmin",
-      "Dashboard-View",
-      "Transaction-View",
-      "Transaction-Edit-Request",
-      "Transaction-Delete-Request",
-      "Website-View",
-      "Bank-View",
-      "report-all-txn"
+      'superAdmin',
+      'Dashboard-View',
+      'Transaction-View',
+      'Transaction-Edit-Request',
+      'Transaction-Delete-Request',
+      'Website-View',
+      'Bank-View',
+      'report-all-txn',
     ]),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const {
-          page,
-          itemsPerPage
-        } = req.query;
+        const { page, itemsPerPage } = req.query;
         const {
           transactionType,
           introducerList,
@@ -682,11 +679,11 @@ const AccountRoute = (app) => {
           sdate,
           edate,
           minAmount,
-          maxAmount
+          maxAmount,
         } = req.body;
-  
+
         const filter = {};
-  
+
         if (transactionType) {
           filter.transactionType = transactionType;
         }
@@ -713,67 +710,66 @@ const AccountRoute = (app) => {
         //   const endDate = new Date(edate).toISOString().slice(0, 19).replace('T', ' ');
         //   filter.createdAt = `<= '${endDate}'`;
         // }
-  
-        console.log("Filter:", filter);
-  
+
+        console.log('Filter:', filter);
+
         let filterConditions = '';
         const filterKeys = Object.keys(filter);
         if (filterKeys.length > 0) {
-          filterConditions = filterKeys.map(key => `${key} = '${filter[key]}'`).join(' AND ');
+          filterConditions = filterKeys.map((key) => `${key} = '${filter[key]}'`).join(' AND ');
         }
-  
-        console.log("Filter Conditions:", filterConditions);
-  
+
+        console.log('Filter Conditions:', filterConditions);
+
         let transactions = [];
         let websiteTransactions = [];
         let bankTransactions = [];
-  
+
         if (filterConditions) {
-          [transactions] = await pool.execute(`SELECT * FROM Transaction WHERE ${filterConditions} ORDER BY createdAt DESC;`);
-          [websiteTransactions] = await pool.execute(`SELECT * FROM WebsiteTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`);
-          [bankTransactions] = await pool.execute(`SELECT * FROM BankTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`);
+          [transactions] = await pool.execute(
+            `SELECT * FROM Transaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
+          );
+          [websiteTransactions] = await pool.execute(
+            `SELECT * FROM WebsiteTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
+          );
+          [bankTransactions] = await pool.execute(
+            `SELECT * FROM BankTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
+          );
         }
-  
+
         const filteredTransactions = transactions.filter((transaction) => {
           if (minAmount && maxAmount) {
-            return (
-              transaction.amount >= minAmount &&
-              transaction.amount <= maxAmount
-            );
+            return transaction.amount >= minAmount && transaction.amount <= maxAmount;
           } else {
             return true;
           }
         });
-  
+
         const filteredWebsiteTransactions = websiteTransactions.filter((transaction) => {
           if (minAmount && maxAmount) {
             return (
-              transaction.withdrawAmount >= minAmount &&
-              transaction.withdrawAmount <= maxAmount ||
-              transaction.depositAmount >= minAmount &&
-              transaction.depositAmount <= maxAmount
+              (transaction.withdrawAmount >= minAmount && transaction.withdrawAmount <= maxAmount) ||
+              (transaction.depositAmount >= minAmount && transaction.depositAmount <= maxAmount)
             );
           } else {
             return true;
           }
         });
-  
+
         const filteredBankTransactions = bankTransactions.filter((transaction) => {
           if (minAmount && maxAmount) {
             return (
-              transaction.withdrawAmount >= minAmount &&
-              transaction.withdrawAmount <= maxAmount ||
-              transaction.depositAmount >= minAmount &&
-              transaction.depositAmount <= maxAmount
+              (transaction.withdrawAmount >= minAmount && transaction.withdrawAmount <= maxAmount) ||
+              (transaction.depositAmount >= minAmount && transaction.depositAmount <= maxAmount)
             );
           } else {
             return true;
           }
         });
-  
+
         const allTransactions = [...filteredTransactions, ...filteredWebsiteTransactions, ...filteredBankTransactions];
         allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  
+
         const totalItems = allTransactions.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         let pageNumber = parseInt(page) || 1;
@@ -781,17 +777,14 @@ const AccountRoute = (app) => {
         const skip = (pageNumber - 1) * itemsPerPage;
         const limit = Math.min(itemsPerPage, totalItems - skip);
         const paginatedResults = allTransactions.slice(skip, skip + limit);
-  
+
         res.status(200).json({ paginatedResults, pageNumber, totalPages, totalItems });
       } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ message: "Internal server error" });
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Internal server error' });
       }
-    }
+    },
   );
-  
-   
-
 
   app.post(
     '/api/admin/create/introducer/deposit-transaction',
