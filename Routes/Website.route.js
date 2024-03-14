@@ -180,9 +180,8 @@ const WebisteRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const pool = await connectToDB();
-
         const websiteQuery = `SELECT * FROM Website`;
         let [websiteData] = await pool.execute(websiteQuery);
 
@@ -241,6 +240,8 @@ const WebisteRoutes = (app) => {
       } catch (e) {
         console.error(e);
         res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+      } finally {
+        pool.end();
       }
     },
   );
