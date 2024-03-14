@@ -93,8 +93,8 @@ const WebsiteServices = {
 
   updateWebsite: async (response, data) => {
     const pool = await connectToDB();
-    const existingRequest = response[0];
-
+    const existingRequest = response;
+    console.log('existingRequest', existingRequest);
     if (!existingRequest) {
       throw { code: 404, message: `Website not found with id: ${existingRequest}` };
     }
@@ -132,8 +132,11 @@ const WebsiteServices = {
 
     // Create updatedTransactionData using a ternary operator
     const updatedTransactionData = {
-      id: existingRequest,
-      websiteName: data.websiteName !== undefined ? data.websiteName : existingRequest.websiteName,
+      id: existingRequest.website_id,
+      websiteName:
+        data.websiteName.replace(/\s+/g, '') !== undefined
+          ? data.websiteName
+          : existingRequest.websiteName.replace(/\s+/g, ''),
     };
 
     console.log('update', updatedTransactionData);

@@ -267,7 +267,7 @@ const DeleteApiService = {
 
   deleteBank: async (id) => {
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM Bank WHERE id = ?`, [id.id]);
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id.bank_id]);
     console.log('existingTransaction', existingTransaction);
 
     if (!existingTransaction.length) {
@@ -304,7 +304,7 @@ const DeleteApiService = {
     upiAppName, upiNumber, message, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
-      id.id,
+      id.bank_id,
       updatedTransactionData.accountHolderName,
       updatedTransactionData.bankName,
       updatedTransactionData.accountNumber,
@@ -319,9 +319,10 @@ const DeleteApiService = {
   },
 
   deleteWebsite: async (id) => {
+    console.log('Transaction found', id);
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM Website WHERE id = ?`, [id.id]);
-
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Website WHERE website_id = ?`, [id.website_id]);
+    console.log('Transaction found', existingTransaction);
     if (!existingTransaction.length) {
       throw { code: 404, message: `Website not found with id: ${id}` };
     }
@@ -349,7 +350,12 @@ const DeleteApiService = {
     const createEditRequestQuery = `INSERT INTO EditWebsiteRequest (websiteTransactionId, websiteName, message, type) 
     VALUES (?, ?, ?, ?)`;
 
-    await pool.execute(createEditRequestQuery, [id.id, updatedTransactionData.websiteName, editMessage, 'Delete']);
+    await pool.execute(createEditRequestQuery, [
+      id.website_id,
+      updatedTransactionData.websiteName,
+      editMessage,
+      'Delete',
+    ]);
     return true;
   },
 };
