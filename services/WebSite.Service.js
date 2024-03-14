@@ -8,26 +8,28 @@ const WebsiteServices = {
       VALUES (?, ?, ?, ?)`;
       const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
       isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-      await pool.query(insertWebsiteDetails,[
+      await pool.query(insertWebsiteDetails, [
         approvedWebsiteRequest[0].website_id,
         approvedWebsiteRequest[0].websiteName,
         approvedWebsiteRequest[0].subAdminName,
-        true
-      ])
-      await Promise.all(subAdmins.map(async (subAdmin) => {
-        const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
-        // Insert subadmin details
-        await pool.query(insertSubadmin, [
-          approvedWebsiteRequest[0].website_id,
+        true,
+      ]);
+      await Promise.all(
+        subAdmins.map(async (subAdmin) => {
+          const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+          // Insert subadmin details
+          await pool.query(insertSubadmin, [
+            approvedWebsiteRequest[0].website_id,
             subAdminId,
             isDeposit,
             isWithdraw,
             isEdit,
             isRenew,
-            isDelete
-        ]);
-    }));
-    return subAdmins.length;
+            isDelete,
+          ]);
+        }),
+      );
+      return subAdmins.length;
     } catch (error) {
       throw error; // Propagate error to the caller
     }

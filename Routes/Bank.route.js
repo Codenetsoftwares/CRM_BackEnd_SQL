@@ -64,9 +64,9 @@ const BankRoutes = (app) => {
     const pool = await connectToDB();
     try {
       const { isApproved, subAdmins } = req.body;
-      
+
       const bankId = req.params.bank_id;
-      
+
       const approvedBankRequests = (await pool.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]))[0];
 
       if (!approvedBankRequests || approvedBankRequests.length === 0) {
@@ -74,7 +74,7 @@ const BankRoutes = (app) => {
       }
 
       if (isApproved) {
-        const rowsInserted = await BankServices.approveBankAndAssignSubadmin(approvedBankRequests,subAdmins);
+        const rowsInserted = await BankServices.approveBankAndAssignSubadmin(approvedBankRequests, subAdmins);
         if (rowsInserted > 0) {
           await BankServices.deleteBankRequest(bankId);
         } else {
@@ -128,24 +128,72 @@ const BankRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
-      const { page, itemsPerPage } = req.query;
-      const pool = await connectToDB();
       try {
-        const banksQuery = `SELECT * FROM Bank`;
-        const [bankData] = await pool.execute(banksQuery);
-        for (let index = 0; index < bankData.length; index++) {
-          bankData[index].balance = await BankServices.getBankBalance(bankData[index].bank_id);
+        const pool = await connectToDB();
 
-          // Fetch BankSubAdmins for each bank
-          const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [
-            bankData[index].bank_id,
-          ]);
-          if (subAdmins && subAdmins.length > 0) {
-            // Add BankSubAdmins array to the bank object
-            bankData[index].subAdmins = subAdmins;
+        // Fetch bank data
+        const banksQuery = `SELECT * FROM Bank`;
+        let [bankData] = await pool.execute(banksQuery);
+
+        const userRole = req.user[0]?.roles; // Accessing roles property
+        if (userRole.includes('superAdmin')) {
+          // For superAdmin, fetch balances for all banks
+          const balancePromises = bankData.map(async (bank) => {
+            bank.balance = await BankServices.getBankBalance(bank.bank_id);
+            // Fetch BankSubAdmins for each bank
+            const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
+            if (subAdmins && subAdmins.length > 0) {
+              bank.subAdmins = subAdmins;
+            }
+            return bank;
+          });
+
+          // Await all promises to complete
+          bankData = await Promise.all(balancePromises);
+        } else {
+          // For subAdmins, filter banks based on user permissions
+          const userSubAdminId = req.user[0]?.userName; // Accessing userName property
+          console.log('userSubAdminId', userSubAdminId);
+          if (userSubAdminId) {
+            const filteredBanksPromises = bankData.map(async (bank) => {
+              const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
+              if (subAdmins && subAdmins.length > 0) {
+                bank.subAdmins = subAdmins;
+                const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
+                if (userSubAdmin) {
+                  // Update balance for the specific bank
+                  bank.balance = await BankServices.getBankBalance(bank.bank_id);
+
+                  // Set permissions for the specific bank
+                  bank.isDeposit = userSubAdmin.isDeposit;
+                  bank.isWithdraw = userSubAdmin.isWithdraw;
+                  bank.isRenew = userSubAdmin.isRenew;
+                  bank.isEdit = userSubAdmin.isEdit;
+                  bank.isDelete = userSubAdmin.isDelete;
+                } else {
+                  // Exclude this bank from the result
+                  return null;
+                }
+              } else {
+                return null; // Exclude banks without subAdmins
+              }
+              return bank; // Include this bank in the result
+            });
+
+            // Wait for all promises to complete
+            const filteredBanks = await Promise.all(filteredBanksPromises);
+
+            // Filter out null values (banks not authorized for the subAdmin)
+            bankData = filteredBanks.filter((bank) => bank !== null);
+          } else {
+            console.error('SubAdminId not found in req.user');
+            // Handle the case where subAdminId is not found in req.user
           }
         }
+
+        // Sort bankData by created_at
         bankData.sort((a, b) => b.created_at - a.created_at);
+
         return res.status(200).send(bankData);
       } catch (e) {
         console.error(e);

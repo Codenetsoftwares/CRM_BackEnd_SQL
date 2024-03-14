@@ -4,43 +4,45 @@ const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
     const pool = await connectToDB();
     try {
-      console.log("approvedBankRequests", approvedBankRequests);
-        const insertBankDetails = `INSERT INTO Bank (bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, 
+      console.log('approvedBankRequests', approvedBankRequests);
+      const insertBankDetails = `INSERT INTO Bank (bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, 
         upiAppName, upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, 
+      const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, 
         isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await pool.query(insertBankDetails, [
-          approvedBankRequests[0].bank_id,
-          approvedBankRequests[0].bankName,
-          approvedBankRequests[0].accountHolderName,
-          approvedBankRequests[0].accountNumber,
-          approvedBankRequests[0].ifscCode,
-          approvedBankRequests[0].upiId,
-          approvedBankRequests[0].upiAppName,
-          approvedBankRequests[0].upiNumber,
-          approvedBankRequests[0].subAdminName,
-          true
+      await pool.query(insertBankDetails, [
+        approvedBankRequests[0].bank_id,
+        approvedBankRequests[0].bankName,
+        approvedBankRequests[0].accountHolderName,
+        approvedBankRequests[0].accountNumber,
+        approvedBankRequests[0].ifscCode,
+        approvedBankRequests[0].upiId,
+        approvedBankRequests[0].upiAppName,
+        approvedBankRequests[0].upiNumber,
+        approvedBankRequests[0].subAdminName,
+        true,
       ]);
-        // Execute insert queries for each subadmin concurrently
-        await Promise.all(subAdmins.map(async (subAdmin) => {
-            const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
-            // Insert subadmin details
-            await pool.query(insertSubadmin, [
-                approvedBankRequests[0].bank_id,
-                subAdminId,
-                isDeposit,
-                isWithdraw,
-                isEdit,
-                isRenew,
-                isDelete
-            ]);
-        }));
+      // Execute insert queries for each subadmin concurrently
+      await Promise.all(
+        subAdmins.map(async (subAdmin) => {
+          const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+          // Insert subadmin details
+          await pool.query(insertSubadmin, [
+            approvedBankRequests[0].bank_id,
+            subAdminId,
+            isDeposit,
+            isWithdraw,
+            isEdit,
+            isRenew,
+            isDelete,
+          ]);
+        }),
+      );
 
-        return subAdmins.length; // Return the number of subadmins processed for further verification
+      return subAdmins.length; // Return the number of subadmins processed for further verification
     } catch (error) {
-        throw error; // Propagate error to the caller
+      throw error; // Propagate error to the caller
     }
-},
+  },
 
   deleteBankRequest: async (bankId) => {
     const pool = await connectToDB();
