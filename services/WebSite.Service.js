@@ -55,8 +55,8 @@ const WebsiteServices = {
   },
 
   getWebsiteBalance: async (websiteId) => {
+    const pool = await connectToDB();
     try {
-      const pool = await connectToDB();
       const websiteTransactionsQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ?`;
       const [websiteTransactions] = await pool.execute(websiteTransactionsQuery, [websiteId]);
 
@@ -85,10 +85,12 @@ const WebsiteServices = {
         }
       });
       return balance;
-    } catch (error) {
-      console.error('Error in getBankBalance:', error);
-      throw error;
-    }
+    }catch (e) {
+      console.error(e);
+      throw e; // Rethrow the error to handle it at the calling site
+  } finally {
+      pool.end(); // Release the connection after use
+  }
   },
 
   updateWebsite: async (response, data) => {
