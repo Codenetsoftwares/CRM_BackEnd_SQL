@@ -654,125 +654,135 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.post(
-    "/api/admin/filter-data",
-    Authorize([
-      "superAdmin",
-      "Dashboard-View",
-      "Transaction-View",
-      "Transaction-Edit-Request",
-      "Transaction-Delete-Request",
-      "Website-View",
-      "Bank-View",
-      "report-all-txn"
-    ]),
-    async (req, res) => {
-      const pool = await connectToDB();
-      try {
-        const {
-          page,
-          itemsPerPage
-        } = req.query;
-        const {
-          transactionType,
-          introducerList,
-          subAdminList,
-          BankList,
-          WebsiteList,
-          sdate,
-          edate,
-          minAmount,
-          maxAmount
-        } = req.body;
-  
-        const filterConditions = [];
-        const filterParams = [];
-  
-        if (transactionType) {
-          filterConditions.push("transactionType = ?");
-          filterParams.push(transactionType);
-        }
-        if (introducerList) {
-          filterConditions.push("introducerUserName = ?");
-          filterParams.push(introducerList);
-        }
-        if (subAdminList) {
-          filterConditions.push("subAdminName = ?");
-          filterParams.push(subAdminList);
-        }
-        if (BankList) {
-          filterConditions.push("bankName = ?");
-          filterParams.push(BankList);
-        }
-        if (WebsiteList) {
-          filterConditions.push("websiteName = ?");
-          filterParams.push(WebsiteList);
-        }
-        if (sdate && edate) {
-          filterConditions.push("createdAt BETWEEN ? AND ?");
-          filterParams.push(sdate, edate);
-        } else if (sdate) {
-          filterConditions.push("createdAt >= ?");
-          filterParams.push(sdate);
-        } else if (edate) {
-          filterConditions.push("createdAt <= ?");
-          filterParams.push(edate);
-        }
-        if (minAmount) {
-          filterConditions.push("amount >= ?");
-          filterParams.push(minAmount);
-        }
-        if (maxAmount) {
-          filterConditions.push("amount <= ?");
-          filterParams.push(maxAmount);
-        }
-  
-        const filterClause = filterConditions.length > 0 ? "WHERE " + filterConditions.join(" AND ") : "";
-  
-        const query = `
-          SELECT *
-          FROM (
-            SELECT *
-            FROM Transaction
-            ${filterClause}
-            UNION ALL
-            SELECT *
-            FROM WebsiteTransaction
-            ${filterClause}
-            UNION ALL
-            SELECT *
-            FROM BankTransaction
-            ${filterClause}
-          ) AS alltrans
-        `;
-  
-        const [result] = await pool.execute(query, filterParams);
-  
-        const totalItems = result.length;
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
-        let pageNumber = parseInt(page) || 1;
-        pageNumber = Math.min(Math.max(1, pageNumber), totalPages);
-  
-        const skip = (pageNumber - 1) * itemsPerPage;
-        const limit = Math.min(itemsPerPage, totalItems - skip);
-  
-        const paginatedResults = result.slice(skip, skip + limit);
-  
-        return res.status(200).json({
-          paginatedResults,
-          pageNumber,
-          totalPages,
-          totalItems
-        });
-      } catch (e) {
-        console.error(e);
-        res.status(500).send({
-          message: e.message
-        });
-      }
-    }
-  );
+  // app.post(
+  //   "/api/admin/filter-data",
+  //   Authorize([
+  //     "superAdmin",
+  //     "Dashboard-View",
+  //     "Transaction-View",
+  //     "Transaction-Edit-Request",
+  //     "Transaction-Delete-Request",
+  //     "Website-View",
+  //     "Bank-View",
+  //     "report-all-txn"
+  //   ]),
+  //   async (req, res) => {
+  //     const pool = await connectToDB();
+  //     try {
+  //       const {
+  //         page,
+  //         itemsPerPage
+  //       } = req.query;
+  //       const {
+  //         transactionType,
+  //         introducerList,
+  //         subAdminList,
+  //         BankList,
+  //         WebsiteList,
+  //         sdate,
+  //         edate,
+  //         minAmount,
+  //         maxAmount
+  //       } = req.body;
+
+  //       const filter = {};
+
+  //       if (transactionType) {
+  //         filter.transactionType = transactionType;
+  //       }
+  //       if (introducerList) {
+  //         filter.introducerUserName = introducerList;
+  //       }
+  //       if (subAdminList) {
+  //         filter.subAdminName = subAdminList;
+  //       }
+  //       if (BankList) {
+  //         filter.bankName = BankList;
+  //       }
+  //       if (WebsiteList) {
+  //         filter.websiteName = WebsiteList;
+  //       }
+  //       if (sdate && edate) {
+  //         filter.createdAt = { $gte: new Date(sdate), $lte: new Date(edate) };
+  //       } else if (sdate) {
+  //         filter.createdAt = { $gte: new Date(sdate) };
+  //       } else if (edate) {
+  //         filter.createdAt = { $lte: new Date(edate) };
+  //       }
+
+  //       // Dynamic construction of SQL WHERE clause
+  //       const filterConditions = Object.keys(filter).map(key => `${key} = '${filter[key]}'`).join(' AND ');
+
+  //       const [transactions] = await pool.execute(`SELECT * FROM Transaction WHERE ${filterConditions} ORDER BY createdAt DESC;`);
+  //       const [websiteTransactions] = await pool.execute(`SELECT * FROM WebsiteTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`);
+  //       const [bankTransactions] = await pool.execute(`SELECT * FROM BankTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`);
+
+  //       const filteredTransactions = transactions.filter((transaction) => {
+  //         if (minAmount && maxAmount) {
+  //           return (
+  //             transaction.amount >= minAmount &&
+  //             transaction.amount <= maxAmount
+  //           );
+  //         } else {
+  //           return true;
+  //         }
+  //       });
+
+  //       const filteredWebsiteTransactions = websiteTransactions.filter((transaction) => {
+  //         if (minAmount && maxAmount) {
+  //           return (
+  //             transaction.withdrawAmount >= minAmount &&
+  //             transaction.withdrawAmount <= maxAmount ||
+  //             transaction.depositAmount >= minAmount &&
+  //             transaction.depositAmount <= maxAmount
+  //           );
+  //         } else {
+  //           return true;
+  //         }
+  //       });
+
+  //       const filteredBankTransactions = bankTransactions.filter((transaction) => {
+  //         if (minAmount && maxAmount) {
+  //           return (
+  //             transaction.withdrawAmount >= minAmount &&
+  //             transaction.withdrawAmount <= maxAmount ||
+  //             transaction.depositAmount >= minAmount &&
+  //             transaction.depositAmount <= maxAmount
+  //           );
+  //         } else {
+  //           return true;
+  //         }
+  //       });
+
+  //       const alltrans = [...filteredTransactions, ...filteredWebsiteTransactions, ...filteredBankTransactions];
+  //       alltrans.sort((a, b) => b.createdAt - a.createdAt);
+
+  //       const allIntroDataLength = alltrans.length;
+  //       let pageNumber = Math.floor(allIntroDataLength / 10 + 1);
+  //       const skip = (page - 1) * itemsPerPage;
+  //       const limit = parseInt(itemsPerPage);
+  //       const paginatedResults = alltrans.slice(skip, skip + limit);
+
+  //       if (paginatedResults.length !== 0) {
+  //         return res.status(200).json({ paginatedResults, pageNumber, allIntroDataLength });
+  //       } else {
+  //         const totalItems = alltrans.length;
+  //         const totalPages = Math.ceil(totalItems / itemsPerPage);
+  //         let page = parseInt(req.query.page) || 1;
+  //         page = Math.min(Math.max(1, page), totalPages);
+  //         const skip = (page - 1) * itemsPerPage;
+  //         const limit = Math.min(itemsPerPage, totalItems - skip);
+  //         const paginatedResults = alltrans.slice(skip, skip + limit);
+  //         const pageNumber = page;
+  //         return res.status(200).json({ paginatedResults, pageNumber, totalPages, allIntroDataLength });
+  //       }
+  //     } catch (e) {
+  //       console.error(e);
+  //       res.status(e.code || 500).send({ message: e.message });
+  //     }
+  //   }
+  // );  
+
 
   app.post(
     '/api/admin/create/introducer/deposit-transaction',
