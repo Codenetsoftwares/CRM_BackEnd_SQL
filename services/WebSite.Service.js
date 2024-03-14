@@ -63,34 +63,32 @@ const WebsiteServices = {
       const transactionsQuery = `SELECT * FROM Transaction WHERE websiteId = ?`;
       const [transactions] = await pool.execute(transactionsQuery, [websiteId]);
 
-      // const editTransactionQuery = `SELECT * FROM editwebsiterequest WHERE websiteId = ?`;
-      // const editTransaction = await query(editTransactionQuery, [websiteId]);
-
       let balance = 0;
 
-      websiteTransactions.forEach((transaction) => {
+      for (const transaction of websiteTransactions) {
         if (transaction.depositAmount) {
           balance += parseFloat(transaction.depositAmount);
         }
         if (transaction.withdrawAmount) {
           balance -= parseFloat(transaction.withdrawAmount);
         }
-      });
+      }
 
-      transactions.forEach((transaction) => {
+      for (const transaction of transactions) {
         if (transaction.transactionType === 'Deposit') {
-          balance = parseFloat(balance) - parseFloat(transactions.bonus) - parseFloat(transactions.amount);
+          balance -= parseFloat(transaction.bonus) + parseFloat(transaction.amount);
         } else {
-          balance += parseFloat(transactions.amount);
+          balance += parseFloat(transaction.amount);
         }
-      });
+      }
+
       return balance;
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       throw e; // Rethrow the error to handle it at the calling site
-  } finally {
+    } finally {
       pool.end(); // Release the connection after use
-  }
+    }
   },
 
   updateWebsite: async (response, data) => {
