@@ -540,56 +540,57 @@ const WebisteRoutes = (app) => {
     },
   );
 
-  app.put(
-    '/api/website/edit-request/:websiteId',
-    Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
-    async (req, res) => {
-      try {
-        const pool = await connectToDB();
-        const { subAdminId, isDeposit, isWithdraw, isDelete, isRenew, isEdit } = req.body;
+  app.put('/api/website/edit-request/:websiteId', Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+        const { subAdmins } = req.body;
         const websiteId = req.params.websiteId;
 
-        // Check if the bank exists
-        const [subAdminWebsiteEdit] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = ?`, [
-          websiteId,
-        ]);
-        if (!subAdminWebsiteEdit.length) {
-          throw { code: 404, message: 'Website SubAdmins not found for Editing' };
+        for (const subAdminData of subAdmins) {
+            const [existingSubAdmin] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = ? AND subAdminId = ?`, [websiteId, subAdminData.subAdminId]);
+
+            if (existingSubAdmin.length === 0) {
+                const insertSubAdminQuery = `
+                    INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, isRenew, isDelete)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `;
+                await pool.execute(insertSubAdminQuery, [
+                  websiteId,
+                    subAdminData.subAdminId,
+                    subAdminData.isDeposit,
+                    subAdminData.isWithdraw,
+                    subAdminData.isEdit,
+                    subAdminData.isRenew,
+                    subAdminData.isDelete,
+                ]);
+            } else {
+                const updateSubAdminQuery = `
+                    UPDATE WebsiteSubAdmins
+                    SET isDeposit = ?, isWithdraw = ?, isEdit = ?, isRenew = ?, isDelete = ?
+                    WHERE websiteId = ? AND subAdminId = ?
+                `;
+                await pool.execute(updateSubAdminQuery, [
+                    subAdminData.isDeposit,
+                    subAdminData.isWithdraw,
+                    subAdminData.isEdit,
+                    subAdminData.isRenew,
+                    subAdminData.isDelete,
+                    websiteId,
+                    subAdminData.subAdminId,
+                ]);
+            }
         }
 
-        // Update subAdmins for the bank
-        for (const subAdminData of subAdminWebsiteEdit) {
-          // Update the relevant fields
-          subAdminData.isDeposit = isDeposit;
-          subAdminData.isWithdraw = isWithdraw;
-          subAdminData.isDelete = isDelete;
-          subAdminData.isRenew = isRenew;
-          subAdminData.isEdit = isEdit;
-
-          // Update the record in the database
-          const updateSubAdminQuery = `
-                UPDATE BankSubAdmins
-                SET isDeposit = ?, isWithdraw = ?, isEdit = ?, isRenew = ?, isDelete = ?
-                WHERE websiteId = ? AND subAdminId = ?
-            `;
-          await pool.execute(updateSubAdminQuery, [
-            isDeposit,
-            isWithdraw,
-            isEdit,
-            isRenew,
-            isDelete,
-            websiteId,
-            subAdminData.subAdminId,
-          ]);
-        }
-
-        res.status(200).send({ message: 'Updated successfully' });
-      } catch (error) {
+        res.status(200).send({ message: 'Website Permission Updated successfully' });
+    } catch (error) {
         console.error(error);
         res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
-      }
-    },
-  );
+    } finally {
+        if (pool) {
+            pool.end();
+        }
+    }
+});
 };
 
 export default WebisteRoutes;

@@ -518,47 +518,63 @@ const BankRoutes = (app) => {
   app.put('/api/bank/edit-request/:bankId', Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const { subAdminId, isDeposit, isWithdraw, isDelete, isRenew, isEdit } = req.body;
-      const bankId = req.params.bankId;
+        const { subAdmins } = req.body;
+        const bankId = req.params.bankId;
 
-      // Check if the bank exists
-      const [subAdminBankEdit] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = ?`, [bankId]);
-      if (!subAdminBankEdit.length) {
-        throw { code: 404, message: 'Bank SubAdmins not found for Editing' };
-      }
+        // Update subAdmins for the bank
+        for (const subAdminData of subAdmins) {
+            // Check if the subAdmin already exists in the database for this bank
+            const [existingSubAdmin] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = ? AND subAdminId = ?`, [bankId, subAdminData.subAdminId]);
 
-      // Update subAdmins for the bank
-      for (const subAdminData of subAdminBankEdit) {
-        // Update the relevant fields
-        subAdminData.isDeposit = isDeposit;
-        subAdminData.isWithdraw = isWithdraw;
-        subAdminData.isDelete = isDelete;
-        subAdminData.isRenew = isRenew;
-        subAdminData.isEdit = isEdit;
+            if (existingSubAdmin.length === 0) {
+                // If the subAdmin does not exist, insert a new record
+                const insertSubAdminQuery = `
+                    INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, isRenew, isDelete)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `;
+                await pool.execute(insertSubAdminQuery, [
+                    bankId,
+                    subAdminData.subAdminId,
+                    subAdminData.isDeposit,
+                    subAdminData.isWithdraw,
+                    subAdminData.isEdit,
+                    subAdminData.isRenew,
+                    subAdminData.isDelete,
+                ]);
+            } else {
+                // If the subAdmin exists, update their permissions
+                const updateSubAdminQuery = `
+                    UPDATE BankSubAdmins
+                    SET isDeposit = ?, isWithdraw = ?, isEdit = ?, isRenew = ?, isDelete = ?
+                    WHERE bankId = ? AND subAdminId = ?
+                `;
+                await pool.execute(updateSubAdminQuery, [
+                    subAdminData.isDeposit,
+                    subAdminData.isWithdraw,
+                    subAdminData.isEdit,
+                    subAdminData.isRenew,
+                    subAdminData.isDelete,
+                    bankId,
+                    subAdminData.subAdminId,
+                ]);
+            }
+        }
 
-        // Update the record in the database
-        const updateSubAdminQuery = `
-                UPDATE BankSubAdmins
-                SET isDeposit = ?, isWithdraw = ?, isEdit = ?, isRenew = ?, isDelete = ?
-                WHERE bankId = ? AND subAdminId = ?
-            `;
-        await pool.execute(updateSubAdminQuery, [
-          isDeposit,
-          isWithdraw,
-          isEdit,
-          isRenew,
-          isDelete,
-          bankId,
-          subAdminData.subAdminId,
-        ]);
-      }
-
-      res.status(200).send({ message: 'Updated successfully' });
+        res.status(200).send({ message: 'Bank Permission Updated successfully' });
     } catch (error) {
-      console.error(error);
-      res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
+        console.error(error);
+        res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
+    } finally {
+        // Close the database connection
+        if (pool) {
+            pool.end();
+        }
     }
-  });
+});
+
+
+
+
 
   app.delete(
     '/api/bank/delete-subadmin/:bankId/:subAdminId',
