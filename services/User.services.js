@@ -138,7 +138,7 @@ export const UserServices = {
     }
   },
 
-  userPasswordResetCode: async (userName, oldPassword, newPassword) => {
+  userPasswordResetCode: async (userName, password) => {
     const pool = await connectToDB();
     try {
       const [existingUser] = await pool.query('SELECT * FROM User WHERE userName = ?', [userName]);
@@ -148,16 +148,8 @@ export const UserServices = {
           message: 'User not found',
         };
       }
-      // Compare old password hashes
-      const oldPasswordIsCorrect = await bcrypt.compare(oldPassword, existingUser[0].password);
-      if (!oldPasswordIsCorrect) {
-        throw {
-          code: 401,
-          message: 'Invalid old password',
-        };
-      }
-      // Compare new password with old password
-      const newPasswordIsDuplicate = await bcrypt.compare(newPassword, existingUser[0].password);
+      // Compare old and new password hashes
+      const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
       if (newPasswordIsDuplicate) {
         throw {
           code: 409,
@@ -166,7 +158,7 @@ export const UserServices = {
       }
       // Hash the new password
       const passwordSalt = existingUser[0].password.substring(0, 29); // Extract salt from existing hashed password
-      const encryptedNewPassword = await bcrypt.hash(newPassword, passwordSalt);
+      const encryptedNewPassword = await bcrypt.hash(password, passwordSalt);
       // Update user's password in the database
       await pool.query('UPDATE User SET password = ? WHERE userName = ?', [encryptedNewPassword, userName]);
       return true;

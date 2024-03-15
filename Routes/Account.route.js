@@ -562,25 +562,24 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.get(
-    '/introducer-user-single-data/:id',
-    Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
+  app.get('/introducer-user-single-data/:intro_id', Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const id = req.params.id;
-        const [introducerUserResult] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE id = '${id}';`);
+        const id = req.params.intro_id;
+        const [introducerUserResult] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [id]);
         const introducerUserName = introducerUserResult[0].userName;
 
         // Find users with introducersUserName matching introducerUser.userName
-        const usersResult = await pool.execute(`
-      SELECT *
-      FROM User
-      WHERE introducersUserName = '${introducerUserName}'
-        OR introducersUserName1 = '${introducerUserName}'
-        OR introducersUserName2 = '${introducerUserName}';
-    `);
-
+        const [usersResult] = await pool.execute(
+          `SELECT *
+              FROM User
+              WHERE introducersUserName = ?
+              OR introducersUserName1 = ?
+              OR introducersUserName2 = ?`,
+          [introducerUserName, introducerUserName, introducerUserName],
+        );
+           console.log("usersResult",  usersResult);
         if (usersResult.length === 0) {
           return res.status(404).send({ message: 'No matching users found' });
         }
@@ -639,9 +638,7 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.post(
-    '/api/admin/user/reset-password',
-    Authorize(['superAdmin', 'Create-User', 'Create-Admin', 'Profile-View', 'User-Profile-View']),
+  app.post('/api/admin/user/reset-password', Authorize(['superAdmin', 'Create-User', 'Create-Admin', 'Profile-View', 'User-Profile-View']),
     async (req, res) => {
       try {
         const { userName, password } = req.body;

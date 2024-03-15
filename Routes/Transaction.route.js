@@ -1,5 +1,6 @@
 import TransactionServices from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
+import connectToDB from '../db/db.js';
 
 const TransactionRoutes = (app) => {
   app.post(
@@ -43,6 +44,18 @@ const TransactionRoutes = (app) => {
       res.status(e.code).send({ message: e.message });
     }
   });
+
+  app.get('/api/superadmin/view-edit-introducer-transaction-requests', Authorize(["superAdmin", "RequestAdmin"]), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const [introEdit] = await pool.execute(`SELECT * FROM IntroducerEditRequest`)
+      res.status(200).send(introEdit);
+    } catch (error) {
+      console.log(error);
+      res.status(500).send("Internal Server error");
+    }
+  });
+
 };
 
 export default TransactionRoutes;
