@@ -38,18 +38,6 @@ export const UserRoutes = (app) => {
     }
   });
 
-  // API To Create User
-
-  app.post('/api/accounts/user/register', async (req, res) => {
-    try {
-      await UserServices.createUser(req.body);
-      res.status(200).send({ code: 200, message: 'User registered successfully!' });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
-
   // API To Add Bank Name
 
   app.post('/api/user/add-bank-name', AuthorizeRole(['user']), async (req, res) => {

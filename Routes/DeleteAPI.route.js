@@ -501,22 +501,26 @@ const DeleteAPIRoute = (app) => {
 
   // API For Rejecting Bank Detail
 
-  app.delete('/api/reject/bank-detail/:bankTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const id = req.params.bankTransactionId;
-      const deleteQuery = 'DELETE FROM EditBankRequest WHERE bankTransactionId = ?';
-      const [result] = await pool.execute(deleteQuery, [id]);
-      if (result.affectedRows === 1) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      } else {
-        res.status(404).send({ message: 'Data not found' });
+  app.delete(
+    '/api/reject/bank-detail/:bankTransactionId',
+    Authorize(['superAdmin', 'RequestAdmin']),
+    async (req, res) => {
+      const pool = await connectToDB();
+      try {
+        const id = req.params.bankTransactionId;
+        const deleteQuery = 'DELETE FROM EditBankRequest WHERE bankTransactionId = ?';
+        const [result] = await pool.execute(deleteQuery, [id]);
+        if (result.affectedRows === 1) {
+          res.status(200).send({ message: 'Data deleted successfully' });
+        } else {
+          res.status(404).send({ message: 'Data not found' });
+        }
+      } catch (e) {
+        console.error(e);
+        res.status(500).send({ message: e.message });
       }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
-    }
-  });
+    },
+  );
 
   // API For Rejecting Website Detail
 

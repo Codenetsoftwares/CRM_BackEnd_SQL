@@ -288,6 +288,112 @@ const AccountServices = {
       };
     }
   },
+
+  getIntroBalance: async (introUserId) => {
+    console.log('introUserId', introUserId);
+    const pool = await connectToDB();
+    try {
+      const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
+        introUserId,
+      ]);
+      let balance = 0;
+      intorTranasction.forEach((transaction) => {
+        if (transaction.transactionType === 'Deposit') {
+          balance += transaction.amount;
+        } else {
+          balance -= transaction.amount;
+        }
+      });
+      const liveBalance = await AccountServices.introducerLiveBalance(introUserId);
+      const currentDue = liveBalance - balance;
+      // console.log("currentDue", currentDue)
+      return {
+        balance: balance,
+        currentDue: currentDue,
+      };
+    } catch (err) {
+      console.error(err);
+      throw {
+        code: err.code || 500,
+        message: err.message || `Failed to update User Profile with id: ${userDetails}`,
+      };
+    }
+  },
+
+  introducerLiveBalance: async (id) => {
+    const pool = await connectToDB();
+    try {
+      const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE intro_id = ?', [id]);
+
+      if (!introId.length) {
+        throw {
+          code: 404,
+          message: `Introducer with ID ${id} not found`,
+        };
+      }
+
+      const IntroducerId = introId[0].userName;
+
+      // Check if IntroducerId exists in any of the introducer user names
+      const [userIntroId] = await pool.execute(
+        `SELECT *
+            FROM User
+            WHERE introducersUserName = ?
+            OR introducersUserName1 = ?
+            OR introducersUserName2 = ?`,
+        [IntroducerId, IntroducerId, IntroducerId],
+      );
+
+      if (!userIntroId.length) {
+        return 0;
+      }
+
+      let liveBalance = 0;
+      for (const user of userIntroId) {
+        let matchedIntroducersUserName, matchedIntroducerPercentage;
+
+        if (user.introducersUserName === IntroducerId) {
+          matchedIntroducersUserName = user.introducersUserName;
+          matchedIntroducerPercentage = user.introducerPercentage;
+        } else if (user.introducersUserName1 === IntroducerId) {
+          matchedIntroducersUserName = user.introducersUserName1;
+          matchedIntroducerPercentage = user.introducerPercentage1;
+        } else if (user.introducersUserName2 === IntroducerId) {
+          matchedIntroducersUserName = user.introducersUserName2;
+          matchedIntroducerPercentage = user.introducerPercentage2;
+        }
+
+        const [transDetails] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
+          user.user_id,
+        ]);
+
+        if (!transDetails.length) {
+          continue;
+        }
+
+        let totalDep = 0;
+        let totalWith = 0;
+
+        transDetails.forEach((res) => {
+          if (res.transactionType === 'Deposit') {
+            totalDep += Number(res.amount);
+          }
+          if (res.transactionType === 'Withdraw') {
+            totalWith += Number(res.amount);
+          }
+        });
+
+        let diff = totalDep - totalWith;
+        let amount = (matchedIntroducerPercentage / 100) * diff;
+        liveBalance += amount;
+      }
+
+      return Math.round(liveBalance);
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
 };
 
 export default AccountServices;
