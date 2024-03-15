@@ -501,11 +501,11 @@ const DeleteAPIRoute = (app) => {
 
   // API For Rejecting Bank Detail
 
-  app.delete('/api/reject/bank-detail/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.delete('/api/reject/bank-detail/:bankTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const deleteQuery = 'DELETE FROM EditBankRequest WHERE id = ?';
+      const id = req.params.bankTransactionId;
+      const deleteQuery = 'DELETE FROM EditBankRequest WHERE bankTransactionId = ?';
       const [result] = await pool.execute(deleteQuery, [id]);
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
