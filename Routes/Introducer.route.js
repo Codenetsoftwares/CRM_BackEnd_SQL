@@ -65,11 +65,11 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.put('/api/intoducer-profile-edit/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.put('/api/intoducer-profile-edit/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const userId = req.params.id;
-      const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = (?)`, [userId]);
+      const userId = req.params.intro_id;
+      const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [userId]);
       // console.log("introUser", introUser);
       const updateResult = await introducerUser.updateIntroducerProfile(introUser, req.body);
       console.log(updateResult);

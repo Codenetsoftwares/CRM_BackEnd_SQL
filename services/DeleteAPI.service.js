@@ -79,21 +79,23 @@ const DeleteApiService = {
 
   deleteWebsiteTransaction: async (transaction, user) => {
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM WebsiteTransaction WHERE id = ?`, [transaction.id]);
+
+    const [existingTransaction] = await pool.execute(`SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`, 
+    [transaction.WebsiteTransaction_Id]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Website Transaction not found with id: ${transaction.id}` };
     }
 
     const [existingEditRequest] = await pool.execute(
-      `SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`,
-      [transaction.id],
+      `SELECT * FROM EditRequest WHERE WebsiteTransaction_Id = ? AND type = 'Delete'`,
+      [transaction.WebsiteTransaction_Id],
     );
 
     if (existingEditRequest.length) {
       throw { code: 409, message: 'Request Already Sent For Approval' };
     }
-
+       console.log("transaction", transaction);
     const updatedTransactionData = {
       websiteId: transaction.websiteId,
       transactionType: transaction.transactionType,
@@ -114,10 +116,11 @@ const DeleteApiService = {
     });
 
     const name = user[0].firstname;
+    const Edit_ID = uuidv4()
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
-        depositAmount, withdrawAmount, remarks, websiteName, message, type, Nametype, transId) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        depositAmount, withdrawAmount, remarks, websiteName, message, type, Nametype, WebsiteTransaction_Id, Edit_ID) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
       updatedTransactionData.websiteId,
@@ -132,7 +135,8 @@ const DeleteApiService = {
       editMessage,
       'Delete',
       'Website',
-      transaction.id,
+      transaction.WebsiteTransaction_Id,
+      Edit_ID
     ]);
     return true;
   },

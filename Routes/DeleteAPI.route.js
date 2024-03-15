@@ -104,16 +104,14 @@ const DeleteAPIRoute = (app) => {
   });
 
   // API To Move The Website Transaction Into Trash
-  app.post(
-    '/api/admin/save-website-transaction-request',
-    Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
-    async (req, res) => {
+  app.post('/api/admin/save-website-transaction-request', Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']), async (req, res) => {
       const pool = await connectToDB();
       try {
         const user = req.user;
         const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM WebsiteTransaction WHERE id = ?`;
+        const transactionQuery = `SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`;
         const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        // console.log("transactionPOST", transaction[0]);
         if (!transaction) {
           return res.status(404).send('Website Transaction not found');
         }
@@ -131,12 +129,12 @@ const DeleteAPIRoute = (app) => {
 
   // API To Approve Website Transaction To Move Into Trash Request
 
-  app.post('/api/delete-website-transaction/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/delete-website-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE id = ?`, [id]);
-
+      const id = req.params.Edit_ID;
+      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
+       console.log("editRequest", editRequest);
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Edit Website Request not found' });
       }
@@ -154,14 +152,14 @@ const DeleteAPIRoute = (app) => {
           subAdminName: editRequest[0].subAdminName,
           websiteName: editRequest[0].websiteName,
           createdAt: editRequest[0].createdAt,
-          transId: editRequest[0].transId,
+          WebsiteTransaction_Id: editRequest[0].WebsiteTransaction_Id,
         };
 
         // Assuming 'Trash' is the table where you store deleted website transactions
-        const restoreQuery = `INSERT INTO Trash (transId, websiteId, transactionType, remarks, withdrawAmount, depositAmount, 
+        const restoreQuery = `INSERT INTO Trash (WebsiteTransaction_Id, websiteId, transactionType, remarks, withdrawAmount, depositAmount, 
             subAdminId, subAdminName, websiteName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const [restoreResult] = await pool.execute(restoreQuery, [
-          dataToRestore.transId,
+          dataToRestore.WebsiteTransaction_Id,
           dataToRestore.websiteId,
           dataToRestore.transactionType,
           dataToRestore.remarks,
@@ -174,10 +172,10 @@ const DeleteAPIRoute = (app) => {
         ]);
 
         // Delete the website transaction from the original table
-        await pool.execute(`DELETE FROM WebsiteTransaction WHERE id = ?`, [editRequest[0].transId]);
+        await pool.execute(`DELETE FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`, [editRequest[0].WebsiteTransaction_Id]);
 
         // Delete the edit request from the original table
-        await pool.execute(`DELETE FROM EditRequest WHERE id = ?`, [id]);
+        await pool.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
         res.status(200).send({ message: 'Website Transaction Moved To Trash', data: restoreResult });
       } else {
@@ -506,10 +504,7 @@ const DeleteAPIRoute = (app) => {
 
   // API For Rejecting Bank Detail
 
-  app.delete(
-    '/api/reject/bank-detail/:bankTransactionId',
-    Authorize(['superAdmin', 'RequestAdmin']),
-    async (req, res) => {
+  app.delete('/api/reject/bank-detail/:bankTransactionId',Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
       const pool = await connectToDB();
       try {
         const id = req.params.bankTransactionId;
