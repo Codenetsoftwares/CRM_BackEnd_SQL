@@ -147,14 +147,10 @@ export const introducerUser = {
   updateIntroducerProfile: async (introUserId, data) => {
     const pool = await connectToDB();
     try {
-      console.log('idqqqqqq', introUserId);
       // Ensure introUserId is of the correct type
-      const userId = introUserId[0].id;
-      console.log('iddddd', userId);
+      const userId = introUserId[0].intro_id;
       // Query the existing user
-      const [existingUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ?`, [userId]);
-      console.log('existingUser', existingUser);
-
+      const [existingUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -162,21 +158,17 @@ export const introducerUser = {
           message: `Existing Introducer User not found with id: ${userId}`,
         };
       }
-
       // Extracting existing user data
       const user = existingUser[0];
-
       // Update fields if provided in data
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
-
       // Update user data in the database
-      await pool.execute(`UPDATE IntroducerUser SET firstname = ?, lastname = ? WHERE id = ?`, [
+      await pool.execute(`UPDATE IntroducerUser SET firstname = ?, lastname = ? WHERE intro_id = ?`, [
         user.firstname,
         user.lastname,
         userId,
       ]);
-
       return true; // Return true on successful update
     } catch (err) {
       console.error(err);
@@ -187,31 +179,20 @@ export const introducerUser = {
     }
   },
 
-  introducerPasswordResetCode: async (userName, oldPassword, newPassword) => {
+  introducerPasswordResetCode: async (userName, password) => {
     const pool = await connectToDB();
     try {
       // Fetch user from the database
       const [existingUser] = await pool.query('SELECT * FROM IntroducerUser WHERE userName = ?', [userName]);
-
-      if (!existingUser) {
+      if (!existingUser || existingUser.length === 0) {
         throw {
           code: 404,
           message: 'User not found',
         };
       }
 
-      // Compare old password hashes
-      const oldPasswordIsCorrect = await bcrypt.compare(oldPassword, existingUser[0].password);
-
-      if (!oldPasswordIsCorrect) {
-        throw {
-          code: 401,
-          message: 'Invalid old password',
-        };
-      }
-
       // Compare new password with old password
-      const newPasswordIsDuplicate = await bcrypt.compare(newPassword, existingUser[0].password);
+      const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
 
       if (newPasswordIsDuplicate) {
         throw {
@@ -221,8 +202,7 @@ export const introducerUser = {
       }
 
       // Hash the new password
-      const passwordSalt = existingUser[0].password.substring(0, 29); // Extract salt from existing hashed password
-      const encryptedNewPassword = await bcrypt.hash(newPassword, passwordSalt);
+      const encryptedNewPassword = await bcrypt.hash(password, 10); // Hash with new salt
 
       // Update user's password in the database
       await pool.query('UPDATE IntroducerUser SET password = ? WHERE userName = ?', [encryptedNewPassword, userName]);

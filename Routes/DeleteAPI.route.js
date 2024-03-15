@@ -297,7 +297,6 @@ const DeleteAPIRoute = (app) => {
   });
 
   // API To Move The Introducer Transaction Into Trash
-  // Need TO Test
   app.post(
     '/api/admin/save-introducer-transaction-request',
     Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
@@ -306,7 +305,7 @@ const DeleteAPIRoute = (app) => {
       try {
         const user = req.user;
         const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM IntroducerTransaction WHERE id = ?`;
+        const transactionQuery = `SELECT * FROM IntroducerTransaction WHERE introTransactionId = ?`;
         const [transaction] = await pool.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Transaction not found');
@@ -324,55 +323,61 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Approve Introducer Transaction To Move Into Trash Request
-  app.post('/api/delete-introducer-transaction/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const id = req.params.id;
-      const [editRequest] = await pool.execute(`SELECT * FROM IntroducerEditRequest WHERE id = ?`, [id]);
+  app.post(
+    '/api/delete-introducer-transaction/:IntroEditID',
+    Authorize(['superAdmin', 'RequestAdmin']),
+    async (req, res) => {
+      const pool = await connectToDB();
+      try {
+        const id = req.params.IntroEditID;
+        const [editRequest] = await pool.execute(`SELECT * FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
+        console.log('editRequest', editRequest);
+        if (!editRequest || editRequest.length === 0) {
+          return res.status(404).send({ message: 'Edit Request not found' });
+        }
 
-      if (!editRequest || editRequest.length === 0) {
-        return res.status(404).send({ message: 'Edit Request not found' });
-      }
+        const isApproved = true;
 
-      const isApproved = true;
+        if (isApproved) {
+          const dataToRestore = {
+            introTransactionId: editRequest[0].introTransactionId,
+            amount: editRequest[0].amount,
+            transactionType: editRequest[0].transactionType,
+            remarks: editRequest[0].remarks,
+            subAdminId: editRequest[0].subAdminId,
+            subAdminName: editRequest[0].subAdminName,
+            introducerUserName: editRequest[0].introducerUserName,
+            createdAt: editRequest[0].createdAt,
+          };
 
-      if (isApproved) {
-        const dataToRestore = {
-          introUserId: editRequest[0].introUserId,
-          amount: editRequest[0].amount,
-          transactionType: editRequest[0].transactionType,
-          remarks: editRequest[0].remarks,
-          subAdminId: editRequest[0].subAdminId,
-          subAdminName: editRequest[0].subAdminName,
-          introducerUserName: editRequest[0].introducerUserName,
-          createdAt: editRequest[0].createdAt,
-        };
-
-        const restoreQuery = `INSERT INTO Trash (introUserId, amount, transactionType, remarks, subAdminId, subAdminName, 
+          const restoreQuery = `INSERT INTO Trash (introTransactionId, amount, transactionType, remarks, subAdminId, subAdminName, 
             introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await pool.execute(restoreQuery, [
-          dataToRestore.introUserId,
-          dataToRestore.amount,
-          dataToRestore.transactionType,
-          dataToRestore.remarks,
-          dataToRestore.subAdminId,
-          dataToRestore.subAdminName,
-          dataToRestore.introducerUserName,
-          dataToRestore.createdAt,
-        ]);
+          const [restoreResult] = await pool.execute(restoreQuery, [
+            dataToRestore.introTransactionId,
+            dataToRestore.amount,
+            dataToRestore.transactionType,
+            dataToRestore.remarks,
+            dataToRestore.subAdminId,
+            dataToRestore.subAdminName,
+            dataToRestore.introducerUserName,
+            dataToRestore.createdAt,
+          ]);
 
-        await pool.execute(`DELETE FROM IntroducerTransaction WHERE id = ?`, [editRequest[0].id]);
-        await pool.execute(`DELETE FROM IntroducerEditRequest WHERE id = ?`, [id]);
+          await pool.execute(`DELETE FROM IntroducerTransaction WHERE introTransactionId = ?`, [
+            editRequest[0].introTransactionId,
+          ]);
+          await pool.execute(`DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
 
-        res.status(200).send({ message: 'Transaction moved to Trash', data: restoreResult });
-      } else {
-        res.status(400).send({ message: 'Approval request rejected by super admin' });
+          res.status(200).send({ message: 'Transaction moved to Trash', data: restoreResult });
+        } else {
+          res.status(400).send({ message: 'Approval request rejected by super admin' });
+        }
+      } catch (e) {
+        console.error(e);
+        res.status(500).send({ message: 'Internal server error' });
       }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal server error' });
-    }
-  });
+    },
+  );
 
   app.delete('/api/reject/EditRequest/:id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
