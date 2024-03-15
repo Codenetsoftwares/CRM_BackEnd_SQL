@@ -296,9 +296,7 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.get(
-    '/api/admin/introducer-live-balance/:intro_id',
-    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
+  app.get('/api/admin/introducer-live-balance/:intro_id', Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
@@ -408,15 +406,13 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.get(
-    '/api/get-single-Introducer/:id',
-    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
+  app.get('/api/get-single-Introducer/:id', Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
         const id = req.params.id;
         // Assuming 'IntroducerUser' is a table in a relational database
-        const [result] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
+        const [result] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [id]);
         if (result.length === 0) {
           res.status(404).send({ message: 'Introducer not found' });
         } else {
