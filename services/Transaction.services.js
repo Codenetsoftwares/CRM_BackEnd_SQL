@@ -283,7 +283,7 @@ const TransactionServices = {
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
       const name = subAdminDetail[0].firstname;
-      const id = subAdminDetail[0].id;
+      const id = subAdminDetail[0].admin_id;
       const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
       if (introId.length === 0) {
         throw new Error('Introducer user not found'); // or handle this case accordingly
@@ -327,7 +327,7 @@ const TransactionServices = {
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
       const name = subAdminDetail[0].firstname;
-      const id = subAdminDetail[0].id;
+      const id = subAdminDetail[0].admin_id;
       const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
       const introTransactionId = uuidv4();
       if (transactionType === 'Withdraw') {

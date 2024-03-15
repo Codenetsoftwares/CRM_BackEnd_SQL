@@ -1,4 +1,5 @@
 import connectToDB from '../db/db.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const DeleteApiService = {
   // Functions For Moveing The Transaction Into Trash
@@ -212,25 +213,27 @@ const DeleteApiService = {
     return true;
   },
 
-  //   Need to test
   deleteIntroducerTransaction: async (transaction, user) => {
+    console.log('user', user);
+    console.log('transaction', transaction);
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM IntroducerTransaction WHERE id = ?`, [
-      transaction.id,
-    ]);
+    const [existingTransaction] = await pool.execute(
+      `SELECT * FROM IntroducerTransaction WHERE introTransactionId = ?`,
+      [transaction.introTransactionId],
+    );
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction}` };
     }
     const [existingEditRequest] = await pool.execute(
-      `SELECT * FROM IntroducerEditRequest WHERE transId = ? AND type = 'Delete'`,
-      [transaction.id],
+      `SELECT * FROM IntroducerEditRequest WHERE introTransactionId = ? AND type = 'Delete'`,
+      [transaction.introTransactionId],
     );
 
     if (existingEditRequest.length) {
       throw { code: 409, message: 'Request Already Sent For Approval' };
     }
-
+    const IntroEditID = uuidv4();
     const updatedTransactionData = {
       introUserId: transaction.introUserId,
       amount: transaction.amount,
@@ -241,14 +244,14 @@ const DeleteApiService = {
       introducerUserName: transaction.introducerUserName,
       createdAt: transaction.createdAt,
     };
-
+    console.log('updatedTransactionData', updatedTransactionData);
     const name = user[0].firstname;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
-    const createEditRequestQuery = `INSERT INTO IntroducerEditRequest (transId, amount, requesteduserName, transactionType, remarks, subAdminId, subAdminName, 
-        introducerUserName, message, type, Nametype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const createEditRequestQuery = `INSERT INTO IntroducerEditRequest (introTransactionId, amount, requesteduserName, transactionType, remarks, subAdminId, subAdminName, 
+        introducerUserName, message, type, Nametype, IntroEditID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
-      transaction.id,
+      transaction.introTransactionId,
       updatedTransactionData.amount,
       name,
       updatedTransactionData.transactionType,
@@ -259,6 +262,7 @@ const DeleteApiService = {
       editMessage,
       'Delete',
       'Introducer',
+      IntroEditID,
     ]);
     return true;
   },

@@ -144,13 +144,13 @@ const AccountRoute = (app) => {
   // API To Edit User Profile
 
   app.put(
-    '/api/admin/user-profile-edit/:id',
+    '/api/admin/user-profile-edit/:user_id',
     Authorize(['superAdmin', 'User-Profile-View', 'Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const [id] = await pool.execute(`SELECT * FROM User WHERE id = (?)`, [req.params.id]);
-        // console.log("id", id);
+        const [id] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [req.params.user_id]);
+
         const updateResult = await AccountServices.updateUserProfile(id, req.body);
         console.log(updateResult);
         if (updateResult) {
@@ -296,7 +296,9 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.get('/api/admin/introducer-live-balance/:intro_id', Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
+  app.get(
+    '/api/admin/introducer-live-balance/:intro_id',
+    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
@@ -320,7 +322,7 @@ const AccountRoute = (app) => {
   );
 
   app.put(
-    '/api/admin/intoducer-profile-edit/:id',
+    '/api/admin/intoducer-profile-edit/:intro_id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
@@ -406,7 +408,9 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.get('/api/get-single-Introducer/:id', Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
+  app.get(
+    '/api/get-single-Introducer/:id',
+    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
@@ -536,16 +540,22 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.put('/api/admin/edit-subadmin-roles/:id', Authorize(['superAdmin']), async (req, res) => {
+  app.put('/api/admin/edit-subadmin-roles/:admin_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const subAdminId = req.params.id;
+      const subAdminId = req.params.admin_id;
       const { roles } = req.body;
       if (!subAdminId) {
         throw { code: 400, message: 'Id not found' };
       }
-      const [result] = await pool.execute(`UPDATE Admin SET roles = '${roles}' WHERE id = ${subAdminId};`);
-      res.status(200).send(`Sub admin roles updated with ${roles}`);
+      // Fetch existing roles from the database
+      const [existingRolesRow] = await pool.execute('SELECT roles FROM Admin WHERE admin_id = ?', [subAdminId]);
+      const existingRoles = existingRolesRow[0].roles;
+      // Merge existing roles with new roles
+      const updatedRoles = [...existingRoles, ...roles];
+      // Update roles in the database
+      const [result] = await pool.execute('UPDATE Admin SET roles = ? WHERE admin_id = ?', [updatedRoles, subAdminId]);
+      res.status(200).send(`Subadmin roles updated with ${JSON.stringify(updatedRoles)}`);
     } catch (e) {
       console.error(e);
       res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
@@ -912,10 +922,11 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.put('/api/admin/subAdmin-profile-edit/:id', Authorize(['superAdmin']), async (req, res) => {
+  app.put('/api/admin/subAdmin-profile-edit/:admin_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const [id] = await pool.execute(`SELECT * FROM Admin WHERE id = '${req.params.id}'`);
+      const adminId = req.params.admin_id;
+      const [id] = await pool.execute(`SELECT * FROM Admin WHERE admin_id = ? `, [adminId]);
       const updateResult = await AccountServices.updateSubAdminProfile(id, req.body);
       console.log(updateResult);
       if (updateResult) {

@@ -133,8 +133,8 @@ const AccountServices = {
     const pool = await connectToDB();
     try {
       // Fetch existing user data from the database
-      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE id = ?`, [id[0].id]);
-      console.log('existingUser', existingUser.id);
+      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id[0].user_id]);
+      console.log('existingUser', existingUser[0].user_id);
 
       // Check if the user exists
       if (!existingUser) {
@@ -145,15 +145,15 @@ const AccountServices = {
       const introducerPercentage =
         data.introducerPercentage !== undefined
           ? parseFloat(data.introducerPercentage)
-          : existingUser.introducerPercentage;
+          : existingUser[0].introducerPercentage;
       const introducerPercentage1 =
         data.introducerPercentage1 !== undefined
           ? parseFloat(data.introducerPercentage1)
-          : existingUser.introducerPercentage1;
+          : existingUser[0].introducerPercentage1;
       const introducerPercentage2 =
         data.introducerPercentage2 !== undefined
           ? parseFloat(data.introducerPercentage2)
-          : existingUser.introducerPercentage2;
+          : existingUser[0].introducerPercentage2;
 
       if (isNaN(introducerPercentage) || isNaN(introducerPercentage1) || isNaN(introducerPercentage2)) {
         throw { code: 400, message: 'Introducer percentages must be valid numbers.' };
@@ -168,19 +168,19 @@ const AccountServices = {
       // Construct the SQL update query
       const updateUserQuery = `UPDATE User SET firstname = ?, lastname = ?, introducersUserName = ?,
         introducerPercentage = ?, introducersUserName1 = ?,
-        introducerPercentage1 = ?, introducersUserName2 = ?, introducerPercentage2 = ? WHERE id = ?`;
+        introducerPercentage1 = ?, introducersUserName2 = ?, introducerPercentage2 = ? WHERE user_id = ?`;
 
       // Execute the update query with the provided data
       await pool.execute(updateUserQuery, [
-        data.firstname || existingUser.firstname,
-        data.lastname || existingUser.lastname,
-        data.introducersUserName || existingUser.introducersUserName,
+        data.firstname || existingUser[0].firstname,
+        data.lastname || existingUser[0].lastname,
+        data.introducersUserName || existingUser[0].introducersUserName,
         introducerPercentage,
-        data.introducersUserName1 || existingUser.introducersUserName1,
+        data.introducersUserName1 || existingUser[0].introducersUserName1,
         introducerPercentage1,
-        data.introducersUserName2 || existingUser.introducersUserName2,
+        data.introducersUserName2 || existingUser[0].introducersUserName2,
         introducerPercentage2,
-        id[0].id,
+        id[0].user_id,
       ]);
 
       return true;
@@ -259,8 +259,8 @@ const AccountServices = {
   updateSubAdminProfile: async (id, data) => {
     const pool = await connectToDB();
     try {
-      const userId = id[0].id;
-      const existingUser = await pool.execute(`SELECT * FROM Admin WHERE id = ?`, [userId]);
+      const userId = id[0].admin_id;
+      const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE admin_id = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -273,7 +273,7 @@ const AccountServices = {
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
       // Update user data in the database
-      await pool.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE id = ?`, [
+      await pool.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE admin_id = ?`, [
         user.firstname,
         user.lastname,
         userId,
