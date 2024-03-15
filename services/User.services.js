@@ -11,18 +11,43 @@ export const UserServices = {
         throw { code: 400, message: 'Invalid data provided' };
       }
       const [existingUsers] = await pool.execute('SELECT * FROM User WHERE userName = ?', [data.userName]);
+      const [existingAdmin] = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [data.userName]);
+      const [existingIntroducerUser] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
+        data.userName,
+      ]);
 
-      if (existingUsers.length > 0) {
-        throw { code: 409, message: `User already exists: ${data.userName}` };
+      if (
+        (existingAdmin && existingAdmin[0] && existingAdmin[0].length > 0) ||
+        (existingUsers && existingUsers[0] && existingUsers[0].length > 0) ||
+        (existingIntroducerUser && existingIntroducerUser[0] && existingIntroducerUser[0].length > 0)
+      ) {
+        throw { code: 409, message: `User already exists with user name: ${data.userName}` };
       }
+
       // Generate salt and hash the password
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
       const user_id = uuidv4();
       // Insert new admin into the Admin table
       const [result] = await pool.execute(
-        'INSERT INTO User (user_id, firstname, lastname, userName, password) VALUES (?, ?, ?, ?, ?)',
-        [user_id, data.firstname, data.lastname, data.userName, encryptedPassword],
+        `INSERT INTO User (user_id, firstname, lastname, contactNumber, userName, password, introducersUserName, introducerPercentage,
+        introducersUserName1, introducerPercentage1, introducersUserName2, introducerPercentage2, wallet) VALUES (?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          user_id,
+          data.firstname,
+          data.lastname,
+          data.contactNumber,
+          data.userName,
+          encryptedPassword,
+          data.introducersUserName || null,
+          data.introducerPercentage || null,
+          data.introducersUserName1 || null,
+          data.introducerPercentage1 || null,
+          data.introducersUserName2 || null,
+          data.introducerPercentage2 || null,
+          0,
+        ],
       );
       if (result.affectedRows === 1) {
         return { code: 201, message: 'User created successfully' };

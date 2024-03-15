@@ -282,15 +282,17 @@ const TransactionServices = {
     const pool = await connectToDB();
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
-      console.log('subAdminDetail', subAdminDetail);
-      const name = subAdminDetail.firstname;
-      const id = subAdminDetail.id;
-      // const introId = await IntroducerUser.findOne({ userName: introducerUserName }).exec();
+      const name = subAdminDetail[0].firstname;
+      const id = subAdminDetail[0].id;
       const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
-      console.log('introId', introId);
+      if (introId.length === 0) {
+        throw new Error('Introducer user not found'); // or handle this case accordingly
+      }
+      const introTransactionId = uuidv4();
       if (transactionType === 'Deposit') {
         const NewIntroducerTransaction = {
-          introUserId: introId[0].id,
+          introTransactionId,
+          introUserId: introId[0].intro_id,
           amount: amount,
           transactionType: transactionType,
           remarks: remarks,
@@ -299,16 +301,18 @@ const TransactionServices = {
           introducerUserName: introducerUserName,
           createdAt: new Date(),
         };
-        const incertData = `INSERT INTO IntroducerTransaction (introUserId, amount, transactionType, remarks, subAdminId, subAdminName, 
-          introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const incertData = `INSERT INTO IntroducerTransaction (introTransactionId, introUserId, amount, transactionType, remarks, 
+        subAdminId, subAdminName, introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(incertData, [
-          NewIntroducerTransaction.introUserId,
-          NewIntroducerTransaction.amount,
-          NewIntroducerTransaction.transactionType,
-          NewIntroducerTransaction.remarks,
-          NewIntroducerTransaction.subAdminId,
-          NewIntroducerTransaction.subAdminName,
-          NewIntroducerTransaction.introducerUserName,
+          introTransactionId || null,
+          NewIntroducerTransaction.introUserId || null,
+          NewIntroducerTransaction.amount || null,
+          NewIntroducerTransaction.transactionType || null,
+          NewIntroducerTransaction.remarks || null,
+          NewIntroducerTransaction.subAdminId || null,
+          NewIntroducerTransaction.subAdminName || null,
+          NewIntroducerTransaction.introducerUserName || null,
+          NewIntroducerTransaction.createdAt || null,
         ]);
       }
       return res.status(200).json({ status: true, message: 'Transaction created successfully' });
@@ -322,12 +326,14 @@ const TransactionServices = {
     const pool = await connectToDB();
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
-      const name = subAdminDetail.firstname;
-      const id = subAdminDetail.id;
+      const name = subAdminDetail[0].firstname;
+      const id = subAdminDetail[0].id;
       const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
+      const introTransactionId = uuidv4();
       if (transactionType === 'Withdraw') {
         const NewIntroducerTransaction = {
-          introUserId: introId[0].id,
+          introTransactionId,
+          introUserId: introId[0].intro_id,
           amount: amount,
           transactionType: transactionType,
           remarks: remarks,
@@ -336,16 +342,18 @@ const TransactionServices = {
           introducerUserName: introducerUserName,
           createdAt: new Date(),
         };
-        const incertData = `INSERT INTO IntroducerTransaction (introUserId, amount, transactionType, remarks, subAdminId, subAdminName, 
-          introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const incertData = `INSERT INTO IntroducerTransaction (introTransactionId, introUserId, amount, transactionType, remarks, 
+          subAdminId, subAdminName, introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(incertData, [
-          NewIntroducerTransaction.introUserId,
-          NewIntroducerTransaction.amount,
-          NewIntroducerTransaction.transactionType,
-          NewIntroducerTransaction.remarks,
-          NewIntroducerTransaction.subAdminId,
-          NewIntroducerTransaction.subAdminName,
-          NewIntroducerTransaction.introducerUserName,
+          introTransactionId || null,
+          NewIntroducerTransaction.introUserId || null,
+          NewIntroducerTransaction.amount || null,
+          NewIntroducerTransaction.transactionType || null,
+          NewIntroducerTransaction.remarks || null,
+          NewIntroducerTransaction.subAdminId || null,
+          NewIntroducerTransaction.subAdminName || null,
+          NewIntroducerTransaction.introducerUserName || null,
+          NewIntroducerTransaction.createdAt || null,
         ]);
       }
       return res.status(200).json({ status: true, message: 'Transaction created successfully' });

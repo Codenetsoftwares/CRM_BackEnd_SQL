@@ -297,18 +297,26 @@ const AccountRoute = (app) => {
   });
 
   app.get(
-    '/api/admin/introducer-live-balance/:id',
+    '/api/admin/introducer-live-balance/:intro_id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
+      const pool = await connectToDB();
       try {
-        const id = await IntroducerUser.findById(req.params.id);
+        const [introLivedata] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [
+          req.params.intro_id,
+        ]);
+        if (introLivedata.length === 0) {
+          throw { code: 404, message: 'Introducer not found' };
+        }
+        const id = introLivedata[0].intro_id;
         console.log('id', id);
-        const data = await introducerUser.introducerLiveBalance(id);
+        const data = await AccountServices.introducerLiveBalance(id);
         console.log('data', data);
         res.send({ LiveBalance: data });
       } catch (e) {
         console.error(e);
-        res.status(e.code).send({ message: e.message });
+        const statusCode = e.code || 500; // Default to 500 if code is not provided
+        res.status(statusCode).send({ message: e.message });
       }
     },
   );
@@ -319,7 +327,7 @@ const AccountRoute = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const [id] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = (?)`, [req.params.id]);
+        const [id] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [req.params.intro_id]);
         const updateResult = await introducerUser.updateIntroducerProfile(id, req.body);
         console.log(updateResult);
         if (updateResult) {
@@ -341,21 +349,21 @@ const AccountRoute = (app) => {
       const userName = req.query.search;
       try {
         let [introducerUser] = await pool.execute(`SELECT * FROM IntroducerUser`);
+
         // let introducerUser = await queryExecutor(query);
 
         let introData = introducerUser;
 
         // Filter introducer user data based on the search query
         if (userName) {
-          introData = introData.filter((user) => user.userName.includes(userName));
+          introData = introData.filter((user) => user[0].userName.includes(userName));
+          console.log('uuuu0', user.userName);
         }
 
         // Calculate balance for each introducer user
-        // for (let index = 0; index < introData.length; index++) {
-        //   introData[index].balance = await AccountServices.getIntroBalance(
-        //     introData[index]._id
-        //   );
-        // }
+        for (let index = 0; index < introData.length; index++) {
+          introData[index].balance = await AccountServices.getIntroBalance(introData[index].intro_id);
+        }
 
         const allIntroDataLength = introData.length;
         let pageNumber = Math.floor(allIntroDataLength / 10) + 1;
@@ -513,14 +521,15 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.post('/api/admin/single-sub-admin/:id', Authorize(['superAdmin']), async (req, res) => {
+  app.post('/api/admin/single-sub-admin/:admin_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      if (!req.params.id) {
+      const id = req.params.admin_id;
+      console.log('iddd', id);
+      if (!id) {
         throw { code: 400, message: "Sub Admin's Id not present" };
       }
-      const subAdminId = req.params.id;
-      const [subAdmin] = await pool.execute(`SELECT * FROM Admin WHERE id = ${subAdminId}`);
+      const [subAdmin] = await pool.execute(`SELECT * FROM Admin WHERE admin_id = ?`, [id]);
       if (!subAdmin) {
         throw { code: 500, message: 'Sub Admin not found with the given Id' };
       }
