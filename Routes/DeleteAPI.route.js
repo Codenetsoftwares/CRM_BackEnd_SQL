@@ -321,8 +321,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Approve Introducer Transaction To Move Into Trash Request
-  app.post(
-    '/api/delete-introducer-transaction/:IntroEditID',
+  app.post('/api/delete-introducer-transaction/:IntroEditID',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
       const pool = await connectToDB();
@@ -346,12 +345,14 @@ const DeleteAPIRoute = (app) => {
             subAdminName: editRequest[0].subAdminName,
             introducerUserName: editRequest[0].introducerUserName,
             createdAt: editRequest[0].createdAt,
+            introUserId: editRequest[0].introUserId
           };
 
-          const restoreQuery = `INSERT INTO Trash (introTransactionId, amount, transactionType, remarks, subAdminId, subAdminName, 
-            introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+          const restoreQuery = `INSERT INTO Trash (introTransactionId, introUserId, transactionType, amount, subAdminId, subAdminName, 
+          remarks, createdAt, introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
           const [restoreResult] = await pool.execute(restoreQuery, [
             dataToRestore.introTransactionId,
+            dataToRestore.introUserId,
             dataToRestore.amount,
             dataToRestore.transactionType,
             dataToRestore.remarks,
@@ -543,8 +544,9 @@ const DeleteAPIRoute = (app) => {
 
   //  API To View Trash Data
   app.get('/api/admin/view-trash', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
-      const resultArray = await Trash.find().exec();
+      const [resultArray] = await pool.execute(`SELECT * FROM Trash`)
       res.status(200).send(resultArray);
     } catch (error) {
       console.log(error);
@@ -693,10 +695,7 @@ const DeleteAPIRoute = (app) => {
 
   // Need to re-test
   // API To Re-Store The Transaction Data
-  app.post(
-    '/api/restore/transaction/data/:transactionID',
-    Authorize(['superAdmin', 'RequestAdmin']),
-    async (req, res) => {
+  app.post('/api/restore/transaction/data/:transactionID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
       const pool = await connectToDB();
       try {
         const transactionID = req.params.transactionID;
@@ -796,51 +795,71 @@ const DeleteAPIRoute = (app) => {
 
   // Need To Test
   // API To Re-Store The Intoducer Transaction
-  app.post('/api/restore/Introducer/data/:introUserId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/restore/Introducer/data/:introTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const introUserId = req.params.introUserId;
+        const introUserId = req.params.introTransactionId;
 
-      // Retrieve deleted data from the Trash table based on introUserId
-      const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE introUserId = ?`, [introUserId]);
+        // Retrieve deleted data from the Trash table based on introUserId
+        const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE introTransactionId = ?`, [introUserId]);
+        console.log("deletedData", deletedData);
+        if (!deletedData || deletedData.length === 0) {
+            return res.status(404).send({ message: 'Data not found in Trash' });
+        }
 
-      if (!deletedData || deletedData.length === 0) {
-        return res.status(404).send({ message: 'Data not found in Trash' });
+        // Extract data to restore from the retrieved deleted data
+        const dataToRestore = {
+            introTransactionId: deletedData[0].introTransactionId,
+            introUserId : deletedData[0],introUserId,
+            amount: deletedData[0].amount,
+            transactionType: deletedData[0].transactionType,
+            remarks: deletedData[0].remarks,
+            subAdminId: deletedData[0].subAdminId,
+            subAdminName: deletedData[0].subAdminName,
+            introducerUserName: deletedData[0].introducerUserName,
+            createdAt: deletedData[0].createdAt,
+        };
+            console.log("dataToRestore", dataToRestore);
+        // Insert restored data into the IntroducerTransaction table
+        const [restoredData] = await pool.execute(
+            `INSERT INTO IntroducerTransaction 
+          (introTransactionId, introUserId, amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName, createdAt) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                dataToRestore.introTransactionId,
+                dataToRestore.introUserId,
+                dataToRestore.amount,
+                dataToRestore.transactionType,
+                dataToRestore.remarks,
+                dataToRestore.subAdminId,
+                dataToRestore.subAdminName,
+                dataToRestore.introducerUserName,
+                dataToRestore.createdAt,
+            ].map(value => (value === undefined ? null : value)) // Replace undefined with null
+        );
+
+        // Delete the restored data from the Trash table
+        await pool.execute(`DELETE FROM Trash WHERE introTransactionId = ?`, [introUserId]);
+
+        res.status(200).send({ message: 'Data restored successfully', data: restoredData });
+    } catch (e) {
+        console.error(e);
+        res.status(500).send({ message: e.message });
+    }
+});
+
+
+  app.delete('/api/reject/introducer-detail/:IntroEditID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const id = req.params.IntroEditID;
+      const deleteQuery = 'DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?';
+      const [result] = await pool.execute(deleteQuery, [id]);
+      if (result.affectedRows === 1) {
+        res.status(200).send({ message: 'Data deleted successfully' });
+      } else {
+        res.status(404).send({ message: 'Data not found' });
       }
-
-      // Extract data to restore from the retrieved deleted data
-      const dataToRestore = {
-        introUserId: deletedData[0].introUserId,
-        amount: deletedData[0].amount,
-        transactionType: deletedData[0].transactionType,
-        remarks: deletedData[0].remarks,
-        subAdminId: deletedData[0].subAdminId,
-        subAdminName: deletedData[0].subAdminName,
-        introducerUserName: deletedData[0].introducerUserName,
-        createdAt: deletedData[0].createdAt,
-      };
-
-      // Insert restored data into the IntroducerTransaction table
-      const [restoredData] = await pool.execute(
-        `INSERT INTO IntroducerTransaction 
-          (introUserId, amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName, createdAt) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          dataToRestore.introUserId,
-          dataToRestore.amount,
-          dataToRestore.transactionType,
-          dataToRestore.remarks,
-          dataToRestore.subAdminId,
-          dataToRestore.subAdminName,
-          dataToRestore.introducerUserName,
-          dataToRestore.createdAt,
-        ],
-      );
-
-      // Delete the restored data from the Trash table
-      await pool.execute(`DELETE FROM Trash WHERE introUserId = ?`, [introUserId]);
-
-      res.status(200).send({ message: 'Data restored successfully', data: restoredData });
     } catch (e) {
       console.error(e);
       res.status(500).send({ message: e.message });

@@ -252,7 +252,7 @@ const DeleteApiService = {
     const name = user[0].firstname;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO IntroducerEditRequest (introTransactionId, amount, requesteduserName, transactionType, remarks, subAdminId, subAdminName, 
-        introducerUserName, message, type, Nametype, IntroEditID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        introducerUserName, message, type, Nametype, IntroEditID, introUserId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
       transaction.introTransactionId,
@@ -267,6 +267,7 @@ const DeleteApiService = {
       'Delete',
       'Introducer',
       IntroEditID,
+      updatedTransactionData.introUserId
     ]);
     return true;
   },
