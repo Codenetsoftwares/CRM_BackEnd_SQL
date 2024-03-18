@@ -6,15 +6,16 @@ const DeleteApiService = {
 
   deleteBankTransaction: async (transaction, user) => {
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM BankTransaction WHERE id = ?`, [transaction.id]);
+    const [existingTransaction] = await pool.execute(`SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`, 
+    [transaction.BankTransaction_Id]);
 
     if (!existingTransaction.length) {
-      throw { code: 404, message: `Transaction not found with id: ${transaction.id}` };
+      throw { code: 404, message: `Transaction not found with id: ${transaction.BankTransaction_Id}` };
     }
 
     const [existingEditRequest] = await pool.execute(
-      `SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`,
-      [transaction.id],
+      `SELECT * FROM EditRequest WHERE BankTransaction_Id = ? AND type = 'Delete'`,
+      [transaction.BankTransaction_Id],
     );
 
     if (existingEditRequest.length) {
@@ -48,10 +49,11 @@ const DeleteApiService = {
     });
 
     const name = user[0].firstname;
+    const Edit_ID = uuidv4()
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (bankId, transactionType, requesteduserName, subAdminId, subAdminName, 
         depositAmount, withdrawAmount, remarks, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, message, 
-        type, Nametype, transId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        type, Nametype, Edit_ID, BankTransaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
       updatedTransactionData.bankId,
@@ -72,7 +74,9 @@ const DeleteApiService = {
       editMessage,
       'Delete',
       'Bank',
-      transaction.id,
+      Edit_ID,
+      transaction.BankTransaction_Id,
+
     ]);
     return true;
   },
@@ -84,7 +88,7 @@ const DeleteApiService = {
     [transaction.WebsiteTransaction_Id]);
 
     if (!existingTransaction.length) {
-      throw { code: 404, message: `Website Transaction not found with id: ${transaction.id}` };
+      throw { code: 404, message: `Website Transaction not found with id: ${transaction.WebsiteTransaction_Id}` };
     }
 
     const [existingEditRequest] = await pool.execute(
@@ -105,7 +109,7 @@ const DeleteApiService = {
       subAdminId: transaction.subAdminId,
       subAdminName: transaction.subAdminName,
       websiteName: transaction.websiteName,
-      createdAt: transaction.createdAt,
+      createdAt: transaction.createdAt
     };
 
     // Replace undefined values with null in updatedTransactionData
@@ -119,8 +123,8 @@ const DeleteApiService = {
     const Edit_ID = uuidv4()
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
-        depositAmount, withdrawAmount, remarks, websiteName, message, type, Nametype, WebsiteTransaction_Id, Edit_ID) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        depositAmount, withdrawAmount, remarks, websiteName, createdAt, message, type, Nametype, WebsiteTransaction_Id, Edit_ID) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
       updatedTransactionData.websiteId,
@@ -132,6 +136,7 @@ const DeleteApiService = {
       updatedTransactionData.withdrawAmount,
       updatedTransactionData.remarks,
       updatedTransactionData.websiteName,
+      updatedTransactionData.createdAt,
       editMessage,
       'Delete',
       'Website',
