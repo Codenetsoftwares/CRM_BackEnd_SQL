@@ -825,8 +825,9 @@ const DeleteAPIRoute = (app) => {
         // Insert restored data into the IntroducerTransaction table
         const [restoredData] = await pool.execute(
             `INSERT INTO IntroducerTransaction 
-          (introTransactionId, introUserId, amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName, createdAt) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (introTransactionId, introUserId, amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName, 
+          createdAt, Nametype) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 dataToRestore.introTransactionId,
                 dataToRestore.introUserId,
@@ -836,7 +837,9 @@ const DeleteAPIRoute = (app) => {
                 dataToRestore.subAdminId,
                 dataToRestore.subAdminName,
                 dataToRestore.introducerUserName,
+                'Introducer',
                 dataToRestore.createdAt,
+            
             ].map(value => (value === undefined ? null : value)) // Replace undefined with null
         );
 
