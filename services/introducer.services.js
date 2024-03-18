@@ -29,6 +29,7 @@ export const introducerUser = {
         name: existingUser.firstname,
         userName: existingUser.userName,
         role: existingUser.role,
+        intro_id: existingUser.intro_id
       };
       console.log(accessTokenResponse);
       const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, {
@@ -38,6 +39,7 @@ export const introducerUser = {
       return {
         userName: existingUser.userName,
         accessToken: accessToken,
+        intro_id: existingUser.intro_id
       };
     } catch (err) {
       console.error(err);
