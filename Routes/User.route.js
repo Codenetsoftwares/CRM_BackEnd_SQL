@@ -43,86 +43,114 @@ export const UserRoutes = (app) => {
   app.post('/api/user/add-bank-name', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const userData = req.body;
-      const user = req.user;
-      const [existingData] = await pool.query('SELECT * FROM user_bank_details WHERE account_number = ?', [
-        userData.account_number,
-      ]);
-      if (existingData.length > 0) {
-        return res.status(400).send({ message: 'Bank details already exist for this account number' });
-      }
-      const [result] = await pool.query(
-        'INSERT INTO user_bank_details (user_id, account_holder_name, bank_name, ifsc_code, account_number) VALUES (?, ?, ?, ?, ?)',
-        [user.id, userData.account_holder_name, userData.bank_name, userData.ifsc_code, userData.account_number],
-      );
-      if (result.affectedRows === 1) {
-        return res.status(201).send({ message: 'User bank details added successfully' });
-      } else {
-        throw { code: 500, message: 'Failed to add user bank details' };
-      }
+        const bankDetailsArray = req.body.bank_details;
+        const user = req.user;
+        const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+
+        let bankDetails = existingUserData[0].Bank_Details || [];
+
+        for (const bankDetail of bankDetailsArray) {
+            if (bankDetails.some(existingBankDetail => existingBankDetail.bank_name === bankDetail.bank_name)) {
+                return res.status(400).send({ message: `Bank details already exist for account number ${bankDetail.bank_name}` });
+            }
+            bankDetails.push({
+                account_holder_name: bankDetail.account_holder_name,
+                bank_name: bankDetail.bank_name,
+                ifsc_code: bankDetail.ifsc_code,
+                account_number: bankDetail.account_number
+            });
+        }
+
+        const [updateResult] = await pool.query('UPDATE User SET Bank_Details = ? WHERE user_id = ?', [JSON.stringify(bankDetails), user[0].user_id]);
+
+        if (updateResult.affectedRows === 1) {
+            return res.status(201).send({ message: 'User bank details added successfully' });
+        } else {
+            throw { code: 500, message: 'Failed to add user bank details' };
+        }
     } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
+        console.error(e);
+        res.status(500).send({ message: 'Internal Server Error' });
     }
-  });
+});
+
 
   // API To Add Website Name
 
   app.post('/api/user/add-website-name', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const userData = req.body;
-      const user = req.user;
-      const [existingData] = await pool.query(
-        'SELECT * FROM user_websites_details WHERE user_id = ? AND website_name = ?',
-        [user.id, userData.website_name],
-      );
-      if (existingData.length > 0) {
-        return res.status(400).send({ message: 'Website details already exist for this user' });
-      }
-      const [result] = await pool.query('INSERT INTO user_websites_details (user_id, website_name) VALUES (?, ?)', [
-        user.id,
-        userData.website_name,
-      ]);
-      if (result.affectedRows === 1) {
-        return res.status(201).send({ message: 'User website details added successfully' });
-      } else {
-        throw { code: 500, message: 'Failed to add user website details' };
-      }
+        const websites = req.body.website_name;
+        const user = req.user;
+
+        const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+
+        if (existingUserData.length === 0) {
+            return res.status(404).send({ message: 'User not found' });
+        }
+
+        let websitesArray = existingUserData[0].Websites_Details || [];
+
+        for (const website of websites) {
+            if (websitesArray.includes(website)) {
+                return res.status(400).send({ message: `Website details already exist for ${website}` });
+            }
+            websitesArray.push(website);
+        }
+
+        const [updateResult] = await pool.query('UPDATE User SET Websites_Details = ? WHERE user_id = ?', [JSON.stringify(websitesArray), user[0].user_id]);
+
+        if (updateResult.affectedRows === 1) {
+            return res.status(201).send({ message: 'User website details added successfully' });
+        } else {
+            throw { code: 500, message: 'Failed to add user website details' };
+        }
     } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
+        console.error(e);
+        res.status(500).send({ message: 'Internal Server Error' });
     }
-  });
+});
+
+
+
+
 
   // API To Add UPI Details
 
   app.post('/api/user/add-upi-name', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const userData = req.body;
-      const user = req.user;
-      const [existingData] = await pool.query('SELECT * FROM user_upi_details WHERE user_id = ? AND upi_id = ?', [
-        user.id,
-        userData.upi_id,
-      ]);
-      if (existingData.length > 0) {
-        return res.status(400).send({ message: 'UPI details already exist for this user' });
-      }
-      const [result] = await pool.query(
-        'INSERT INTO user_upi_details (user_id, upi_id, upi_app, upi_number) VALUES (?, ?, ?, ?)',
-        [user.id, userData.upi_id, userData.upi_app, userData.upi_number],
-      );
-      if (result.affectedRows === 1) {
-        return res.status(201).send({ message: 'User UPI details added successfully' });
-      } else {
-        throw { code: 500, message: 'Failed to add user UPI details' };
-      }
+        const upiDetailsArray = req.body.upi_details;
+        const user = req.user;
+       
+        const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+
+        let upiDetails = existingUserData[0].Upi_Details || [];
+
+        for (const upiDetail of upiDetailsArray) {
+            if (upiDetails.some(existingUpiDetail => existingUpiDetail.upi_id === upiDetail.upi_id)) {
+                return res.status(400).send({ message: `UPI details already exist for UPI ID ${upiDetail.upi_id}` });
+            }
+            upiDetails.push({
+                upi_id: upiDetail.upi_id,
+                upi_app: upiDetail.upi_app,
+                upi_number: upiDetail.upi_number
+            });
+        }
+
+        const [updateResult] = await pool.query('UPDATE User SET Upi_Details = ? WHERE user_id = ?', [JSON.stringify(upiDetails), user[0].user_id]);
+
+        if (updateResult.affectedRows === 1) {
+            return res.status(201).send({ message: 'User UPI details added successfully' });
+        } else {
+            throw { code: 500, message: 'Failed to add user UPI details' };
+        }
     } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
+        console.error(e);
+        res.status(500).send({ message: 'Internal Server Error' });
     }
-  });
+});
+
 
   // API To Edit User Profiles
 
@@ -144,11 +172,11 @@ export const UserRoutes = (app) => {
 
   // API To View User Profiles
 
-  app.get('/api/user-profile-data/:id', AuthorizeRole(['user']), async (req, res) => {
+  app.get('/api/user-profile-data/:user_id', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const userId = req.params.id;
-      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE id = (?)`, [userId]);
+      const userId = req.params.user_id;
+      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
       if (!userDetails) {
         return res.status(404).send({ message: 'User not found' });
       }
