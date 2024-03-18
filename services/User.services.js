@@ -112,8 +112,8 @@ export const UserServices = {
   updateUserProfile: async (userDetails, data) => {
     const pool = await connectToDB();
     try {
-      const userId = userDetails[0].id;
-      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE id = ?`, [userId]);
+      const userId = userDetails[0].user_id;
+      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -126,7 +126,7 @@ export const UserServices = {
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
       // Update user data in the database
-      await pool.execute(`UPDATE User SET firstname = ?, lastname = ? WHERE id = ?`, [
+      await pool.execute(`UPDATE User SET firstname = ?, lastname = ? WHERE user_id = ?`, [
         user.firstname,
         user.lastname,
         userId,

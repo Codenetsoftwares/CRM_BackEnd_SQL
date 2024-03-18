@@ -159,11 +159,11 @@ export const UserRoutes = (app) => {
 
   // API To Edit User Profiles
 
-  app.put('/api/user-profile-edit/:id', AuthorizeRole(['user']), async (req, res) => {
+  app.put('/api/user-profile-edit/:user_id', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const userId = req.params.id;
-      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE id = (?)`, [userId]);
+      const userId = req.params.user_id;
+      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
       const updateResult = await UserServices.updateUserProfile(userDetails, req.body);
       console.log(updateResult);
       if (updateResult) {
