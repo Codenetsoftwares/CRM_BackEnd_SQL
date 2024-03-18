@@ -83,7 +83,7 @@ export const UserServices = {
       }
 
       const accessTokenResponse = {
-        id: existingUser.admin_id,
+        user_id: existingUser.user_id,
         firstname: existingUser.firstname,
         lastname: existingUser.lastname,
         userName: existingUser.userName,
@@ -98,6 +98,7 @@ export const UserServices = {
         userName: existingUser.userName,
         accessToken: accessToken,
         role: existingUser.role,
+        user_id: existingUser.user_id
       };
     } catch (err) {
       console.error(err);
