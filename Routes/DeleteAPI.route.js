@@ -555,20 +555,22 @@ const DeleteAPIRoute = (app) => {
   });
 
   // API To Delete Trash Data
-  app.delete('/api/delete/transactions/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.delete('/api/delete/transactions/:_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const result = await Trash.deleteOne({ _id: id });
-      if (result.deletedCount === 1) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      } else {
-        res.status(404).send({ message: 'Data not found' });
-      }
+        const id = req.params._id;
+        const [result] = await pool.execute(`DELETE FROM Trash WHERE _id = ?`, [id]);
+        if (result.affectedRows > 0) {
+            res.status(200).send({ message: 'Data deleted successfully' });
+        } else {
+            res.status(404).send({ message: 'Data not found' });
+        }
     } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
+        console.error(e);
+        res.status(500).send({ message: e.message });
     }
-  });
+});
+
 
   // API To Re-Store The Bank Transaction Data
   app.post('/api/restore/bank/data/:bankId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
@@ -810,7 +812,7 @@ const DeleteAPIRoute = (app) => {
         // Extract data to restore from the retrieved deleted data
         const dataToRestore = {
             introTransactionId: deletedData[0].introTransactionId,
-            introUserId : deletedData[0],introUserId,
+            introUserId : deletedData[0].introUserId,
             amount: deletedData[0].amount,
             transactionType: deletedData[0].transactionType,
             remarks: deletedData[0].remarks,
