@@ -96,82 +96,76 @@ export const introducerUser = {
     }
   },
 
-  introducerLiveBalance: async (id) => {
-    const pool = await connectToDB();
-    try {
-      const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ?`, [id]);
-      if (introUser.length === 0) {
-        throw {
-          code: 404,
-          message: `Introducer with ID ${id} not found`,
-        };
-      }
+  // introducerLiveBalance: async (id) => {
+  //   const pool = await connectToDB();
+  //   try {
+  //     const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ?`, [id]);
+  //     if (introUser.length === 0) {
+  //       throw {
+  //         code: 404,
+  //         message: `Introducer with ID ${id} not found`,
+  //       };
+  //     }
 
-      const introducerUserName = introUser[0].userName;
-      const [userIntroId] = await pool.execute(`SELECT * FROM IntroducedUsers WHERE introducerUserName = ?`, [
-        introducerUserName,
-      ]);
+  //     const introducerUserName = introUser[0].userName;
+  //     const [userIntroId] = await pool.execute(`SELECT * FROM IntroducedUsers WHERE introducerUserName = ?`, [
+  //       introducerUserName,
+  //     ]);
 
-      if (userIntroId.length === 0) {
-        return 0;
-      }
+  //     if (userIntroId.length === 0) {
+  //       return 0;
+  //     }
 
-      let liveBalance = 0;
-      for (const user of userIntroId) {
-        const introducerPercent = user.introducerPercentage;
-        const transDetails = user.transactionDetail;
+  //     let liveBalance = 0;
+  //     for (const user of userIntroId) {
+  //       const introducerPercent = user.introducerPercentage;
+  //       const transDetails = user.transactionDetail;
 
-        let totalDep = 0;
-        let totalWith = 0;
+  //       let totalDep = 0;
+  //       let totalWith = 0;
 
-        transDetails?.forEach((res) => {
-          if (res.transactionType === 'Deposit') {
-            totalDep += Number(res.amount);
-          }
-          if (res.transactionType === 'Withdraw') {
-            totalWith += Number(res.amount);
-          }
-        });
+  //       transDetails?.forEach((res) => {
+  //         if (res.transactionType === 'Deposit') {
+  //           totalDep += Number(res.amount);
+  //         }
+  //         if (res.transactionType === 'Withdraw') {
+  //           totalWith += Number(res.amount);
+  //         }
+  //       });
 
-        let diff = Math.abs(totalDep - totalWith);
-        let amount = (introducerPercent / 100) * diff;
+  //       let diff = Math.abs(totalDep - totalWith);
+  //       let amount = (introducerPercent / 100) * diff;
 
-        liveBalance += amount;
-      }
+  //       liveBalance += amount;
+  //     }
 
-      return liveBalance;
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  },
+  //     return liveBalance;
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw error;
+  //   }
+  // },
 
   updateIntroducerProfile: async (introUserId, data) => {
     const pool = await connectToDB();
     try {
-      // Ensure introUserId is of the correct type
       const userId = introUserId[0].intro_id;
-      // Query the existing user
       const [existingUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [userId]);
-      // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
           code: 404,
           message: `Existing Introducer User not found with id: ${userId}`,
         };
       }
-      // Extracting existing user data
       const user = existingUser[0];
-      // Update fields if provided in data
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
-      // Update user data in the database
       await pool.execute(`UPDATE IntroducerUser SET firstname = ?, lastname = ? WHERE intro_id = ?`, [
         user.firstname,
         user.lastname,
         userId,
       ]);
-      return true; // Return true on successful update
+      return true;
     } catch (err) {
       console.error(err);
       throw {

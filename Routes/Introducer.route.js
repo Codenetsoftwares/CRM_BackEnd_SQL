@@ -41,21 +41,19 @@ export const IntroducerRoutes = (app) => {
   app.get('/api/intoducer/profile', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      console.log('auth', req.user);
-      const id = req.user.id; // Retrieve id from req.user
-      const [IntroUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = (?)`, [id]);
-      console.log('IntroUser', IntroUser);
-      const introUserId = req.user.id; // Use req.user.id here
+      const id = req.user[0].intro_id;
+      const [IntroUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [id]);
+      const introUserId = id;
       const TPDLT = await AccountServices.IntroducerBalance(introUserId);
       const response = {
-        id: IntroUser.id,
-        firstname: IntroUser.firstname,
-        lastname: IntroUser.lastname,
-        role: IntroUser.role,
-        userName: IntroUser.userName,
-        balance: TPDLT,
+        intro_id: IntroUser[0].intro_id,
+        firstname: IntroUser[0].firstname,
+        lastname: IntroUser[0].lastname,
+        role: IntroUser[0].role,
+        userName: IntroUser[0].userName,
+        balance: Number(TPDLT),
       };
-      const liveBalance = await introducerUser.introducerLiveBalance(introUserId);
+      const liveBalance = await AccountServices.introducerLiveBalance(introUserId);
       const currentDue = liveBalance - response.balance;
       response.currentDue = currentDue;
       res.status(201).send(response);
@@ -70,7 +68,6 @@ export const IntroducerRoutes = (app) => {
     try {
       const userId = req.params.intro_id;
       const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [userId]);
-      // console.log("introUser", introUser);
       const updateResult = await introducerUser.updateIntroducerProfile(introUser, req.body);
       console.log(updateResult);
       if (updateResult) {
@@ -82,11 +79,11 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/introducer/user-data/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/introducer/user-data/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const [introducerResult] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ?`, [id]);
+      const id = req.params.intro_id;
+      const [introducerResult] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [id]);
       if (introducerResult.length === 0) {
         throw {
           code: 404,

@@ -98,22 +98,13 @@ const AccountServices = {
   IntroducerBalance: async (introUserId) => {
     const pool = await connectToDB();
     try {
-      // connection.connect();
-      // Fetch Introducer Transactions
-      const selectIntroTransactionsQuery = `SELECT * FROM IntroducerTransactions WHERE introUser_id = ?`;
-      const selectIntroTransactionsValues = [introUserId];
-      const introTransactions = await new Promise((resolve, reject) => {
-        pool.execute(selectIntroTransactionsQuery, selectIntroTransactionsValues, (error, results) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(results);
-          }
-        });
-      });
-      // Calculate Balance
+      console.log("introUserId", introUserId);
+      const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
+        introUserId,
+      ]);
+      console.log("intorTranasction", intorTranasction);
       let balance = 0;
-      introTransactions.forEach((transaction) => {
+      intorTranasction.forEach((transaction) => {
         if (transaction.transactionType === 'Deposit') {
           balance += transaction.amount;
         } else {
@@ -124,8 +115,6 @@ const AccountServices = {
     } catch (e) {
       console.error(e);
       throw { code: 500, message: 'Internal Server Error' };
-    } finally {
-      // connection.end();
     }
   },
 

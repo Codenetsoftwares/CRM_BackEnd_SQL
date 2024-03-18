@@ -409,12 +409,12 @@ const AccountRoute = (app) => {
   );
 
   app.get(
-    '/api/get-single-Introducer/:id',
+    '/api/get-single-Introducer/:intro_id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const id = req.params.id;
+        const id = req.params.intro_id;
         // Assuming 'IntroducerUser' is a table in a relational database
         const [result] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [id]);
         if (result.length === 0) {
@@ -832,9 +832,7 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.get(
-    '/api/admin/introducer-account-summary/:id',
-    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
+  app.get('/api/admin/introducer-account-summary/:id', Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
