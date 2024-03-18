@@ -12,7 +12,7 @@ const DeleteAPIRoute = (app) => {
       try {
         const user = req.user;
         const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM BankTransaction WHERE id = ?`;
+        const transactionQuery = `SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`;
         const [transaction] = await pool.execute(transactionQuery, [requestId]);
         if (!transaction.length) {
           return res.status(404).send('Bank Transaction not found');
@@ -30,11 +30,11 @@ const DeleteAPIRoute = (app) => {
 
   // API To Approve Bank Transaction To Move Into Trash Request
 
-  app.post('/api/delete-bank-transaction/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/delete-bank-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE id = ?`, [id]);
+      const id = req.params.Edit_ID;
+      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Bank Request not found' });
@@ -60,38 +60,45 @@ const DeleteAPIRoute = (app) => {
           upiAppName: editRequest[0].upiAppName,
           upiNumber: editRequest[0].upiNumber,
           isSubmit: editRequest[0].isSubmit,
-          transId: editRequest[0].transId,
+          BankTransaction_Id: editRequest[0].BankTransaction_Id,
+          requesteduserName: editRequest[0].requesteduserName,
+          message: editRequest[0].message,
+          type: editRequest[0].type,
+          Nametype: editRequest[0].Nametype,
         };
 
-        // Assuming 'Trash' is the table where you store deleted bank transactions
-        const restoreQuery = `INSERT INTO Trash (transId, bankId, transactionType, remarks, withdrawAmount, depositAmount, 
-            subAdminId, subAdminName, accountHolderName, bankName, accountNumber, ifscCode, createdAt, upiId, upiAppName, upiNumber, 
-            isSubmit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const restoreQuery = `INSERT INTO Trash (bankId, transactionType, requesteduserName, subAdminId, subAdminName, depositAmount, 
+        withdrawAmount, remarks, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, createdAt, message,
+        type, Nametype, isSubmit, BankTransaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const [restoreResult] = await pool.execute(restoreQuery, [
-          dataToRestore.transId,
           dataToRestore.bankId,
           dataToRestore.transactionType,
-          dataToRestore.remarks,
-          dataToRestore.withdrawAmount,
-          dataToRestore.depositAmount,
+          dataToRestore.requesteduserName,
           dataToRestore.subAdminId,
           dataToRestore.subAdminName,
-          dataToRestore.accountHolderName,
+          dataToRestore.depositAmount,
+          dataToRestore.withdrawAmount,
+          dataToRestore.remarks,
           dataToRestore.bankName,
+          dataToRestore.accountHolderName,
           dataToRestore.accountNumber,
           dataToRestore.ifscCode,
-          dataToRestore.createdAt,
           dataToRestore.upiId,
           dataToRestore.upiAppName,
           dataToRestore.upiNumber,
+          dataToRestore.createdAt,
+          dataToRestore.message,
+          dataToRestore.type,
+          dataToRestore.Nametype,
           dataToRestore.isSubmit,
+          dataToRestore.BankTransaction_Id,
         ]);
 
         // Delete the bank transaction from the original table
-        await pool.execute(`DELETE FROM BankTransaction WHERE id = ?`, [editRequest[0].transId]);
+        await pool.execute(`DELETE FROM BankTransaction WHERE BankTransaction_Id = ?`, [editRequest[0].BankTransaction_Id]);
 
         // Delete the edit request from the original table
-        await pool.execute(`DELETE FROM EditRequest WHERE id = ?`, [id]);
+        await pool.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
         res.status(200).send({ message: 'Bank Transaction Moved To Trash', data: restoreResult });
       } else {
@@ -153,22 +160,31 @@ const DeleteAPIRoute = (app) => {
           websiteName: editRequest[0].websiteName,
           createdAt: editRequest[0].createdAt,
           WebsiteTransaction_Id: editRequest[0].WebsiteTransaction_Id,
+          requesteduserName: editRequest[0].requesteduserName,
+          message: editRequest[0].message,
+          type: editRequest[0].type,
+          Nametype: editRequest[0].Nametype
         };
 
         // Assuming 'Trash' is the table where you store deleted website transactions
-        const restoreQuery = `INSERT INTO Trash (WebsiteTransaction_Id, websiteId, transactionType, remarks, withdrawAmount, depositAmount, 
-            subAdminId, subAdminName, websiteName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const restoreQuery = `INSERT INTO Trash (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
+        depositAmount, withdrawAmount, remarks, websiteName, createdAt, message, type, Nametype, WebsiteTransaction_Id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const [restoreResult] = await pool.execute(restoreQuery, [
-          dataToRestore.WebsiteTransaction_Id,
           dataToRestore.websiteId,
           dataToRestore.transactionType,
-          dataToRestore.remarks,
-          dataToRestore.withdrawAmount,
-          dataToRestore.depositAmount,
+          dataToRestore.requesteduserName,
           dataToRestore.subAdminId,
           dataToRestore.subAdminName,
+          dataToRestore.depositAmount,
+          dataToRestore.withdrawAmount,
+          dataToRestore.remarks,
           dataToRestore.websiteName,
           dataToRestore.createdAt,
+          dataToRestore.message,
+          dataToRestore.type,
+          dataToRestore.Nametype,
+          dataToRestore.WebsiteTransaction_Id,
         ]);
 
         // Delete the website transaction from the original table
@@ -604,30 +620,32 @@ const DeleteAPIRoute = (app) => {
         upiAppName: deletedData[0].upiAppName,
         upiNumber: deletedData[0].upiNumber,
         isSubmit: deletedData[0].isSubmit,
+        BankTransaction_Id: deletedData[0].BankTransaction_Id
       };
 
       // Insert restored data into the BankTransaction table
       const [restoredData] = await pool.execute(
         `INSERT INTO BankTransaction 
-            (bankId, transactionType, remarks, withdrawAmount, depositAmount, subAdminId, subAdminName, accountHolderName, bankName, 
-            accountNumber, ifscCode, createdAt, upiId, upiAppName, upiNumber, isSubmit) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId,
+            upiAppName, upiNumber, withdrawAmount, depositAmount, subAdminId, subAdminName, createdAt, isSubmit) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           dataToRestore.bankId,
-          dataToRestore.transactionType,
-          dataToRestore.remarks,
-          dataToRestore.withdrawAmount,
-          dataToRestore.depositAmount,
-          dataToRestore.subAdminId,
-          dataToRestore.subAdminName,
+          dataToRestore.BankTransaction_Id,
           dataToRestore.accountHolderName,
           dataToRestore.bankName,
           dataToRestore.accountNumber,
           dataToRestore.ifscCode,
-          dataToRestore.createdAt,
+          dataToRestore.transactionType,
+          dataToRestore.remarks,
           dataToRestore.upiId,
           dataToRestore.upiAppName,
           dataToRestore.upiNumber,
+          dataToRestore.withdrawAmount,
+          dataToRestore.depositAmount,
+          dataToRestore.subAdminId,
+          dataToRestore.subAdminName,
+          dataToRestore.createdAt,
           dataToRestore.isSubmit,
         ],
       );
@@ -666,22 +684,25 @@ const DeleteAPIRoute = (app) => {
         subAdminName: deletedData[0].subAdminName,
         websiteName: deletedData[0].websiteName,
         createdAt: deletedData[0].createdAt,
+        WebsiteTransaction_Id: deletedData[0].WebsiteTransaction_Id
       };
 
       // Insert restored data into the WebsiteTransaction table
       const [restoredData] = await pool.execute(
-        `INSERT INTO WebsiteTransaction 
-          (websiteId, transactionType, remarks, withdrawAmount, depositAmount, subAdminId, subAdminName, websiteName, createdAt) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO WebsiteTransaction
+          (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, withdrawAmount, depositAmount, subAdminId, 
+          subAdminName, createdAt) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           dataToRestore.websiteId,
-          dataToRestore.transactionType,
+          dataToRestore.WebsiteTransaction_Id,
+          dataToRestore.websiteName,
           dataToRestore.remarks,
+          dataToRestore.transactionType,
           dataToRestore.withdrawAmount,
           dataToRestore.depositAmount,
           dataToRestore.subAdminId,
           dataToRestore.subAdminName,
-          dataToRestore.websiteName,
           dataToRestore.createdAt,
         ],
       );
