@@ -45,17 +45,20 @@ const TransactionRoutes = (app) => {
     }
   });
 
-  app.get('/api/superadmin/view-edit-introducer-transaction-requests', Authorize(["superAdmin", "RequestAdmin"]), async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const [introEdit] = await pool.execute(`SELECT * FROM IntroducerEditRequest`)
-      res.status(200).send(introEdit);
-    } catch (error) {
-      console.log(error);
-      res.status(500).send("Internal Server error");
-    }
-  });
-
+  app.get(
+    '/api/superadmin/view-edit-introducer-transaction-requests',
+    Authorize(['superAdmin', 'RequestAdmin']),
+    async (req, res) => {
+      const pool = await connectToDB();
+      try {
+        const [introEdit] = await pool.execute(`SELECT * FROM IntroducerEditRequest`);
+        res.status(200).send(introEdit);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send('Internal Server error');
+      }
+    },
+  );
 };
 
 export default TransactionRoutes;

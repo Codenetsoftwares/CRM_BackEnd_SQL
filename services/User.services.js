@@ -62,26 +62,26 @@ export const UserServices = {
 
   generateAccessToken: async (userName, password, persist) => {
     const pool = await connectToDB();
-    if (!userName) {
-      throw { code: 400, message: 'Invalid value for: User Name' };
-    }
-    if (!password) {
-      throw { code: 400, message: 'Invalid value for: password' };
-    }
-
     try {
+      if (!userName) {
+        throw { code: 400, message: 'Invalid value for: User Name' };
+      }
+      if (!password) {
+        throw { code: 400, message: 'Invalid value for: Password' };
+      }
+  
       const [rows] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
       const existingUser = rows[0];
-
+         console.log("deee", existingUser);
       if (!existingUser) {
-        throw { code: 401, message: 'Invalid User Name or password' };
+        throw { code: 401, message: 'Invalid User Name or Password' };
       }
-
+  
       const passwordValid = await bcrypt.compare(password, existingUser.password);
       if (!passwordValid) {
-        throw { code: 401, message: 'Invalid User Name or password' };
+        throw { code: 401, message: 'Invalid User Name or Password' };
       }
-
+  
       const accessTokenResponse = {
         user_id: existingUser.user_id,
         firstname: existingUser.firstname,
@@ -89,20 +89,23 @@ export const UserServices = {
         userName: existingUser.userName,
         role: existingUser.role,
       };
-
-      const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, {
-        expiresIn: persist ? '1y' : '8h',
-      });
-
+  
+      const expiresIn = persist ? '1y' : '8h';
+      const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, { expiresIn });
+  
       return {
         userName: existingUser.userName,
         accessToken: accessToken,
         role: existingUser.role,
-        user_id: existingUser.user_id
+        user_id: existingUser.user_id,
       };
     } catch (err) {
       console.error(err);
-      throw { code: 500, message: 'Internal Server Error' };
+      if (err.code) {
+        throw err; // Re-throw the specific error with code and message
+      } else {
+        throw { code: 500, message: 'Internal Server Error' }; // Generic error for unhandled cases
+      }
     }
   },
 
@@ -142,35 +145,37 @@ export const UserServices = {
   userPasswordResetCode: async (userName, password) => {
     const pool = await connectToDB();
     try {
-      const [existingUser] = await pool.query('SELECT * FROM User WHERE userName = ?', [userName]);
-      if (!existingUser) {
+      // Check if the user exists
+      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE userName = '${userName}';`);
+      if (existingUser.length === 0) {
         throw {
           code: 404,
           message: 'User not found',
         };
       }
-      // Compare old and new password hashes
-      const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
-      if (newPasswordIsDuplicate) {
+      // Compare new password with the existing password
+      const passwordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
+      if (passwordIsDuplicate) {
         throw {
           code: 409,
           message: 'New Password cannot be the same as existing password',
         };
       }
       // Hash the new password
-      const passwordSalt = existingUser[0].password.substring(0, 29); // Extract salt from existing hashed password
-      const encryptedNewPassword = await bcrypt.hash(password, passwordSalt);
-      // Update user's password in the database
-      await pool.query('UPDATE User SET password = ? WHERE userName = ?', [encryptedNewPassword, userName]);
+      const passwordSalt = await bcrypt.genSalt();
+      const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+      // Update the password in the database
+      const updateQuery = await pool.execute(
+        `UPDATE User SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
+      );
       return true;
-    } catch (error) {
-      console.error(error);
-      throw {
-        code: error.code || 500,
-        message: error.message || 'Failed to reset password',
-      };
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
-  },
+}
+
+
 };
 
 export default UserServices;

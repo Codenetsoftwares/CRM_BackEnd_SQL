@@ -21,7 +21,9 @@ export const AuthorizeRole = (roles) => {
       }
 
       // Fetch introducer user from database using username
-      const [introducerUser] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [decodedToken.userName]);
+      const [introducerUser] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
+        decodedToken.userName,
+      ]);
 
       // If no introducer user found, fetch user with other roles
       if (!introducerUser || introducerUser.length === 0) {

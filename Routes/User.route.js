@@ -43,114 +43,119 @@ export const UserRoutes = (app) => {
   app.post('/api/user/add-bank-name', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-        const bankDetailsArray = req.body.bank_details;
-        const user = req.user;
-        const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const bankDetailsArray = req.body.bank_details;
+      const user = req.user;
+      const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
 
-        let bankDetails = existingUserData[0].Bank_Details || [];
+      let bankDetails = existingUserData[0].Bank_Details || [];
 
-        for (const bankDetail of bankDetailsArray) {
-            if (bankDetails.some(existingBankDetail => existingBankDetail.bank_name === bankDetail.bank_name)) {
-                return res.status(400).send({ message: `Bank details already exist for account number ${bankDetail.bank_name}` });
-            }
-            bankDetails.push({
-                account_holder_name: bankDetail.account_holder_name,
-                bank_name: bankDetail.bank_name,
-                ifsc_code: bankDetail.ifsc_code,
-                account_number: bankDetail.account_number
-            });
+      for (const bankDetail of bankDetailsArray) {
+        if (bankDetails.some((existingBankDetail) => existingBankDetail.bank_name === bankDetail.bank_name)) {
+          return res
+            .status(400)
+            .send({ message: `Bank details already exist for account number ${bankDetail.bank_name}` });
         }
+        bankDetails.push({
+          account_holder_name: bankDetail.account_holder_name,
+          bank_name: bankDetail.bank_name,
+          ifsc_code: bankDetail.ifsc_code,
+          account_number: bankDetail.account_number,
+        });
+      }
 
-        const [updateResult] = await pool.query('UPDATE User SET Bank_Details = ? WHERE user_id = ?', [JSON.stringify(bankDetails), user[0].user_id]);
+      const [updateResult] = await pool.query('UPDATE User SET Bank_Details = ? WHERE user_id = ?', [
+        JSON.stringify(bankDetails),
+        user[0].user_id,
+      ]);
 
-        if (updateResult.affectedRows === 1) {
-            return res.status(201).send({ message: 'User bank details added successfully' });
-        } else {
-            throw { code: 500, message: 'Failed to add user bank details' };
-        }
+      if (updateResult.affectedRows === 1) {
+        return res.status(201).send({ message: 'User bank details added successfully' });
+      } else {
+        throw { code: 500, message: 'Failed to add user bank details' };
+      }
     } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal Server Error' });
+      console.error(e);
+      res.status(500).send({ message: 'Internal Server Error' });
     }
-});
-
+  });
 
   // API To Add Website Name
 
   app.post('/api/user/add-website-name', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-        const websites = req.body.website_name;
-        const user = req.user;
+      const websites = req.body.website_name;
+      const user = req.user;
 
-        const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
 
-        if (existingUserData.length === 0) {
-            return res.status(404).send({ message: 'User not found' });
+      if (existingUserData.length === 0) {
+        return res.status(404).send({ message: 'User not found' });
+      }
+
+      let websitesArray = existingUserData[0].Websites_Details || [];
+
+      for (const website of websites) {
+        if (websitesArray.includes(website)) {
+          return res.status(400).send({ message: `Website details already exist for ${website}` });
         }
+        websitesArray.push(website);
+      }
 
-        let websitesArray = existingUserData[0].Websites_Details || [];
+      const [updateResult] = await pool.query('UPDATE User SET Websites_Details = ? WHERE user_id = ?', [
+        JSON.stringify(websitesArray),
+        user[0].user_id,
+      ]);
 
-        for (const website of websites) {
-            if (websitesArray.includes(website)) {
-                return res.status(400).send({ message: `Website details already exist for ${website}` });
-            }
-            websitesArray.push(website);
-        }
-
-        const [updateResult] = await pool.query('UPDATE User SET Websites_Details = ? WHERE user_id = ?', [JSON.stringify(websitesArray), user[0].user_id]);
-
-        if (updateResult.affectedRows === 1) {
-            return res.status(201).send({ message: 'User website details added successfully' });
-        } else {
-            throw { code: 500, message: 'Failed to add user website details' };
-        }
+      if (updateResult.affectedRows === 1) {
+        return res.status(201).send({ message: 'User website details added successfully' });
+      } else {
+        throw { code: 500, message: 'Failed to add user website details' };
+      }
     } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal Server Error' });
+      console.error(e);
+      res.status(500).send({ message: 'Internal Server Error' });
     }
-});
-
-
-
-
+  });
 
   // API To Add UPI Details
 
   app.post('/api/user/add-upi-name', AuthorizeRole(['user']), async (req, res) => {
     const pool = await connectToDB();
     try {
-        const upiDetailsArray = req.body.upi_details;
-        const user = req.user;
-       
-        const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const upiDetailsArray = req.body.upi_details;
+      const user = req.user;
 
-        let upiDetails = existingUserData[0].Upi_Details || [];
+      const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
 
-        for (const upiDetail of upiDetailsArray) {
-            if (upiDetails.some(existingUpiDetail => existingUpiDetail.upi_id === upiDetail.upi_id)) {
-                return res.status(400).send({ message: `UPI details already exist for UPI ID ${upiDetail.upi_id}` });
-            }
-            upiDetails.push({
-                upi_id: upiDetail.upi_id,
-                upi_app: upiDetail.upi_app,
-                upi_number: upiDetail.upi_number
-            });
+      let upiDetails = existingUserData[0].Upi_Details || [];
+
+      for (const upiDetail of upiDetailsArray) {
+        if (upiDetails.some((existingUpiDetail) => existingUpiDetail.upi_id === upiDetail.upi_id)) {
+          return res.status(400).send({ message: `UPI details already exist for UPI ID ${upiDetail.upi_id}` });
         }
+        upiDetails.push({
+          upi_id: upiDetail.upi_id,
+          upi_app: upiDetail.upi_app,
+          upi_number: upiDetail.upi_number,
+        });
+      }
 
-        const [updateResult] = await pool.query('UPDATE User SET Upi_Details = ? WHERE user_id = ?', [JSON.stringify(upiDetails), user[0].user_id]);
+      const [updateResult] = await pool.query('UPDATE User SET Upi_Details = ? WHERE user_id = ?', [
+        JSON.stringify(upiDetails),
+        user[0].user_id,
+      ]);
 
-        if (updateResult.affectedRows === 1) {
-            return res.status(201).send({ message: 'User UPI details added successfully' });
-        } else {
-            throw { code: 500, message: 'Failed to add user UPI details' };
-        }
+      if (updateResult.affectedRows === 1) {
+        return res.status(201).send({ message: 'User UPI details added successfully' });
+      } else {
+        throw { code: 500, message: 'Failed to add user UPI details' };
+      }
     } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal Server Error' });
+      console.error(e);
+      res.status(500).send({ message: 'Internal Server Error' });
     }
-});
-
+  });
 
   // API To Edit User Profiles
 
@@ -189,7 +194,7 @@ export const UserRoutes = (app) => {
 
   app.post('/api/user/reset-password', AuthorizeRole(['user']), async (req, res) => {
     try {
-      const { userName, oldPassword, password } = req.body;
+      const { userName, password } = req.body;
       await UserServices.userPasswordResetCode(userName, oldPassword, password);
       res.status(200).send({ code: 200, message: 'Password reset successful!' });
     } catch (e) {

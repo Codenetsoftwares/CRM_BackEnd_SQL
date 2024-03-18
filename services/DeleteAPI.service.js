@@ -6,8 +6,9 @@ const DeleteApiService = {
 
   deleteBankTransaction: async (transaction, user) => {
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`, 
-    [transaction.BankTransaction_Id]);
+    const [existingTransaction] = await pool.execute(`SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`, [
+      transaction.BankTransaction_Id,
+    ]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction.BankTransaction_Id}` };
@@ -49,7 +50,7 @@ const DeleteApiService = {
     });
 
     const name = user[0].firstname;
-    const Edit_ID = uuidv4()
+    const Edit_ID = uuidv4();
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (bankId, transactionType, requesteduserName, subAdminId, subAdminName, 
         depositAmount, withdrawAmount, remarks, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, message, 
@@ -76,7 +77,6 @@ const DeleteApiService = {
       'Bank',
       Edit_ID,
       transaction.BankTransaction_Id,
-
     ]);
     return true;
   },
@@ -84,8 +84,10 @@ const DeleteApiService = {
   deleteWebsiteTransaction: async (transaction, user) => {
     const pool = await connectToDB();
 
-    const [existingTransaction] = await pool.execute(`SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`, 
-    [transaction.WebsiteTransaction_Id]);
+    const [existingTransaction] = await pool.execute(
+      `SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`,
+      [transaction.WebsiteTransaction_Id],
+    );
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Website Transaction not found with id: ${transaction.WebsiteTransaction_Id}` };
@@ -99,7 +101,7 @@ const DeleteApiService = {
     if (existingEditRequest.length) {
       throw { code: 409, message: 'Request Already Sent For Approval' };
     }
-       console.log("transaction", transaction);
+    console.log('transaction', transaction);
     const updatedTransactionData = {
       websiteId: transaction.websiteId,
       transactionType: transaction.transactionType,
@@ -109,7 +111,7 @@ const DeleteApiService = {
       subAdminId: transaction.subAdminId,
       subAdminName: transaction.subAdminName,
       websiteName: transaction.websiteName,
-      createdAt: transaction.createdAt
+      createdAt: transaction.createdAt,
     };
 
     // Replace undefined values with null in updatedTransactionData
@@ -120,7 +122,7 @@ const DeleteApiService = {
     });
 
     const name = user[0].firstname;
-    const Edit_ID = uuidv4()
+    const Edit_ID = uuidv4();
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
         depositAmount, withdrawAmount, remarks, websiteName, createdAt, message, type, Nametype, WebsiteTransaction_Id, Edit_ID) 
@@ -141,7 +143,7 @@ const DeleteApiService = {
       'Delete',
       'Website',
       transaction.WebsiteTransaction_Id,
-      Edit_ID
+      Edit_ID,
     ]);
     return true;
   },
@@ -272,7 +274,7 @@ const DeleteApiService = {
       'Delete',
       'Introducer',
       IntroEditID,
-      updatedTransactionData.introUserId
+      updatedTransactionData.introUserId,
     ]);
     return true;
   },
