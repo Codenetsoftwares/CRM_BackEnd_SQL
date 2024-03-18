@@ -349,17 +349,18 @@ const DeleteAPIRoute = (app) => {
           };
 
           const restoreQuery = `INSERT INTO Trash (introTransactionId, introUserId, transactionType, amount, subAdminId, subAdminName, 
-          remarks, createdAt, introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+          remarks, createdAt, Nametype, introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
           const [restoreResult] = await pool.execute(restoreQuery, [
             dataToRestore.introTransactionId,
             dataToRestore.introUserId,
-            dataToRestore.amount,
             dataToRestore.transactionType,
-            dataToRestore.remarks,
+            dataToRestore.amount,
             dataToRestore.subAdminId,
             dataToRestore.subAdminName,
-            dataToRestore.introducerUserName,
+            dataToRestore.remarks,
             dataToRestore.createdAt,
+            'Introducer',
+            dataToRestore.introducerUserName
           ]);
 
           await pool.execute(`DELETE FROM IntroducerTransaction WHERE introTransactionId = ?`, [
@@ -826,8 +827,8 @@ const DeleteAPIRoute = (app) => {
         const [restoredData] = await pool.execute(
             `INSERT INTO IntroducerTransaction 
           (introTransactionId, introUserId, amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName, 
-          createdAt, Nametype) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          createdAt) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 dataToRestore.introTransactionId,
                 dataToRestore.introUserId,
@@ -837,7 +838,6 @@ const DeleteAPIRoute = (app) => {
                 dataToRestore.subAdminId,
                 dataToRestore.subAdminName,
                 dataToRestore.introducerUserName,
-                'Introducer',
                 dataToRestore.createdAt,
             
             ].map(value => (value === undefined ? null : value)) // Replace undefined with null
