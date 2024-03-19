@@ -100,11 +100,11 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/list-introducer-user/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/list-introducer-user/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const [introducerUser] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE _id = ?`, [id]);
+      const id = req.params.intro_id;
+      const [introducerUser] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [id]);
       if (introducerUser.length === 0) {
         return res.status(404).send({ message: 'IntroducerUser not found' });
       }
