@@ -138,13 +138,13 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/introducer/introducer-live-balance/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/introducer/introducer-live-balance/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const introId = req.params.id;
-      const [id] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = (?)`, [introId]);
-      console.log('id', id);
-      const data = await introducerUser.introducerLiveBalance(id);
+      const introId = req.params.intro_id;
+      const [introData] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [introId]);
+      const id = introData[0].intro_id;
+      const data = await AccountServices.introducerLiveBalance(id);
       console.log('data', data);
       res.send({ LiveBalance: data });
     } catch (e) {
