@@ -54,8 +54,8 @@ const WebsiteServices = {
     }
   },
 
-  getWebsiteBalance: async (websiteId) => {
-    const pool = await connectToDB();
+  getWebsiteBalance: async (pool, websiteId) => {
+    // const pool = await connectToDB();
     try {
       const websiteTransactionsQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ?`;
       const [websiteTransactions] = await pool.execute(websiteTransactionsQuery, [websiteId]);
@@ -86,9 +86,7 @@ const WebsiteServices = {
     } catch (e) {
       console.error(e);
       throw e; // Rethrow the error to handle it at the calling site
-    } finally {
-      pool.end(); // Release the connection after use
-    }
+    } 
   },
 
   updateWebsite: async (response, data) => {

@@ -130,8 +130,8 @@ const BankServices = {
     return true;
   },
 
-  getBankBalance: async (bankId) => {
-    const pool = await connectToDB();
+  getBankBalance: async (pool,bankId) => {
+    // const pool = await connectToDB();
     try {
       const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;
       const [bankTransactions] = await pool.execute(bankTransactionsQuery, [bankId]);

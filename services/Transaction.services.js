@@ -54,7 +54,7 @@ const TransactionServices = {
       }
       const websiteId = dbWebsiteData[0].website_id;
 
-      const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
+      const websiteBalance = await WebsiteServices.getWebsiteBalance(pool,websiteId);
       const totalBalance = parseFloat(bonus) + parseFloat(amount);
       if (websiteBalance < totalBalance) {
         throw { code: 400, message: 'Insufficient Website balance' };
@@ -67,7 +67,7 @@ const TransactionServices = {
         throw { code: 404, message: 'Bank data not found' };
       }
       const bankId = dbBankData[0].bank_id;
-      const bankBalance = await BankServices.getBankBalance(bankId);
+      const bankBalance = await BankServices.getBankBalance(pool,bankId);
       const totalBankBalance = parseFloat(bankCharges) + parseFloat(amount);
       if (bankBalance < totalBankBalance) {
         throw { code: 400, message: 'Insufficient Bank balance' };
@@ -85,8 +85,8 @@ const TransactionServices = {
       // Calculation of Deposit---- Amount will transfer from Website to Bank (Bonus)
       if (transactionType === 'Deposit') {
         const newTransaction = {
-          bankId: dbBankData[0].id,
-          websiteId: dbWebsiteData[0].id,
+          bankId: dbBankData[0].bank_id,
+          websiteId: dbWebsiteData[0].website_id,
           transactionID: transactionID,
           transactionType: transactionType,
           amount: amount,
@@ -162,8 +162,8 @@ const TransactionServices = {
       // Calculation of Withdraw---- Amount will transfer from Bank to Website (Bank Charge)
       if (transactionType === 'Withdraw') {
         const newTransaction = {
-          bankId: dbBankData[0].id,
-          websiteId: dbWebsiteData[0].id,
+          bankId: dbBankData[0].bank_id,
+          websiteId: dbWebsiteData[0].website_id,
           transactionID: transactionID,
           transactionType: transactionType,
           amount: amount,
