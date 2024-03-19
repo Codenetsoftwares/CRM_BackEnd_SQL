@@ -138,8 +138,8 @@ const BankServices = {
         const transactionsQuery = `SELECT * FROM Transaction WHERE bankId = ?`;
         const [transactions] = await pool.execute(transactionsQuery, [bankId]);
 
-        const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
-        const [editTransaction] = await pool.execute(editTransactionQuery, [bankId]);
+        // const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
+        // const [editTransaction] = await pool.execute(editTransactionQuery, [bankId]);
 
         let balance = 0;
 
@@ -160,24 +160,24 @@ const BankServices = {
             }
         }
 
-        for (const data of editTransaction) {
-            switch (data.transactionType) {
-                case 'Manual-Bank-Deposit':
-                    balance += parseFloat(data.depositAmount);
-                    break;
-                case 'Manual-Bank-Withdraw':
-                    balance -= parseFloat(data.withdrawAmount);
-                    break;
-                case 'Deposit':
-                    balance += parseFloat(data.amount);
-                    break;
-                case 'Withdraw':
-                    balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
-                    break;
-                default:
-                    break;
-            }
-        }
+        // for (const data of editTransaction) {
+        //     switch (data.transactionType) {
+        //         case 'Manual-Bank-Deposit':
+        //             balance += parseFloat(data.depositAmount);
+        //             break;
+        //         case 'Manual-Bank-Withdraw':
+        //             balance -= parseFloat(data.withdrawAmount);
+        //             break;
+        //         case 'Deposit':
+        //             balance += parseFloat(data.amount);
+        //             break;
+        //         case 'Withdraw':
+        //             balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
+        //             break;
+        //         default:
+        //             break;
+        //     }
+        // }
 
         return balance;
     } catch (e) {
