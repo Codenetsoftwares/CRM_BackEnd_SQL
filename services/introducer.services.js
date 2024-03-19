@@ -213,4 +213,69 @@ export const introducerUser = {
       };
     }
   },
+
+  // introducerPercentageCut: async (id, startDate, endDate) => {
+  //   const pool = await connectToDB();
+  //   try {
+  //     const [user] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id])
+  //     const userName = user[0].userName;
+  //     const userId = user.userId;
+  //     const introducerUserId = user.introducersUserId;
+  //     console.log("introducerUserId", introducerUserId);
+
+  //     const introducerId = await IntroducerUser.findOne({
+  //       id: introducerUserId,
+  //     }).exec();
+  //     console.log("introducerUser", introducerId);
+  //     const introducerid = introducerId.introducerId;
+  //     console.log("introducerid", introducerid);
+
+  //     // This is Introducer's User's Percentage
+  //     const introducerpercent = user.introducerPercentage;
+
+  //     const transDetails = user.transactionDetail;
+
+  //     const selectedStartDate = new Date(startDate);
+  //     const selectedEndDate = new Date(endDate);
+
+  //     const transactionsWithin7Days = transDetails.filter((transaction) => {
+  //       const transDate = new Date(transaction.createdAt);
+  //       return transDate >= selectedStartDate && transDate <= selectedEndDate;
+  //     });
+
+  //     let totalDep = 0;
+  //     let totalWith = 0;
+
+  //     transactionsWithin7Days.map((res) => {
+  //       if (res.transactionType === "Deposit") {
+  //         totalDep += Number(res.amount);
+  //       }
+  //       if (res.transactionType === "Withdraw") {
+  //         totalWith += Number(res.amount);
+  //       }
+  //     });
+
+  //     if (totalDep <= totalWith) {
+  //       throw { message: "Can't send amount to Introducer" };
+  //     }
+  //     const date = new Date();
+  //     let amount = 0;
+  //     const transactionType = "Credit";
+  //     if (totalDep > totalWith) {
+  //       let diff = totalDep - totalWith;
+  //       amount = (introducerpercent / 100) * diff;
+  //       introducerId.wallet += amount;
+  //     }
+  //     introducerId.creditTransaction.push({
+  //       date,
+  //       transactionType,
+  //       amount,
+  //       userId,
+  //       userName,
+  //     });
+  //     introducerId.save();
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // },
 };

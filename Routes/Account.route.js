@@ -281,20 +281,20 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.post('/api/admin/introducer/introducerCut/:id', Authorize(['superAdmin']), async (req, res) => {
-    try {
-      const id = req.params.id;
-      const { startDate, endDate } = req.body;
-      await introducerUser.introducerPercentageCut(id, startDate, endDate);
-      res.status(200).send({
-        code: 200,
-        message: 'Introducer Percentage Transferred successfully!',
-      });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
+  // app.post('/api/admin/introducer/introducerCut/:id', Authorize(['superAdmin']), async (req, res) => {
+  //   try {
+  //     const id = req.params.id;
+  //     const { startDate, endDate } = req.body;
+  //     await introducerUser.introducerPercentageCut(id, startDate, endDate);
+  //     res.status(200).send({
+  //       code: 200,
+  //       message: 'Introducer Percentage Transferred successfully!',
+  //     });
+  //   } catch (e) {
+  //     console.error(e);
+  //     res.status(e.code).send({ message: e.message });
+  //   }
+  // });
 
   app.get(
     '/api/admin/introducer-live-balance/:intro_id',
@@ -389,13 +389,13 @@ const AccountRoute = (app) => {
   );
 
   app.get(
-    '/api/introducer/client-data/:id',
+    '/api/introducer/client-data/:intro_id',
     Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const id = req.params.id;
-        const [intoducer] = await pool.execute(`SELECT * FROM IntroducerUser WHERE id = ${id};`);
+        const id = req.params.intro_id;
+        const [intoducer] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ${id};`);
         const introducerId = intoducer[0].userName;
         const introducerUserQuery = await pool.execute(
           `SELECT * FROM User WHERE introducersUserName = '${introducerId}';`,

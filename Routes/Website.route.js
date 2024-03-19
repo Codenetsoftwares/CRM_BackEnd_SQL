@@ -188,7 +188,7 @@ const WebisteRoutes = (app) => {
         const userRole = req.user[0]?.roles;
         if (userRole.includes('superAdmin')) {
           const balancePromises = websiteData.map(async (website) => {
-            website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
+            website.balance = await WebsiteServices.getWebsiteBalance(pool,website.website_id);
             const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
               website.website_id,
             ]);
@@ -211,7 +211,7 @@ const WebisteRoutes = (app) => {
                 website.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
-                  website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
+                  website.balance = await WebsiteServices.getWebsiteBalance(pool,website.website_id);
                   website.isDeposit = userSubAdmin.isDeposit;
                   website.isWithdraw = userSubAdmin.isWithdraw;
                   website.isRenew = userSubAdmin.isRenew;

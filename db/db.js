@@ -12,7 +12,7 @@ const connectToDB = async () => {
       database: process.env.DB_DBNAME,
       port: process.env.DB_PORT,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 1500,
       queueLimit: 0,
     });
 
