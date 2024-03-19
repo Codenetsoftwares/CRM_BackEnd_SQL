@@ -198,7 +198,7 @@ export const IntroducerRoutes = (app) => {
       if (matchedIntroducersUserName) {
         filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
         filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
-        return res.send([filteredIntroducerUser]);
+        return res.send(filteredIntroducerUser);
       } else {
         return res.status(403).send({ message: 'Unauthorized' });
       }
