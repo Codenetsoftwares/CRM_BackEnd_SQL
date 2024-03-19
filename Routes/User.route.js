@@ -178,24 +178,26 @@ export const UserRoutes = (app) => {
   // API To View User Profiles
 
   app.get('/api/user-profile-data/:user_id', AuthorizeRole(['user']), async (req, res) => {
-    const pool = await connectToDB();
     try {
-      const userId = req.params.user_id;
-      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
-      if (!userDetails || userDetails.length === 0) {
-        return res.status(404).send({ message: 'User not found' });
-    }
-      for (let i = 0; i < userDetails.length; i++) {
-        const user = userDetails[i];
+        const pool = await connectToDB();
+        const userId = req.params.user_id;
+        const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
+
+        if (!userDetails || userDetails.length === 0) {
+            return res.status(404).send({ message: 'User not found' });
+        }
+        const user = userDetails[0];
         const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [user.user_id]);
         user.UserTransactionDetail = userTransactionDetail;
-    }
-      res.status(200).send(userDetails);
+
+        res.status(200).send(user);
     } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal server error' });
+        console.error(e);
+        res.status(500).send({ message: 'Internal server error' });
     }
-  });
+});
+
+
 
   app.post('/api/user/reset-password', AuthorizeRole(['user']), async (req, res) => {
     try {
