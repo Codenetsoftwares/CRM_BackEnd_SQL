@@ -149,15 +149,16 @@ const DeleteApiService = {
   },
 
   deleteTransaction: async (transaction, user) => {
+    console.log("transaction", transaction);
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM Transaction WHERE id = ?`, [transaction.id]);
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Transaction WHERE Transaction_Id = ?`, [transaction.Transaction_Id]);
 
     if (!existingTransaction.length) {
-      throw { code: 404, message: `Transaction not found with id: ${transaction.id}` };
+      throw { code: 404, message: `Transaction not found with id: ${transaction.Transaction_Id}` };
     }
 
     const [existingEditRequest] = await pool.execute(
-      `SELECT * FROM EditRequest WHERE transId = ? AND type = 'Delete'`,
+      `SELECT * FROM EditRequest WHERE Transaction_Id = ? AND type = 'Delete'`,
       [transaction.id],
     );
 
@@ -193,19 +194,22 @@ const DeleteApiService = {
     });
 
     const name = user[0].firstname;
+    const Edit_ID = uuidv4();
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
-    const createEditRequestQuery = `INSERT INTO EditRequest (bankId, websiteId, transactionID, transactionType, amount, paymentMethod, userId, userName,
-        requesteduserName, subAdminId, subAdminName, bonus, bankCharges, remarks, bankName, websiteName, message, type, Nametype, transId, introducerUserName) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const createEditRequestQuery = `INSERT INTO EditRequest (bankId, websiteId, Transaction_Id, transactionID, transactionType, amount, 
+    paymentMethod, introducerUserName, userName, requesteduserName, subAdminId, subAdminName, bonus, bankCharges, remarks, bankName, 
+    websiteName, createdAt, message, type, Nametype, Edit_ID) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
       updatedTransactionData.bankId,
       updatedTransactionData.websiteId,
+      transaction.Transaction_Id,
       updatedTransactionData.transactionID,
       updatedTransactionData.transactionType,
       updatedTransactionData.amount,
       updatedTransactionData.paymentMethod,
-      updatedTransactionData.userId,
+      updatedTransactionData.introducerUserName,
       updatedTransactionData.userName,
       name,
       updatedTransactionData.subAdminId,
@@ -215,11 +219,11 @@ const DeleteApiService = {
       updatedTransactionData.remarks,
       updatedTransactionData.bankName,
       updatedTransactionData.websiteName,
+      updatedTransactionData.createdAt,
       editMessage,
       'Delete',
       'Transaction',
-      transaction.id,
-      updatedTransactionData.introducerUserName,
+      Edit_ID
     ]);
     return true;
   },
