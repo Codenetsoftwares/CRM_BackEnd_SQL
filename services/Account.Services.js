@@ -98,11 +98,11 @@ const AccountServices = {
   IntroducerBalance: async (introUserId) => {
     const pool = await connectToDB();
     try {
-      console.log("introUserId", introUserId);
+      console.log('introUserId', introUserId);
       const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
         introUserId,
       ]);
-      console.log("intorTranasction", intorTranasction);
+      console.log('intorTranasction', intorTranasction);
       let balance = 0;
       intorTranasction.forEach((transaction) => {
         if (transaction.transactionType === 'Deposit') {

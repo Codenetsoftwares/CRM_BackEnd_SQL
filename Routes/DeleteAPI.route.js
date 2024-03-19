@@ -830,7 +830,6 @@ const DeleteAPIRoute = (app) => {
     },
   );
 
-  
   // API To Re-Store The Intoducer Transaction
   app.post(
     '/api/restore/Introducer/data/:introTransactionId',

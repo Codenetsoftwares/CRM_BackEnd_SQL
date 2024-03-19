@@ -195,7 +195,7 @@ export const UserRoutes = (app) => {
   app.post('/api/user/reset-password', AuthorizeRole(['user']), async (req, res) => {
     try {
       const { userName, password } = req.body;
-      await UserServices.userPasswordResetCode(userName, oldPassword, password);
+      await UserServices.userPasswordResetCode(userName, password);
       res.status(200).send({ code: 200, message: 'Password reset successful!' });
     } catch (e) {
       console.error(e);

@@ -29,7 +29,7 @@ export const introducerUser = {
         name: existingUser.firstname,
         userName: existingUser.userName,
         role: existingUser.role,
-        intro_id: existingUser.intro_id
+        intro_id: existingUser.intro_id,
       };
       console.log(accessTokenResponse);
       const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, {
@@ -39,7 +39,7 @@ export const introducerUser = {
       return {
         userName: existingUser.userName,
         accessToken: accessToken,
-        intro_id: existingUser.intro_id
+        intro_id: existingUser.intro_id,
       };
     } catch (err) {
       console.error(err);
@@ -198,10 +198,11 @@ export const introducerUser = {
       }
 
       // Hash the new password
-      const encryptedNewPassword = await bcrypt.hash(password, 10); // Hash with new salt
+      const passwordSalt = await bcrypt.genSalt();
+      const encryptedPassword = await bcrypt.hash(password, passwordSalt);
 
       // Update user's password in the database
-      await pool.query('UPDATE IntroducerUser SET password = ? WHERE userName = ?', [encryptedNewPassword, userName]);
+      await pool.query('UPDATE IntroducerUser SET password = ? WHERE userName = ?', [encryptedPassword, userName]);
 
       return true;
     } catch (error) {

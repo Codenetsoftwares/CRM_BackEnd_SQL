@@ -132,60 +132,59 @@ const BankServices = {
 
   getBankBalance: async (pool, bankId) => {
     try {
-        const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;
-        const [bankTransactions] = await pool.execute(bankTransactionsQuery, [bankId]);
+      const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;
+      const [bankTransactions] = await pool.execute(bankTransactionsQuery, [bankId]);
 
-        const transactionsQuery = `SELECT * FROM Transaction WHERE bankId = ?`;
-        const [transactions] = await pool.execute(transactionsQuery, [bankId]);
+      const transactionsQuery = `SELECT * FROM Transaction WHERE bankId = ?`;
+      const [transactions] = await pool.execute(transactionsQuery, [bankId]);
 
-        // const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
-        // const [editTransaction] = await pool.execute(editTransactionQuery, [bankId]);
+      // const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
+      // const [editTransaction] = await pool.execute(editTransactionQuery, [bankId]);
 
-        let balance = 0;
+      let balance = 0;
 
-        for (const transaction of bankTransactions) {
-            if (transaction.depositAmount) {
-                balance += parseFloat(transaction.depositAmount);
-            }
-            if (transaction.withdrawAmount) {
-                balance -= parseFloat(transaction.withdrawAmount);
-            }
+      for (const transaction of bankTransactions) {
+        if (transaction.depositAmount) {
+          balance += parseFloat(transaction.depositAmount);
         }
-
-        for (const transaction of transactions) {
-            if (transaction.transactionType === 'Deposit') {
-                balance += parseFloat(transaction.amount);
-            } else {
-                balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
-            }
+        if (transaction.withdrawAmount) {
+          balance -= parseFloat(transaction.withdrawAmount);
         }
+      }
 
-        // for (const data of editTransaction) {
-        //     switch (data.transactionType) {
-        //         case 'Manual-Bank-Deposit':
-        //             balance += parseFloat(data.depositAmount);
-        //             break;
-        //         case 'Manual-Bank-Withdraw':
-        //             balance -= parseFloat(data.withdrawAmount);
-        //             break;
-        //         case 'Deposit':
-        //             balance += parseFloat(data.amount);
-        //             break;
-        //         case 'Withdraw':
-        //             balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
-        //             break;
-        //         default:
-        //             break;
-        //     }
-        // }
+      for (const transaction of transactions) {
+        if (transaction.transactionType === 'Deposit') {
+          balance += parseFloat(transaction.amount);
+        } else {
+          balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
+        }
+      }
 
-        return balance;
+      // for (const data of editTransaction) {
+      //     switch (data.transactionType) {
+      //         case 'Manual-Bank-Deposit':
+      //             balance += parseFloat(data.depositAmount);
+      //             break;
+      //         case 'Manual-Bank-Withdraw':
+      //             balance -= parseFloat(data.withdrawAmount);
+      //             break;
+      //         case 'Deposit':
+      //             balance += parseFloat(data.amount);
+      //             break;
+      //         case 'Withdraw':
+      //             balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
+      //             break;
+      //         default:
+      //             break;
+      //     }
+      // }
+
+      return balance;
     } catch (e) {
-        console.error(e);
-        throw e; // Rethrow the error to handle it at the calling site
+      console.error(e);
+      throw e; // Rethrow the error to handle it at the calling site
     }
-},
-
+  },
 };
 
 export default BankServices;

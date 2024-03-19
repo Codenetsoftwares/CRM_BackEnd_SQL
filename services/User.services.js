@@ -69,19 +69,19 @@ export const UserServices = {
       if (!password) {
         throw { code: 400, message: 'Invalid value for: Password' };
       }
-  
+
       const [rows] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
       const existingUser = rows[0];
-         console.log("deee", existingUser);
+      console.log('deee', existingUser);
       if (!existingUser) {
         throw { code: 401, message: 'Invalid User Name or Password' };
       }
-  
+
       const passwordValid = await bcrypt.compare(password, existingUser.password);
       if (!passwordValid) {
         throw { code: 401, message: 'Invalid User Name or Password' };
       }
-  
+
       const accessTokenResponse = {
         user_id: existingUser.user_id,
         firstname: existingUser.firstname,
@@ -89,10 +89,10 @@ export const UserServices = {
         userName: existingUser.userName,
         role: existingUser.role,
       };
-  
+
       const expiresIn = persist ? '1y' : '8h';
       const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, { expiresIn });
-  
+
       return {
         userName: existingUser.userName,
         accessToken: accessToken,
@@ -173,9 +173,7 @@ export const UserServices = {
       console.error(err);
       throw err;
     }
-}
-
-
+  },
 };
 
 export default UserServices;

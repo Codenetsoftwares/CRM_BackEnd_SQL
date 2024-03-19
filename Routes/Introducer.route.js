@@ -79,26 +79,27 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/introducer/user-data/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const id = req.params.intro_id;
-      const [introducerResult] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [id]);
-      if (introducerResult.length === 0) {
-        throw {
-          code: 404,
-          message: `Introducer User not found with id: ${id}`,
-        };
-      }
-      const introducer = introducerResult[0];
-      const introducerId = introducer.introducerId;
-      const [usersResult] = await pool.execute(`SELECT * FROM User WHERE introducersUserId = ?`, [introducerId]);
-      res.send(usersResult);
-    } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-    }
-  });
+  // // Not in user
+  // app.get('/api/introducer/user-data/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
+  //   const pool = await connectToDB();
+  //   try {
+  //     const id = req.params.intro_id;
+  //     const [introducerResult] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [id]);
+  //     if (introducerResult.length === 0) {
+  //       throw {
+  //         code: 404,
+  //         message: `Introducer User not found with id: ${id}`,
+  //       };
+  //     }
+  //     const introducer = introducerResult[0];
+  //     const introducerId = introducer.introducerId;
+  //     const [usersResult] = await pool.execute(`SELECT * FROM User WHERE introducersUserId = ?`, [introducerId]);
+  //     res.send(usersResult);
+  //   } catch (e) {
+  //     console.error(e);
+  //     res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+  //   }
+  // });
 
   app.get('/api/list-introducer-user/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
@@ -108,30 +109,99 @@ export const IntroducerRoutes = (app) => {
       if (introducerUser.length === 0) {
         return res.status(404).send({ message: 'IntroducerUser not found' });
       }
+
       const introducerUserName = introducerUser[0].userName;
       const [users] = await pool.execute(
         `SELECT * FROM User WHERE introducersUserName = ? OR introducersUserName1 = ? OR introducersUserName2 = ?`,
         [introducerUserName, introducerUserName, introducerUserName],
       );
-      res.send(users);
+
+      const usersWithTransactionDetails = [];
+      for (const userData of users) {
+        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
+          userData.user_id,
+        ]);
+        userData.UserTransactionDetail = userTransactionDetail;
+        usersWithTransactionDetails.push(userData);
+      }
+      res.send(usersWithTransactionDetails);
     } catch (e) {
       console.error(e);
       res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
     }
   });
 
-  app.get('/api/introducer-user-single-data/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  // app.get('/api/introducer-user-single-data/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  //   const pool = await connectToDB();
+  //   try {
+  //     const id = req.params.id;
+  //     const introducerId = req.user.introducerId;
+  //     const query = `SELECT * FROM User WHERE _id = ? AND introducersUserId = ?`;
+  //     const [introducerUser] = await pool.execute(query, [id, introducerId]);
+  //     res.send(introducerUser);
+  //   } catch (e) {
+  //     console.error(e);
+  //     res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+  //   }
+  // });
+
+  app.get('/api/introducer-user-single-data/:user_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const introducerId = req.user.introducerId;
-      const query = `
-            SELECT *
-            FROM User
-            WHERE _id = ? AND introducersUserId = ?
-          `;
-      const [introducerUser] = await pool.execute(query, [id, introducerId]);
-      res.send(introducerUser);
+      const id = req.params.user_id;
+      const user = req.user;
+      const introUser = user[0].userName;
+      const [introducerUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id]);
+      console.log('introoooooo0', introducerUser);
+
+      // Check if introducerUser exists
+      if (!introducerUser || introducerUser.length === 0) {
+        return res.status(404).send({ message: 'User not found' });
+      }
+
+      const userRecord = introducerUser[0]; // Access the user object
+
+      let filteredIntroducerUser = {
+        user_id: userRecord.user_id,
+        firstname: userRecord.firstname,
+        lastname: userRecord.lastname,
+        userName: userRecord.userName,
+        wallet: userRecord.wallet,
+        role: userRecord.role,
+        transactionDetail: null, // Initialize to null
+      };
+
+      // Fetching and attaching transaction details for the user
+      const [userTransactionDetail] = await pool.execute(
+        `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
+        [userRecord.user_id], // Accessing user_id from the user object
+      );
+      filteredIntroducerUser.transactionDetail = userTransactionDetail;
+
+      console.log('filteredIntroducerUser', filteredIntroducerUser);
+      let matchedIntroducersUserName = null;
+      let matchedIntroducerPercentage = null;
+
+      // Check if req.user.UserName exists in introducerUser's introducersUserName, introducersUserName1, or introducersUserName2 fields
+      if (userRecord.introducersUserName === introUser) {
+        matchedIntroducersUserName = userRecord.introducersUserName;
+        matchedIntroducerPercentage = userRecord.introducerPercentage;
+      } else if (userRecord.introducersUserName1 === introUser) {
+        matchedIntroducersUserName = userRecord.introducersUserName1;
+        matchedIntroducerPercentage = userRecord.introducerPercentage1;
+      } else if (userRecord.introducersUserName2 === introUser) {
+        matchedIntroducersUserName = userRecord.introducersUserName2;
+        matchedIntroducerPercentage = userRecord.introducerPercentage2;
+      }
+
+      // If matched introducersUserName found, include it along with percentage in the response
+      if (matchedIntroducersUserName) {
+        filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
+        filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
+        return res.send([filteredIntroducerUser]);
+      } else {
+        return res.status(403).send({ message: 'Unauthorized' });
+      }
     } catch (e) {
       console.error(e);
       res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
@@ -153,10 +223,10 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/introducer-account-summary/:id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/introducer-account-summary/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const introUserId = req.params.id;
+      const introUserId = req.params.intro_id;
       const query = `
             SELECT *
             FROM IntroducerTransaction
@@ -173,13 +243,55 @@ export const IntroducerRoutes = (app) => {
 
   app.post('/api/introducer/reset-password', AuthorizeRole(['introducer']), async (req, res) => {
     try {
-      const { userName, oldPassword, password } = req.body;
-      await introducerUser.introducerPasswordResetCode(userName, oldPassword, password);
+      const { userName, password } = req.body;
+      await introducerUser.introducerPasswordResetCode(userName, password);
       res.status(200).send({ code: 200, message: 'Password reset successful!' });
     } catch (e) {
       console.error(e);
       res.status(e.code).send({ message: e.message });
     }
   });
+
+  app.get(
+    '/api/introducer-user/accountsummary/:introducerUsername',
+    AuthorizeRole(['introducer']),
+    async (req, res) => {
+      const pool = await connectToDB();
+      try {
+        const introUserName = req.params.introducerUsername;
+        const [users] = await pool.execute(
+          `SELECT * FROM User WHERE introducersUserName = ? OR introducersUserName1 = ? OR introducersUserName2 = ?`,
+          [introUserName, introUserName, introUserName],
+        );
+
+        const transactions = [];
+        for (const userData of users) {
+          const [userTransactions] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
+            userData.user_id,
+          ]);
+          for (const transaction of userTransactions) {
+            const formattedTransaction = {
+              AccountNumber: transaction.accountNumber,
+              BankName: transaction.bankName,
+              WebsiteName: transaction.websiteName,
+              Amount: transaction.amount,
+              PaymentMethod: transaction.paymentMethod,
+              TransactionID: transaction.transactionID,
+              TransactionType: transaction.transactionType,
+              Introducer: transaction.introducerUserName,
+              SubAdminName: transaction.subAdminName,
+              UserName: transaction.userName,
+              Remarks: transaction.remarks,
+            };
+            transactions.push(formattedTransaction);
+          }
+        }
+        res.send(transactions);
+      } catch (e) {
+        console.error(e);
+        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+      }
+    },
+  );
 };
 export default IntroducerRoutes;

@@ -138,7 +138,7 @@ const BankRoutes = (app) => {
         if (userRole.includes('superAdmin')) {
           // For superAdmin, fetch balances for all banks
           const balancePromises = bankData.map(async (bank) => {
-            bank.balance = await BankServices.getBankBalance(pool,bank.bank_id);
+            bank.balance = await BankServices.getBankBalance(pool, bank.bank_id);
             // Fetch BankSubAdmins for each bank
             const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
             if (subAdmins && subAdmins.length > 0) {
@@ -161,7 +161,7 @@ const BankRoutes = (app) => {
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
                   // Update balance for the specific bank
-                  bank.balance = await BankServices.getBankBalance(pool,bank.bank_id);
+                  bank.balance = await BankServices.getBankBalance(pool, bank.bank_id);
 
                   // Set permissions for the specific bank
                   bank.isDeposit = userSubAdmin.isDeposit;
