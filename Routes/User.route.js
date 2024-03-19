@@ -182,9 +182,14 @@ export const UserRoutes = (app) => {
     try {
       const userId = req.params.user_id;
       const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
-      if (!userDetails) {
+      if (!userDetails || userDetails.length === 0) {
         return res.status(404).send({ message: 'User not found' });
-      }
+    }
+      for (let i = 0; i < userDetails.length; i++) {
+        const user = userDetails[i];
+        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [user.user_id]);
+        user.UserTransactionDetail = userTransactionDetail;
+    }
       res.status(200).send(userDetails);
     } catch (e) {
       console.error(e);
