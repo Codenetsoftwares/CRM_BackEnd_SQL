@@ -830,7 +830,7 @@ const DeleteAPIRoute = (app) => {
     },
   );
 
-  // Need To Test
+  
   // API To Re-Store The Intoducer Transaction
   app.post(
     '/api/restore/Introducer/data/:introTransactionId',
@@ -910,6 +910,17 @@ const DeleteAPIRoute = (app) => {
       }
     },
   );
+
+  app.get('/api/admin/view-Delete-Request', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const [resultArray] = await pool.execute(`SELECT * FROM EditRequest`);
+      res.status(200).send(resultArray);
+    } catch (error) {
+      console.log(error);
+      res.status(500).send('Internal Server error');
+    }
+  });
 };
 
 export default DeleteAPIRoute;
