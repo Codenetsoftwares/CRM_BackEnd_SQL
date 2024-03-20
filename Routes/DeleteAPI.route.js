@@ -409,21 +409,6 @@ const DeleteAPIRoute = (app) => {
     },
   );
 
-  app.delete('/api/reject/EditRequest/:id', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const id = req.params.id;
-      const deleteQuery = 'DELETE FROM EditRequest WHERE id = ?';
-      const [result] = await pool.execute(deleteQuery, [id]);
-      if (result.affectedRows === 1) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
-    }
-  });
-
   // API TO Sent deleting Bank Detail's approval
 
   app.post(
@@ -585,23 +570,6 @@ const DeleteAPIRoute = (app) => {
     } catch (error) {
       console.log(error);
       res.status(500).send('Internal Server error');
-    }
-  });
-
-  // API To Delete Trash Data
-  app.delete('/api/delete/transactions/:_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const id = req.params._id;
-      const [result] = await pool.execute(`DELETE FROM Trash WHERE _id = ?`, [id]);
-      if (result.affectedRows > 0) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      } else {
-        res.status(404).send({ message: 'Data not found' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
     }
   });
 
@@ -927,6 +895,39 @@ const DeleteAPIRoute = (app) => {
     } catch (error) {
       console.log(error);
       res.status(500).send('Internal Server error');
+    }
+  });
+
+// API To Reject EditRequest Data
+  app.delete('/api/reject/DeleteRequest/:Edit_ID', Authorize(['superAdmin']), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const id = req.params.Edit_ID;
+      const deleteQuery = 'DELETE FROM EditRequest WHERE Edit_ID = ?';
+      const [result] = await pool.execute(deleteQuery, [id]);
+      if (result.affectedRows === 1) {
+        res.status(200).send({ message: 'Data deleted successfully' });
+      }
+    } catch (e) {
+      console.error(e);
+      res.status(500).send({ message: e.message });
+    }
+  });
+
+  // API To Reject Trash Data
+  app.delete('/api/reject/trash/transactions/:_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const id = req.params._id;
+      const [result] = await pool.execute(`DELETE FROM Trash WHERE _id = ?`, [id]);
+      if (result.affectedRows > 0) {
+        res.status(200).send({ message: 'Data deleted successfully' });
+      } else {
+        res.status(404).send({ message: 'Data not found' });
+      }
+    } catch (e) {
+      console.error(e);
+      res.status(500).send({ message: e.message });
     }
   });
 };
