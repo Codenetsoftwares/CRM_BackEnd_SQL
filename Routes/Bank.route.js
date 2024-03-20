@@ -398,7 +398,7 @@ const BankRoutes = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const [bankName] = await pool.execute(`SELECT bankName FROM Bank `);
+        const [bankName] = await pool.execute(`SELECT bankName, bank_id FROM Bank `);
         res.status(200).send(bankName);
       } catch (e) {
         console.error(e);

@@ -558,74 +558,83 @@ const AccountRoute = (app) => {
 });
 
 
-  app.get(
-    '/introducer-user-single-data/:intro_id',
-    Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
-    async (req, res) => {
-      const pool = await connectToDB();
-      try {
-        const id = req.params.intro_id;
-        const [introducerUserResult] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [
-          id,
-        ]);
-        const introducerUserName = introducerUserResult[0].userName;
+app.get(
+  '/introducer-user-single-data/:intro_id',
+  Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
+  async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const id = req.params.intro_id;
+      const [introducerUserResult] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [id]);
+      const introducerUserName = introducerUserResult[0].userName;
 
-        // Find users with introducersUserName matching introducerUser.userName
-        const [usersResult] = await pool.execute(
-          `SELECT *
-              FROM User
-              WHERE introducersUserName = ?
-              OR introducersUserName1 = ?
-              OR introducersUserName2 = ?`,
-          [introducerUserName, introducerUserName, introducerUserName],
-        );
-        console.log('usersResult', usersResult);
-        if (usersResult.length === 0) {
-          return res.status(404).send({ message: 'No matching users found' });
+      // Find users with introducersUserName matching introducerUser.userName
+      const [usersResult] = await pool.execute(
+        `SELECT *
+        FROM User
+        WHERE introducersUserName = ?
+        OR introducersUserName1 = ?
+        OR introducersUserName2 = ?`,
+        [introducerUserName, introducerUserName, introducerUserName],
+      );
+         console.log("usersResult", usersResult);
+      if (usersResult.length === 0) {
+        return res.status(404).send({ message: 'No matching users found' });
+      }
+
+      let filteredIntroducerUsers = [];
+
+      for (const matchedUser of usersResult) {
+        let filteredIntroducerUser = {
+          user_id: matchedUser.user_id,
+          firstname: matchedUser.firstname,
+          lastname: matchedUser.lastname,
+          userName: matchedUser.userName,
+          wallet: matchedUser.wallet,
+          role: matchedUser.role,
+          webSiteDetail: matchedUser.webSiteDetail,
+          transactionDetail: [], // Initialize as an empty array
+        };
+
+        let matchedIntroducersUserName = null;
+        let matchedIntroducerPercentage = null;
+
+        if (matchedUser.introducersUserName === introducerUserName) {
+          matchedIntroducersUserName = matchedUser.introducersUserName;
+          matchedIntroducerPercentage = matchedUser.introducerPercentage;
+        } else if (matchedUser.introducersUserName1 === introducerUserName) {
+          matchedIntroducersUserName = matchedUser.introducersUserName1;
+          matchedIntroducerPercentage = matchedUser.introducerPercentage1;
+        } else if (matchedUser.introducersUserName2 === introducerUserName) {
+          matchedIntroducersUserName = matchedUser.introducersUserName2;
+          matchedIntroducerPercentage = matchedUser.introducerPercentage2;
         }
 
-        let filteredIntroducerUsers = [];
+        if (matchedIntroducersUserName) {
+          filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
+          filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
 
-        usersResult.forEach((matchedUser) => {
-          let filteredIntroducerUser = {
-            _id: matchedUser._id,
-            firstname: matchedUser.firstname,
-            lastname: matchedUser.lastname,
-            userName: matchedUser.userName,
-            wallet: matchedUser.wallet,
-            role: matchedUser.role,
-            webSiteDetail: matchedUser.webSiteDetail,
-            transactionDetail: matchedUser.transactionDetail,
-          };
+          // Fetch transaction details for the current user
+          const [userTransactionDetails] = await pool.execute(
+            `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
+            [matchedUser.userName],
+          );
 
-          let matchedIntroducersUserName = null;
-          let matchedIntroducerPercentage = null;
-
-          if (matchedUser.introducersUserName === introducerUserName) {
-            matchedIntroducersUserName = matchedUser.introducersUserName;
-            matchedIntroducerPercentage = matchedUser.introducerPercentage;
-          } else if (matchedUser.introducersUserName1 === introducerUserName) {
-            matchedIntroducersUserName = matchedUser.introducersUserName1;
-            matchedIntroducerPercentage = matchedUser.introducerPercentage1;
-          } else if (matchedUser.introducersUserName2 === introducerUserName) {
-            matchedIntroducersUserName = matchedUser.introducersUserName2;
-            matchedIntroducerPercentage = matchedUser.introducerPercentage2;
-          }
-
-          if (matchedIntroducersUserName) {
-            filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
-            filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
-            filteredIntroducerUsers.push(filteredIntroducerUser);
-          }
-        });
-
-        return res.send(filteredIntroducerUsers);
-      } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal Server Error' });
+          // Attach transaction details to the current user
+          filteredIntroducerUser.transactionDetail = userTransactionDetails;
+          filteredIntroducerUsers.push(filteredIntroducerUser);
+        }
       }
-    },
-  );
+      
+      return res.send(filteredIntroducerUsers);
+    } catch (e) {
+      console.error(e);
+      res.status(500).send({ message: 'Internal Server Error' });
+    }
+  },
+);
+
+
 
   app.post('/api/admin/reset-password', Authorize(['superAdmin']), async (req, res) => {
     try {
