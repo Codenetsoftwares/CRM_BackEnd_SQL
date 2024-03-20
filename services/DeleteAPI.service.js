@@ -286,6 +286,7 @@ const DeleteApiService = {
   // Functions To Delete Bank Detail's
 
   deleteBank: async (id) => {
+    console.log("iddd", id);
     const pool = await connectToDB();
     const [existingTransaction] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id.bank_id]);
     console.log('existingTransaction', existingTransaction);
@@ -295,8 +296,8 @@ const DeleteApiService = {
     }
 
     const [existingEditRequest] = await pool.execute(
-      `SELECT * FROM EditBankRequest WHERE bankTransactionId = ? AND type = 'Delete'`,
-      [id.id],
+      `SELECT * FROM EditBankRequest WHERE bank_id = ? AND type = 'Delete'`,
+      [id.bank_id],
     );
 
     if (existingEditRequest.length) {
@@ -304,7 +305,7 @@ const DeleteApiService = {
     }
 
     const updatedTransactionData = {
-      id: id.id,
+      bank_id: id.bank_id,
       accountHolderName: id.accountHolderName,
       bankName: id.bankName,
       accountNumber: id.accountNumber,
@@ -312,6 +313,8 @@ const DeleteApiService = {
       upiId: id.upiId,
       upiAppName: id.upiAppName,
       upiNumber: id.upiNumber,
+      subAdminName: id.subAdminName,
+      createdAt: id.createdAt
     };
     // Replace undefined values with null in updatedTransactionData
     Object.keys(updatedTransactionData).forEach((key) => {
@@ -320,11 +323,11 @@ const DeleteApiService = {
       }
     });
     const editMessage = `${existingTransaction[0].bankName} is sent to Super Admin for deleting approval`;
-    const createEditRequestQuery = `INSERT INTO EditBankRequest (bankTransactionId, accountHolderName, bankName, accountNumber, ifscCode, upiId, 
-    upiAppName, upiNumber, message, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const createEditRequestQuery = `INSERT INTO EditBankRequest (bank_id, accountHolderName, bankName, accountNumber, ifscCode, upiId, 
+    upiAppName, upiNumber, createdAt, message, type, subAdminName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
-      id.bank_id,
+      updatedTransactionData.bank_id,
       updatedTransactionData.accountHolderName,
       updatedTransactionData.bankName,
       updatedTransactionData.accountNumber,
@@ -332,8 +335,10 @@ const DeleteApiService = {
       updatedTransactionData.upiId,
       updatedTransactionData.upiAppName,
       updatedTransactionData.upiNumber,
+      updatedTransactionData.createdAt,
       editMessage,
       'Delete',
+      updatedTransactionData.subAdminName
     ]);
     return true;
   },
@@ -348,8 +353,8 @@ const DeleteApiService = {
     }
 
     const [existingEditRequest] = await pool.execute(
-      `SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ? AND type = 'Delete'`,
-      [id.id],
+      `SELECT * FROM EditWebsiteRequest WHERE website_id = ? AND type = 'Delete'`,
+      [id.website_id],
     );
 
     if (existingEditRequest.length) {
@@ -357,8 +362,10 @@ const DeleteApiService = {
     }
 
     const updatedTransactionData = {
-      id: id.id,
+      website_id: id.website_id,
       websiteName: id.websiteName,
+      subAdminName: id.subAdminName,
+      createdAt: id.createdAt
     };
     // Replace undefined values with null in updatedTransactionData
     Object.keys(updatedTransactionData).forEach((key) => {
@@ -367,12 +374,14 @@ const DeleteApiService = {
       }
     });
     const editMessage = `${existingTransaction[0].websiteName} is sent to Super Admin for deleting approval`;
-    const createEditRequestQuery = `INSERT INTO EditWebsiteRequest (websiteTransactionId, websiteName, message, type) 
-    VALUES (?, ?, ?, ?)`;
+    const createEditRequestQuery = `INSERT INTO EditWebsiteRequest (website_id, subAdminName, websiteName, createdAt, message, type) 
+    VALUES (?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(createEditRequestQuery, [
-      id.website_id,
+      updatedTransactionData.website_id,
+      updatedTransactionData.subAdminName,
       updatedTransactionData.websiteName,
+      updatedTransactionData.createdAt,
       editMessage,
       'Delete',
     ]);

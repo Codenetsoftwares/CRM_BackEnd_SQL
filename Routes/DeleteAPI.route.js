@@ -439,11 +439,11 @@ const DeleteAPIRoute = (app) => {
 
   // API For Bank Delete Request
 
-  app.post('/api/delete-bank/:bankTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/delete-bank/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.bankTransactionId;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bankTransactionId = ?`, [id]);
+      const id = req.params.bank_id;
+      const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bank_id = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Bank Request not found' });
@@ -452,8 +452,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await pool.execute(`DELETE FROM Bank WHERE bank_id = ?`, [editRequest[0].bankTransactionId]);
-        await pool.execute(`DELETE FROM EditBankRequest WHERE bankTransactionId = ?`, [id]);
+        await pool.execute(`DELETE FROM Bank WHERE bank_id = ?`, [editRequest[0].bank_id]);
+        await pool.execute(`DELETE FROM EditBankRequest WHERE bank_id = ?`, [id]);
         res.status(200).send({ message: 'Bank deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });
@@ -494,11 +494,11 @@ const DeleteAPIRoute = (app) => {
 
   // API For Website Delet Request
 
-  app.post('/api/delete-website/:websiteTransactionId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/delete-website/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.websiteTransactionId;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [id]);
+      const id = req.params.website_id;
+      const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Website Request not found' });
@@ -507,8 +507,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await pool.execute(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].websiteTransactionId]);
-        await pool.execute(`DELETE FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [id]);
+        await pool.execute(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].website_id]);
+        await pool.execute(`DELETE FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
         res.status(200).send({ message: 'Website deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });
@@ -522,13 +522,13 @@ const DeleteAPIRoute = (app) => {
   // API For Rejecting Bank Detail
 
   app.delete(
-    '/api/reject/bank-detail/:bankTransactionId',
+    '/api/reject/bank-detail/:bank_id',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const id = req.params.bankTransactionId;
-        const deleteQuery = 'DELETE FROM EditBankRequest WHERE bankTransactionId = ?';
+        const id = req.params.bank_id;
+        const deleteQuery = 'DELETE FROM EditBankRequest WHERE bank_id = ?';
         const [result] = await pool.execute(deleteQuery, [id]);
         if (result.affectedRows === 1) {
           res.status(200).send({ message: 'Data deleted successfully' });
@@ -544,11 +544,11 @@ const DeleteAPIRoute = (app) => {
 
   // API For Rejecting Website Detail
 
-  app.delete('/api/reject/website-detail/:id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.delete('/api/reject/website-detail/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
-      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE id = ?';
+      const id = req.params.website_id;
+      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE website_id = ?';
       const [result] = await pool.execute(deleteQuery, [id]);
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
