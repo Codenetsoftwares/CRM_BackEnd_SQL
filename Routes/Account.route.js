@@ -543,24 +543,20 @@ const AccountRoute = (app) => {
   app.put('/api/admin/edit-subadmin-roles/:admin_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const subAdminId = req.params.admin_id;
-      const { roles } = req.body;
-      if (!subAdminId) {
-        throw { code: 400, message: 'Id not found' };
-      }
-      // Fetch existing roles from the database
-      const [existingRolesRow] = await pool.execute('SELECT roles FROM Admin WHERE admin_id = ?', [subAdminId]);
-      const existingRoles = existingRolesRow[0].roles;
-      // Merge existing roles with new roles
-      const updatedRoles = [...existingRoles, ...roles];
-      // Update roles in the database
-      const [result] = await pool.execute('UPDATE Admin SET roles = ? WHERE admin_id = ?', [updatedRoles, subAdminId]);
-      res.status(200).send(`Subadmin roles updated with ${JSON.stringify(updatedRoles)}`);
+        const subAdminId = req.params.admin_id;
+        const { roles } = req.body;
+        if (!subAdminId) {
+            throw { code: 400, message: 'Id not found' };
+        }
+        // Update roles in the database
+        const [result] = await pool.execute('UPDATE Admin SET roles = ? WHERE admin_id = ?', [roles, subAdminId]);
+        res.status(200).send(`Subadmin roles updated with ${JSON.stringify(roles)}`);
     } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+        console.error(e);
+        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
     }
-  });
+});
+
 
   app.get(
     '/introducer-user-single-data/:intro_id',

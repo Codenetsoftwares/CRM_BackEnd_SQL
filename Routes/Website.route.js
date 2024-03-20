@@ -126,12 +126,12 @@ const WebisteRoutes = (app) => {
     }
   });
 
-  app.delete('/api/reject-website-edit/:id', Authorize(['superAdmin']), async (req, res) => {
+  app.delete('/api/reject-website-edit/:website_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-      const id = req.params.id;
+      const id = req.params.website_id;
       // Construct SQL DELETE query
-      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE websiteTransactionId = ?';
+      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE website_id = ?';
       // Execute the query
       const [result] = await pool.execute(deleteQuery, [id]);
       // Check if any rows were affected
@@ -280,7 +280,7 @@ const WebisteRoutes = (app) => {
           return res.status(404).send({ message: 'Website not found' });
         }
         const websiteId = dbWebsiteData[0].website_id;
-        const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
+        const websiteBalance = await WebsiteServices.getWebsiteBalance(pool,websiteId);
         const response = {
           website_id: dbWebsiteData[0].website_id,
           websiteName: dbWebsiteData[0].websiteName,
@@ -376,7 +376,7 @@ const WebisteRoutes = (app) => {
         if (!website) {
           return res.status(404).send({ message: 'Websitet not found' });
         }
-        if ((await WebsiteServices.getWebsiteBalance(id)) < Number(amount)) {
+        if ((await WebsiteServices.getWebsiteBalance(pool,id)) < Number(amount)) {
           return res.status(400).send({ message: 'Insufficient Website Balance' });
         }
         const websiteTransaction = {

@@ -183,7 +183,7 @@ const AccountServices = {
     const pool = await connectToDB();
     try {
       // Check if the user exists
-      const existingUser = await pool.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
+      const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE userName = ?`, [userName]);
       if (existingUser.length === 0) {
         throw {
           code: 404,
@@ -202,7 +202,7 @@ const AccountServices = {
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(password, passwordSalt);
       // Update the password in the database
-      const updateQuery = await query(
+      const updateQuery = await pool.execute(
         `UPDATE Admin SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
       );
       return true;
