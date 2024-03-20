@@ -352,8 +352,8 @@ const AccountServices = {
           matchedIntroducerPercentage = user.introducerPercentage2;
         }
 
-        const [transDetails] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
-          user.user_id,
+        const [transDetails] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
+          user.userName,
         ]);
 
         if (!transDetails.length) {

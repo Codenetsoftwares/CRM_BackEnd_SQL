@@ -744,7 +744,7 @@ const DeleteAPIRoute = (app) => {
 
         // Retrieve deleted data from the Trash table based on transactionID
         const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE Transaction_Id = ?`, [transactionID]);
-
+           console.log("deletedData", deletedData);
         if (!deletedData || deletedData.length === 0) {
           return res.status(404).send({ message: 'Data not found in Trash' });
         }
@@ -801,32 +801,32 @@ const DeleteAPIRoute = (app) => {
         );
 
         // Update the user's transaction detail
-        // await pool.execute(
-        //   `INSERT INTO UserTransactionDetail 
-        //   (user_ID, Transaction_id, bankId, websiteId, subAdminName, transactionID, transactionType, amount, paymentMethod, userName, 
-        //   introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, createdAt) 
-        //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        //   [
-        //     dataToRestore.Transaction_id,
-        //     dataToRestore.bankId,
-        //     dataToRestore.websiteId,
-        //     dataToRestore.transactionID,
-        //     dataToRestore.transactionType,
-        //     dataToRestore.remarks,
-        //     dataToRestore.amount,
-        //     dataToRestore.subAdminId,
-        //     dataToRestore.subAdminName,
-        //     dataToRestore.introducerUserName,
-        //     dataToRestore.userId,
-        //     dataToRestore.userName,
-        //     dataToRestore.paymentMethod,
-        //     dataToRestore.websiteName,
-        //     dataToRestore.bankName,
-        //     dataToRestore.bonus,
-        //     dataToRestore.bankCharges,
-        //     dataToRestore.createdAt,
-        //   ],
-        // );
+        await pool.execute(
+          `INSERT INTO UserTransactionDetail 
+          (user_ID, Transaction_id, bankId, websiteId, subAdminName, transactionID, transactionType, amount, paymentMethod, userName, 
+          introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, createdAt) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            null,
+            dataToRestore.Transaction_Id,
+            dataToRestore.bankId,
+            dataToRestore.websiteId,
+            dataToRestore.subAdminName,
+            dataToRestore.transactionID,
+            dataToRestore.transactionType,
+            dataToRestore.amount,
+            dataToRestore.paymentMethod,
+            dataToRestore.userName,
+            dataToRestore.introducerUserName,
+            dataToRestore.bonus,
+            dataToRestore.bankCharges,
+            dataToRestore.remarks,
+            dataToRestore.accountNumber,
+            dataToRestore.bankName,
+            dataToRestore.websiteName,
+            dataToRestore.createdAt,
+          ],
+        );
 
         // Delete the restored data from the Trash table
         await pool.execute(`DELETE FROM Trash WHERE Transaction_Id = ?`, [transactionID]);

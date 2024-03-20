@@ -92,8 +92,8 @@ const AccountRoute = (app) => {
           // Loop through users and fetch UserTransactionDetail for each user
           for (const user of users) {
             const [userTransactionDetail] = await pool.execute(
-              `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
-              [user.user_id],
+              `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
+              [user.userName],
             );
             user.UserTransactionDetail = userTransactionDetail;
             SecondArray.push(user);
@@ -117,8 +117,8 @@ const AccountRoute = (app) => {
 
             // Fetch UserTransactionDetail for each user
             const [userTransactionDetail] = await pool.execute(
-              `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
-              [user.user_id],
+              `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
+              [user.userName],
             );
             user.UserTransactionDetail = userTransactionDetail;
 
@@ -906,14 +906,14 @@ const AccountRoute = (app) => {
       try {
         const id = req.params.user_id;
         const [userProfile] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id]);
-
+        const UserName = userProfile[0].userName
         if (userProfile.length === 0) {
           return res.status(404).send({ message: 'User not found' });
         }
 
         // Fetch UserTransactionDetail for the user
-        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
-          id,
+        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
+          UserName,
         ]);
         userProfile[0].UserTransactionDetail = userTransactionDetail;
 

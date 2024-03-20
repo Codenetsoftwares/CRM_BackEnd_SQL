@@ -187,7 +187,7 @@ export const UserRoutes = (app) => {
             return res.status(404).send({ message: 'User not found' });
         }
         const user = userDetails[0];
-        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [user.user_id]);
+        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [user.userName]);
         user.UserTransactionDetail = userTransactionDetail;
 
         res.status(200).send(user);

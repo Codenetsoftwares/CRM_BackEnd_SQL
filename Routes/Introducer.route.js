@@ -118,8 +118,8 @@ export const IntroducerRoutes = (app) => {
 
       const usersWithTransactionDetails = [];
       for (const userData of users) {
-        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
-          userData.user_id,
+        const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
+          userData.userName,
         ]);
         userData.UserTransactionDetail = userTransactionDetail;
         usersWithTransactionDetails.push(userData);
@@ -173,8 +173,8 @@ export const IntroducerRoutes = (app) => {
 
       // Fetching and attaching transaction details for the user
       const [userTransactionDetail] = await pool.execute(
-        `SELECT * FROM UserTransactionDetail WHERE user_ID = ?`,
-        [userRecord.user_id], // Accessing user_id from the user object
+        `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
+        [userRecord.userName], // Accessing userName from the user object
       );
       filteredIntroducerUser.transactionDetail = userTransactionDetail;
 
@@ -266,8 +266,8 @@ export const IntroducerRoutes = (app) => {
 
         const transactions = [];
         for (const userData of users) {
-          const [userTransactions] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE user_ID = ?`, [
-            userData.user_id,
+          const [userTransactions] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
+            userData.userName,
           ]);
           for (const transaction of userTransactions) {
             const formattedTransaction = {
