@@ -12,17 +12,17 @@ export const introducerUser = {
       }
       const [rows] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [userName]);
       const existingUser = rows[0];
-  
+
       if (!existingUser) {
         throw { code: 401, message: 'Invalid User Name or Password' };
       }
-  
+
       const passwordValid = await bcrypt.compare(password, existingUser.password);
-  
+
       if (!passwordValid) {
         throw { code: 401, message: 'Invalid User Name or Password' };
       }
-  
+
       const accessTokenResponse = {
         intro_id: existingUser.intro_id,
         name: existingUser.firstname,
@@ -30,11 +30,11 @@ export const introducerUser = {
         role: existingUser.role,
         intro_id: existingUser.intro_id,
       };
-  
+
       const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, {
         expiresIn: persist ? '1y' : '8h',
       });
-  
+
       return {
         userName: existingUser.userName,
         accessToken: accessToken,
@@ -43,7 +43,7 @@ export const introducerUser = {
       };
     } catch (err) {
       console.error(err);
-      throw err; 
+      throw err;
     }
   },
 

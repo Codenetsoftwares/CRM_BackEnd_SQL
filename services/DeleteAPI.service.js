@@ -149,9 +149,11 @@ const DeleteApiService = {
   },
 
   deleteTransaction: async (transaction, user) => {
-    console.log("transaction", transaction);
+    console.log('transaction', transaction);
     const pool = await connectToDB();
-    const [existingTransaction] = await pool.execute(`SELECT * FROM Transaction WHERE Transaction_Id = ?`, [transaction.Transaction_Id]);
+    const [existingTransaction] = await pool.execute(`SELECT * FROM Transaction WHERE Transaction_Id = ?`, [
+      transaction.Transaction_Id,
+    ]);
 
     if (!existingTransaction.length) {
       throw { code: 404, message: `Transaction not found with id: ${transaction.Transaction_Id}` };
@@ -223,7 +225,7 @@ const DeleteApiService = {
       editMessage,
       'Delete',
       'Transaction',
-      Edit_ID
+      Edit_ID,
     ]);
     return true;
   },
@@ -286,7 +288,7 @@ const DeleteApiService = {
   // Functions To Delete Bank Detail's
 
   deleteBank: async (id) => {
-    console.log("iddd", id);
+    console.log('iddd', id);
     const pool = await connectToDB();
     const [existingTransaction] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id.bank_id]);
     console.log('existingTransaction', existingTransaction);
@@ -314,7 +316,7 @@ const DeleteApiService = {
       upiAppName: id.upiAppName,
       upiNumber: id.upiNumber,
       subAdminName: id.subAdminName,
-      createdAt: id.createdAt
+      createdAt: id.createdAt,
     };
     // Replace undefined values with null in updatedTransactionData
     Object.keys(updatedTransactionData).forEach((key) => {
@@ -338,7 +340,7 @@ const DeleteApiService = {
       updatedTransactionData.createdAt,
       editMessage,
       'Delete',
-      updatedTransactionData.subAdminName
+      updatedTransactionData.subAdminName,
     ]);
     return true;
   },
@@ -365,7 +367,7 @@ const DeleteApiService = {
       website_id: id.website_id,
       websiteName: id.websiteName,
       subAdminName: id.subAdminName,
-      createdAt: id.createdAt
+      createdAt: id.createdAt,
     };
     // Replace undefined values with null in updatedTransactionData
     Object.keys(updatedTransactionData).forEach((key) => {

@@ -5,6 +5,7 @@ import { introducerUser } from '../services/introducer.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 import UserServices from '../services/User.services.js';
 import TransactionServices from '../services/Transaction.services.js';
+import moment from "moment";
 
 const AccountRoute = (app) => {
   app.post('/admin/login', async (req, res) => {
@@ -543,98 +544,97 @@ const AccountRoute = (app) => {
   app.put('/api/admin/edit-subadmin-roles/:admin_id', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
-        const subAdminId = req.params.admin_id;
-        const { roles } = req.body;
-        if (!subAdminId) {
-            throw { code: 400, message: 'Id not found' };
-        }
-        // Update roles in the database
-        const [result] = await pool.execute('UPDATE Admin SET roles = ? WHERE admin_id = ?', [roles, subAdminId]);
-        res.status(200).send(`Subadmin roles updated with ${JSON.stringify(roles)}`);
+      const subAdminId = req.params.admin_id;
+      const { roles } = req.body;
+      if (!subAdminId) {
+        throw { code: 400, message: 'Id not found' };
+      }
+      // Update roles in the database
+      const [result] = await pool.execute('UPDATE Admin SET roles = ? WHERE admin_id = ?', [roles, subAdminId]);
+      res.status(200).send(`Subadmin roles updated with ${JSON.stringify(roles)}`);
     } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+      console.error(e);
+      res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
     }
-});
+  });
 
+  app.get(
+    '/introducer-user-single-data/:intro_id',
+    Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
+    async (req, res) => {
+      const pool = await connectToDB();
+      try {
+        const id = req.params.intro_id;
+        const [introducerUserResult] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [
+          id,
+        ]);
+        const introducerUserName = introducerUserResult[0].userName;
 
-app.get(
-  '/introducer-user-single-data/:intro_id',
-  Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View']),
-  async (req, res) => {
-    const pool = await connectToDB();
-    try {
-      const id = req.params.intro_id;
-      const [introducerUserResult] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [id]);
-      const introducerUserName = introducerUserResult[0].userName;
-
-      // Find users with introducersUserName matching introducerUser.userName
-      const [usersResult] = await pool.execute(
-        `SELECT *
+        // Find users with introducersUserName matching introducerUser.userName
+        const [usersResult] = await pool.execute(
+          `SELECT *
         FROM User
         WHERE introducersUserName = ?
         OR introducersUserName1 = ?
         OR introducersUserName2 = ?`,
-        [introducerUserName, introducerUserName, introducerUserName],
-      );
-         console.log("usersResult", usersResult);
-      if (usersResult.length === 0) {
-        return res.status(404).send({ message: 'No matching users found' });
-      }
-
-      let filteredIntroducerUsers = [];
-
-      for (const matchedUser of usersResult) {
-        let filteredIntroducerUser = {
-          user_id: matchedUser.user_id,
-          firstname: matchedUser.firstname,
-          lastname: matchedUser.lastname,
-          userName: matchedUser.userName,
-          wallet: matchedUser.wallet,
-          role: matchedUser.role,
-          webSiteDetail: matchedUser.webSiteDetail,
-          transactionDetail: [], // Initialize as an empty array
-        };
-
-        let matchedIntroducersUserName = null;
-        let matchedIntroducerPercentage = null;
-
-        if (matchedUser.introducersUserName === introducerUserName) {
-          matchedIntroducersUserName = matchedUser.introducersUserName;
-          matchedIntroducerPercentage = matchedUser.introducerPercentage;
-        } else if (matchedUser.introducersUserName1 === introducerUserName) {
-          matchedIntroducersUserName = matchedUser.introducersUserName1;
-          matchedIntroducerPercentage = matchedUser.introducerPercentage1;
-        } else if (matchedUser.introducersUserName2 === introducerUserName) {
-          matchedIntroducersUserName = matchedUser.introducersUserName2;
-          matchedIntroducerPercentage = matchedUser.introducerPercentage2;
+          [introducerUserName, introducerUserName, introducerUserName],
+        );
+        console.log('usersResult', usersResult);
+        if (usersResult.length === 0) {
+          return res.status(404).send({ message: 'No matching users found' });
         }
 
-        if (matchedIntroducersUserName) {
-          filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
-          filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
+        let filteredIntroducerUsers = [];
 
-          // Fetch transaction details for the current user
-          const [userTransactionDetails] = await pool.execute(
-            `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
-            [matchedUser.userName],
-          );
+        for (const matchedUser of usersResult) {
+          let filteredIntroducerUser = {
+            user_id: matchedUser.user_id,
+            firstname: matchedUser.firstname,
+            lastname: matchedUser.lastname,
+            userName: matchedUser.userName,
+            wallet: matchedUser.wallet,
+            role: matchedUser.role,
+            webSiteDetail: matchedUser.webSiteDetail,
+            transactionDetail: [], // Initialize as an empty array
+          };
 
-          // Attach transaction details to the current user
-          filteredIntroducerUser.transactionDetail = userTransactionDetails;
-          filteredIntroducerUsers.push(filteredIntroducerUser);
+          let matchedIntroducersUserName = null;
+          let matchedIntroducerPercentage = null;
+
+          if (matchedUser.introducersUserName === introducerUserName) {
+            matchedIntroducersUserName = matchedUser.introducersUserName;
+            matchedIntroducerPercentage = matchedUser.introducerPercentage;
+          } else if (matchedUser.introducersUserName1 === introducerUserName) {
+            matchedIntroducersUserName = matchedUser.introducersUserName1;
+            matchedIntroducerPercentage = matchedUser.introducerPercentage1;
+          } else if (matchedUser.introducersUserName2 === introducerUserName) {
+            matchedIntroducersUserName = matchedUser.introducersUserName2;
+            matchedIntroducerPercentage = matchedUser.introducerPercentage2;
+          }
+
+          if (matchedIntroducersUserName) {
+            filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
+            filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
+
+            // Fetch transaction details for the current user
+            const [userTransactionDetails] = await pool.execute(
+              `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
+              [matchedUser.userName],
+            );
+
+            // Attach transaction details to the current user
+            filteredIntroducerUser.transactionDetail = userTransactionDetails;
+            filteredIntroducerUsers.push(filteredIntroducerUser);
+          }
         }
+
+        return res.send(filteredIntroducerUsers);
+      } catch (e) {
+        console.error(e);
+        res.status(500).send({ message: 'Internal Server Error' });
       }
-      
-      return res.send(filteredIntroducerUsers);
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
-    }
-  },
-);
-
-
+    },
+  );
 
   app.post('/api/admin/reset-password', Authorize(['superAdmin']), async (req, res) => {
     try {
@@ -677,137 +677,150 @@ app.get(
     },
   );
 
-  app.post(
-    '/api/admin/filter-data',
-    Authorize([
-      'superAdmin',
-      'Dashboard-View',
-      'Transaction-View',
-      'Transaction-Edit-Request',
-      'Transaction-Delete-Request',
-      'Website-View',
-      'Bank-View',
-      'report-all-txn',
-    ]),
-    async (req, res) => {
-      const pool = await connectToDB();
-      try {
-        const { page, itemsPerPage } = req.query;
-        const {
-          transactionType,
-          introducerList,
-          subAdminList,
-          BankList,
-          WebsiteList,
-          sdate,
-          edate,
-          minAmount,
-          maxAmount,
-        } = req.body;
+  // app.post(
+  //   '/api/admin/filter-data',
+  //   Authorize([
+  //     'superAdmin',
+  //     'Dashboard-View',
+  //     'Transaction-View',
+  //     'Transaction-Edit-Request',
+  //     'Transaction-Delete-Request',
+  //     'Website-View',
+  //     'Bank-View',
+  //     'report-all-txn',
+  //   ]),
+  //   async (req, res) => {
+  //     const pool = await connectToDB();
+  //     try {
+  //       const { page, itemsPerPage } = req.query;
+  //       const {
+  //         transactionType,
+  //         introducerList,
+  //         subAdminList,
+  //         BankList,
+  //         WebsiteList,
+  //         minAmount,
+  //         maxAmount,
+  //       } = req.body;
+      
+  //       const filter = {};
+        
+  //       if (transactionType) {
+  //         filter.transactionType = transactionType;
+  //       }
+  //       if (introducerList) {
+  //         filter.introducerUserName = introducerList;
+  //       }
+  //       if (subAdminList) {
+  //         filter.subAdminName = subAdminList;
+  //       }
+  //       if (BankList) {
+  //         filter.bankName = BankList;
+  //       }
+  //       if (WebsiteList) {
+  //         filter.websiteName = WebsiteList;
+  //       }
 
-        const filter = {};
+  //       let filterConditions = '';
+  //       const filterKeys = Object.keys(filter);
+  //       const filterValues = [];
 
-        if (transactionType) {
-          filter.transactionType = transactionType;
-        }
-        if (introducerList) {
-          filter.introducerUserName = introducerList;
-        }
-        if (subAdminList) {
-          filter.subAdminName = subAdminList;
-        }
-        if (BankList) {
-          filter.bankName = BankList;
-        }
-        if (WebsiteList) {
-          filter.websiteName = WebsiteList;
-        }
-        // if (sdate && edate) {
-        //   const startDate = new Date(sdate).toISOString().slice(0, 19).replace('T', ' ');
-        //   const endDate = new Date(edate).toISOString().slice(0, 19).replace('T', ' ');
-        //   filter.createdAt = `${startDate} AND ${endDate}`;
-        // } else if (sdate) {
-        //   const startDate = new Date(sdate).toISOString().slice(0, 19).replace('T', ' ');
-        //   filter.createdAt = `>= '${startDate}'`;
-        // } else if (edate) {
-        //   const endDate = new Date(edate).toISOString().slice(0, 19).replace('T', ' ');
-        //   filter.createdAt = `<= '${endDate}'`;
-        // }
+  //       if (filterKeys.length > 0) {
+  //         filterConditions = filterKeys
+  //           .map((key) => {
+  //             filterValues.push(filter[key]);
+  //             return `${key} = ?`;
+  //           })
+  //           .join(' AND ');
+  //       }
 
-        console.log('Filter:', filter);
+  //       let transactions = [];
+  //       let websiteTransactions = [];
+  //       let bankTransactions = [];
 
-        let filterConditions = '';
-        const filterKeys = Object.keys(filter);
-        if (filterKeys.length > 0) {
-          filterConditions = filterKeys.map((key) => `${key} = '${filter[key]}'`).join(' AND ');
-        }
+  //       if (filterConditions) {
+  //         [transactions] = await pool.execute(
+  //             `SELECT * FROM Transaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
+  //             filterValues,
+  //         );
+  //           console.log("filterValues", filterValues);
+  //         [websiteTransactions] = await pool.execute(
+  //             `SELECT * FROM WebsiteTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
+  //             filterValues,
+  //         );
+      
+  //         [bankTransactions] = await pool.execute(
+  //             `SELECT * FROM BankTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
+  //             filterValues,
+  //         );
+  //     }
+      
+  //       const filteredTransactions = transactions.filter((transaction) => {
+  //         if (minAmount && maxAmount) {
+  //           return transaction.amount >= minAmount && transaction.amount <= maxAmount;
+  //         } else {
+  //           return true;
+  //         }
+  //       });
 
-        console.log('Filter Conditions:', filterConditions);
+  //       const filteredWebsiteTransactions = websiteTransactions.filter((transaction) => {
+  //         if (minAmount && maxAmount) {
+  //           return (
+  //             (transaction.withdrawAmount >= minAmount && transaction.withdrawAmount <= maxAmount) ||
+  //             (transaction.depositAmount >= minAmount && transaction.depositAmount <= maxAmount)
+  //           );
+  //         } else {
+  //           return true;
+  //         }
+  //       });
 
-        let transactions = [];
-        let websiteTransactions = [];
-        let bankTransactions = [];
+  //       const filteredBankTransactions = bankTransactions.filter((transaction) => {
+  //         if (minAmount && maxAmount) {
+  //           return (
+  //             (transaction.withdrawAmount >= minAmount && transaction.withdrawAmount <= maxAmount) ||
+  //             (transaction.depositAmount >= minAmount && transaction.depositAmount <= maxAmount)
+  //           );
+  //         } else {
+  //           return true;
+  //         }
+  //       });
 
-        if (filterConditions) {
-          [transactions] = await pool.execute(
-            `SELECT * FROM Transaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
-          );
-          [websiteTransactions] = await pool.execute(
-            `SELECT * FROM WebsiteTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
-          );
-          [bankTransactions] = await pool.execute(
-            `SELECT * FROM BankTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
-          );
-        }
+  //       const allTransactions = [...filteredTransactions, ...filteredWebsiteTransactions, ...filteredBankTransactions];
+  //       console.log("allTransactions", allTransactions);
+  //       allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  //       const allIntroDataLength = allTransactions.length;
+  //       let pageNumber = Math.floor(allIntroDataLength / 10 + 1);
+  //       const skip = (page - 1) * itemsPerPage;
+  //       const limit = parseInt(itemsPerPage);
+  //       const paginatedResults = allTransactions.slice(skip, skip + limit);
+  //       console.log("paginatedResults", paginatedResults);
+  //       if (paginatedResults.length !== 0) {
+  //         console.log("paginatedResults", paginatedResults);
+  //         return res.status(200).json({ paginatedResults, pageNumber, allIntroDataLength });
+  //       } else {
+  //         const itemsPerPage = 10; // Specify the number of items per page
 
-        const filteredTransactions = transactions.filter((transaction) => {
-          if (minAmount && maxAmount) {
-            return transaction.amount >= minAmount && transaction.amount <= maxAmount;
-          } else {
-            return true;
-          }
-        });
+  //         const totalItems = allTransactions.length;
+  //         const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-        const filteredWebsiteTransactions = websiteTransactions.filter((transaction) => {
-          if (minAmount && maxAmount) {
-            return (
-              (transaction.withdrawAmount >= minAmount && transaction.withdrawAmount <= maxAmount) ||
-              (transaction.depositAmount >= minAmount && transaction.depositAmount <= maxAmount)
-            );
-          } else {
-            return true;
-          }
-        });
+  //         let page = parseInt(req.query.page) || 1; // Get the page number from the request, default to 1 if not provided
+  //         page = Math.min(Math.max(1, page), totalPages); // Ensure page is within valid range
 
-        const filteredBankTransactions = bankTransactions.filter((transaction) => {
-          if (minAmount && maxAmount) {
-            return (
-              (transaction.withdrawAmount >= minAmount && transaction.withdrawAmount <= maxAmount) ||
-              (transaction.depositAmount >= minAmount && transaction.depositAmount <= maxAmount)
-            );
-          } else {
-            return true;
-          }
-        });
+  //         const skip = (page - 1) * itemsPerPage;
+  //         const limit = Math.min(itemsPerPage, totalItems - skip); // Ensure limit doesn't exceed the number of remaining items
+  //         const paginatedResults = allTransactions.slice(skip, skip + limit);
 
-        const allTransactions = [...filteredTransactions, ...filteredWebsiteTransactions, ...filteredBankTransactions];
-        allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  //         const pageNumber = page;
+  //         const allIntroDataLength = totalItems;
 
-        const totalItems = allTransactions.length;
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-        let pageNumber = parseInt(page) || 1;
-        pageNumber = Math.min(Math.max(1, pageNumber), totalPages);
-        const skip = (pageNumber - 1) * itemsPerPage;
-        const limit = Math.min(itemsPerPage, totalItems - skip);
-        const paginatedResults = allTransactions.slice(skip, skip + limit);
-
-        res.status(200).json({ paginatedResults, pageNumber, totalPages, totalItems });
-      } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-      }
-    },
-  );
+  //         return res.status(200).json({ paginatedResults, pageNumber, totalPages, allIntroDataLength });
+  //       }
+  //     } catch (error) {
+  //       console.error('Error:', error);
+  //       res.status(500).json({ message: 'Internal server error' });
+  //     }
+  //   },
+  // );
 
   app.post(
     '/api/admin/create/introducer/deposit-transaction',
@@ -911,7 +924,7 @@ app.get(
       try {
         const id = req.params.user_id;
         const [userProfile] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id]);
-        const UserName = userProfile[0].userName
+        const UserName = userProfile[0].userName;
         if (userProfile.length === 0) {
           return res.status(404).send({ message: 'User not found' });
         }

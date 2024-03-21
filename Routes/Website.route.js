@@ -188,7 +188,7 @@ const WebisteRoutes = (app) => {
         const userRole = req.user[0]?.roles;
         if (userRole.includes('superAdmin')) {
           const balancePromises = websiteData.map(async (website) => {
-            website.balance = await WebsiteServices.getWebsiteBalance(pool,website.website_id);
+            website.balance = await WebsiteServices.getWebsiteBalance(pool, website.website_id);
             const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
               website.website_id,
             ]);
@@ -211,7 +211,7 @@ const WebisteRoutes = (app) => {
                 website.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
-                  website.balance = await WebsiteServices.getWebsiteBalance(pool,website.website_id);
+                  website.balance = await WebsiteServices.getWebsiteBalance(pool, website.website_id);
                   website.isDeposit = userSubAdmin.isDeposit;
                   website.isWithdraw = userSubAdmin.isWithdraw;
                   website.isRenew = userSubAdmin.isRenew;
@@ -280,7 +280,7 @@ const WebisteRoutes = (app) => {
           return res.status(404).send({ message: 'Website not found' });
         }
         const websiteId = dbWebsiteData[0].website_id;
-        const websiteBalance = await WebsiteServices.getWebsiteBalance(pool,websiteId);
+        const websiteBalance = await WebsiteServices.getWebsiteBalance(pool, websiteId);
         const response = {
           website_id: dbWebsiteData[0].website_id,
           websiteName: dbWebsiteData[0].websiteName,
@@ -376,7 +376,7 @@ const WebisteRoutes = (app) => {
         if (!website) {
           return res.status(404).send({ message: 'Websitet not found' });
         }
-        if ((await WebsiteServices.getWebsiteBalance(pool,id)) < Number(amount)) {
+        if ((await WebsiteServices.getWebsiteBalance(pool, id)) < Number(amount)) {
           return res.status(400).send({ message: 'Insufficient Website Balance' });
         }
         const websiteTransaction = {

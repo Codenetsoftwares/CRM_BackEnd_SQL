@@ -48,13 +48,13 @@ const TransactionServices = {
 
       // Website
       const [dbWebsiteData] = await pool.execute('SELECT * FROM Website WHERE websiteName = ?', [websiteName]);
-      
+
       if (!dbWebsiteData) {
         throw { code: 404, message: 'Website data not found' };
       }
       const websiteId = dbWebsiteData[0].website_id;
 
-      const websiteBalance = await WebsiteServices.getWebsiteBalance(pool,websiteId);
+      const websiteBalance = await WebsiteServices.getWebsiteBalance(pool, websiteId);
       const totalBalance = parseFloat(bonus) + parseFloat(amount);
       if (websiteBalance < totalBalance) {
         throw { code: 400, message: 'Insufficient Website balance' };
@@ -62,12 +62,12 @@ const TransactionServices = {
 
       // Bank
       const [dbBankData] = await pool.execute('SELECT * FROM Bank WHERE bankName = ?', [bankName]);
-      
+
       if (!dbBankData) {
         throw { code: 404, message: 'Bank data not found' };
       }
       const bankId = dbBankData[0].bank_id;
-      const bankBalance = await BankServices.getBankBalance(pool,bankId);
+      const bankBalance = await BankServices.getBankBalance(pool, bankId);
       const totalBankBalance = parseFloat(bankCharges) + parseFloat(amount);
       if (bankBalance < totalBankBalance) {
         throw { code: 400, message: 'Insufficient Bank balance' };

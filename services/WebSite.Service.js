@@ -86,7 +86,7 @@ const WebsiteServices = {
     } catch (e) {
       console.error(e);
       throw e; // Rethrow the error to handle it at the calling site
-    } 
+    }
   },
 
   updateWebsite: async (response, data) => {

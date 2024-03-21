@@ -273,7 +273,7 @@ const DeleteAPIRoute = (app) => {
           Transaction_Id: editRequest[0].Transaction_Id,
           message: editRequest[0].message,
           type: editRequest[0].type,
-          Nametype: editRequest[0].Nametype
+          Nametype: editRequest[0].Nametype,
         };
 
         // Assuming 'Trash' is the table where you store deleted transactions
@@ -311,7 +311,9 @@ const DeleteAPIRoute = (app) => {
         await pool.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
         // Remove the transaction detail from the user
-        await pool.execute(`DELETE FROM UserTransactionDetail WHERE Transaction_id = ?`, [editRequest[0].Transaction_Id]);
+        await pool.execute(`DELETE FROM UserTransactionDetail WHERE Transaction_id = ?`, [
+          editRequest[0].Transaction_Id,
+        ]);
 
         res.status(200).send({ message: 'Transaction moved to Trash', data: restoreResult });
       } else {
@@ -521,26 +523,22 @@ const DeleteAPIRoute = (app) => {
 
   // API For Rejecting Bank Detail
 
-  app.delete(
-    '/api/reject/bank-detail/:bank_id',
-    Authorize(['superAdmin', 'RequestAdmin']),
-    async (req, res) => {
-      const pool = await connectToDB();
-      try {
-        const id = req.params.bank_id;
-        const deleteQuery = 'DELETE FROM EditBankRequest WHERE bank_id = ?';
-        const [result] = await pool.execute(deleteQuery, [id]);
-        if (result.affectedRows === 1) {
-          res.status(200).send({ message: 'Data deleted successfully' });
-        } else {
-          res.status(404).send({ message: 'Data not found' });
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: e.message });
+  app.delete('/api/reject/bank-detail/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+    const pool = await connectToDB();
+    try {
+      const id = req.params.bank_id;
+      const deleteQuery = 'DELETE FROM EditBankRequest WHERE bank_id = ?';
+      const [result] = await pool.execute(deleteQuery, [id]);
+      if (result.affectedRows === 1) {
+        res.status(200).send({ message: 'Data deleted successfully' });
+      } else {
+        res.status(404).send({ message: 'Data not found' });
       }
-    },
-  );
+    } catch (e) {
+      console.error(e);
+      res.status(500).send({ message: e.message });
+    }
+  });
 
   // API For Rejecting Website Detail
 
@@ -712,7 +710,7 @@ const DeleteAPIRoute = (app) => {
 
         // Retrieve deleted data from the Trash table based on transactionID
         const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE Transaction_Id = ?`, [transactionID]);
-           console.log("deletedData", deletedData);
+        console.log('deletedData', deletedData);
         if (!deletedData || deletedData.length === 0) {
           return res.status(404).send({ message: 'Data not found in Trash' });
         }
@@ -737,7 +735,7 @@ const DeleteAPIRoute = (app) => {
           bankCharges: deletedData[0].bankCharges,
           createdAt: deletedData[0].createdAt,
           Transaction_Id: deletedData[0].Transaction_Id,
-          accountNumber: deletedData[0].accountNumber
+          accountNumber: deletedData[0].accountNumber,
         };
 
         // Insert restored data into the Transaction table
@@ -898,7 +896,7 @@ const DeleteAPIRoute = (app) => {
     }
   });
 
-// API To Reject EditRequest Data
+  // API To Reject EditRequest Data
   app.delete('/api/reject/DeleteRequest/:Edit_ID', Authorize(['superAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
