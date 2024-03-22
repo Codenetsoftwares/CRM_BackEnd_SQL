@@ -137,7 +137,7 @@ const TransactionServices = {
         const Id = Transaction_Id;
         const incertUserData = `INSERT INTO UserTransactionDetail (user_ID, Transaction_id ,bankId, websiteId, subAdminName, transactionID,
         transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
-        websiteName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        websiteName, createdAt, subAdminId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(incertUserData, [
           user_ID,
           Id,
@@ -157,6 +157,7 @@ const TransactionServices = {
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
+          newTransaction.subAdminId
         ]);
       }
       // Calculation of Withdraw---- Amount will transfer from Bank to Website (Bank Charge)
@@ -215,7 +216,7 @@ const TransactionServices = {
         const Id = Transaction_Id;
         const incertUserData = `INSERT INTO UserTransactionDetail (user_ID, Transaction_id ,bankId, websiteId, subAdminName, transactionID,
         transactionType, amount, paymentMethod, userName, introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName,
-        websiteName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        websiteName, createdAt, subAdminId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await pool.execute(incertUserData, [
           user_ID,
           Id,
@@ -235,6 +236,7 @@ const TransactionServices = {
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
+          newTransaction.subAdminId
         ]);
       }
       return res.status(200).json({ status: true, message: 'Transaction created successfully' });
