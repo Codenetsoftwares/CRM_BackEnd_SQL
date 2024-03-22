@@ -5,7 +5,7 @@ import connectToDB from '../db/db.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const BankRoutes = (app) => {
-  app.post('/api/add-bank-name', Authorize(['superAdmin']), async (req, res) => {
+  app.post('/api/add-bank-name', Authorize(['superAdmin', "Bank-View", "Transaction-View"]), async (req, res) => {
     const pool = await connectToDB();
     try {
       const userName = req.user;
