@@ -143,6 +143,8 @@ const BankRoutes = (app) => {
             const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
             if (subAdmins && subAdmins.length > 0) {
               bank.subAdmins = subAdmins;
+            } else {
+              bank.subAdmins = [];
             }
             return bank;
           });
@@ -174,7 +176,8 @@ const BankRoutes = (app) => {
                   return null;
                 }
               } else {
-                return null; // Exclude banks without subAdmins
+                bank.subAdmins = [];
+                return null;
               }
               return bank; // Include this bank in the result
             });

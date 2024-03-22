@@ -194,6 +194,8 @@ const WebisteRoutes = (app) => {
             ]);
             if (subAdmins && subAdmins.length > 0) {
               website.subAdmins = subAdmins;
+            } else {
+              website.subAdmins = [];
             }
             return website;
           });
@@ -221,6 +223,7 @@ const WebisteRoutes = (app) => {
                   return null;
                 }
               } else {
+                website.subAdmins = [];
                 return null;
               }
               return website;
