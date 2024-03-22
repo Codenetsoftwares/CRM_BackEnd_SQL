@@ -30,7 +30,7 @@ const EditAPIRoute = (app) => {
     async (req, res) => {
       const pool = await connectToDB();
       try {
-        const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bankTransactionId = ?`, [
+        const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bank_id = ?`, [
           req.params.requestId,
         ]);
 
@@ -68,11 +68,11 @@ const EditAPIRoute = (app) => {
               ],
             );
 
-            await pool.execute(`UPDATE EditBankRequest SET isApproved = TRUE WHERE bankTransactionId = ?`, [
+            await pool.execute(`UPDATE EditBankRequest SET isApproved = TRUE WHERE bank_id = ?`, [
               req.params.requestId,
             ]);
 
-            await pool.execute(`DELETE FROM EditBankRequest WHERE bankTransactionId = ?`, [req.params.requestId]);
+            await pool.execute(`DELETE FROM EditBankRequest WHERE bank_id = ?`, [req.params.requestId]);
 
             return res.status(200).send({ message: 'Edit request approved and data updated' });
           } else {

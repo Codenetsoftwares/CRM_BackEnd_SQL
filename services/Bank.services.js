@@ -114,7 +114,7 @@ const BankServices = {
     };
     console.log('update', updatedTransactionData);
     const editRequestQuery = `INSERT INTO EditBankRequest 
-        (bankTransactionId, accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, changedFields, isApproved, type, message) 
+        (bank_id, accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, changedFields, isApproved, type, message) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, false, 'Edit', "Bank Detail's has been edited")`;
     await pool.execute(editRequestQuery, [
       updatedTransactionData.id,

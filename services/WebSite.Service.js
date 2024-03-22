@@ -147,7 +147,7 @@ const WebsiteServices = {
     });
 
     const editRequestQuery = `
-    INSERT INTO EditWebsiteRequest (websiteTransactionId, websiteName, message, type, changedFields, isApproved) 
+    INSERT INTO EditWebsiteRequest (website_id, websiteName, message, type, changedFields, isApproved) 
     VALUES (?, ?, ?, ?, ?, ?)`;
 
     await pool.execute(editRequestQuery, [

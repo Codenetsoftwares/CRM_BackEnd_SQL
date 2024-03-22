@@ -217,7 +217,7 @@ const BankRoutes = (app) => {
           return res.status(404).send({ message: 'Bank not found' });
         }
         const [bankId] = dbBankData[0].bank_id;
-        const bankBalance = await BankServices.getBankBalance(bankId);
+        const bankBalance = await BankServices.getBankBalance(pool,bankId);
         const response = {
           bank_id: dbBankData[0].bank_id,
           bankName: dbBankData[0].bankName,
