@@ -98,7 +98,7 @@ const WebsiteServices = {
     }
 
     // Check if the website has already been edited
-    const [editHistory] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE websiteTransactionId = ?`, [
+    const [editHistory] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [
       existingRequest,
     ]);
     if (editHistory.length > 0) {
