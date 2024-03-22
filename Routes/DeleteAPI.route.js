@@ -897,7 +897,7 @@ const DeleteAPIRoute = (app) => {
   });
 
   // API To Reject EditRequest Data
-  app.delete('/api/reject/DeleteRequest/:Edit_ID', Authorize(['superAdmin']), async (req, res) => {
+  app.delete('/api/reject/DeleteRequest/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     const pool = await connectToDB();
     try {
       const id = req.params.Edit_ID;

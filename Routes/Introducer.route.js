@@ -282,7 +282,7 @@ export const IntroducerRoutes = (app) => {
               SubAdminName: transaction.subAdminName,
               UserName: transaction.userName,
               Remarks: transaction.remarks,
-              createdAt: transaction.createdAt
+              createdAt: transaction.createdAt,
             };
             transactions.push(formattedTransaction);
           }

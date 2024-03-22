@@ -157,7 +157,7 @@ const TransactionServices = {
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
-          newTransaction.subAdminId
+          newTransaction.subAdminId,
         ]);
       }
       // Calculation of Withdraw---- Amount will transfer from Bank to Website (Bank Charge)
@@ -236,7 +236,7 @@ const TransactionServices = {
           newTransaction.bankName,
           newTransaction.websiteName,
           newTransaction.createdAt,
-          newTransaction.subAdminId
+          newTransaction.subAdminId,
         ]);
       }
       return res.status(200).json({ status: true, message: 'Transaction created successfully' });

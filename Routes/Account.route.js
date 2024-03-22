@@ -495,16 +495,15 @@ const AccountRoute = (app) => {
     try {
       let allIntroDataLength;
       if (searchQuery) {
-        console.log('first');
         const [users] = await pool.execute(`SELECT * FROM Admin WHERE userName LIKE '%${searchQuery}%';`);
         allIntroDataLength = users.length;
         const pageNumber = Math.ceil(allIntroDataLength / 10);
         res.status(200).json({ users, pageNumber, allIntroDataLength });
       } else {
-        console.log('second');
-        const [introducerUser] = await pool.execute(`SELECT * FROM Admin WHERE roles NOT IN ('superAdmin');`);
+        const [introducerUser] = await pool.execute(
+          `SELECT * FROM Admin WHERE NOT JSON_CONTAINS(roles, '"superAdmin"');`,
+        );
         const introData = introducerUser.slice((page - 1) * 10, page * 10);
-        console.log('introData', introData.length);
 
         allIntroDataLength = introducerUser.length;
 
@@ -516,7 +515,7 @@ const AccountRoute = (app) => {
         res.status(200).json({ introData, pageNumber, allIntroDataLength });
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error occurred:', e);
       res.status(500).send({ message: 'Internal Server Error' });
     }
   });
@@ -701,9 +700,9 @@ const AccountRoute = (app) => {
   //         minAmount,
   //         maxAmount,
   //       } = req.body;
-      
+
   //       const filter = {};
-        
+
   //       if (transactionType) {
   //         filter.transactionType = transactionType;
   //       }
@@ -747,13 +746,13 @@ const AccountRoute = (app) => {
   //             `SELECT * FROM WebsiteTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
   //             filterValues,
   //         );
-      
+
   //         [bankTransactions] = await pool.execute(
   //             `SELECT * FROM BankTransaction WHERE ${filterConditions} ORDER BY createdAt DESC;`,
   //             filterValues,
   //         );
   //     }
-      
+
   //       const filteredTransactions = transactions.filter((transaction) => {
   //         if (minAmount && maxAmount) {
   //           return transaction.amount >= minAmount && transaction.amount <= maxAmount;
