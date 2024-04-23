@@ -7,7 +7,7 @@ const WebsiteServices = {
       VALUES (?, ?, ?, ?)`;
       const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
       isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-      await pool.query(insertWebsiteDetails, [
+      await database.execute(insertWebsiteDetails, [
         approvedWebsiteRequest[0].website_id,
         approvedWebsiteRequest[0].websiteName,
         approvedWebsiteRequest[0].subAdminName,
@@ -17,7 +17,7 @@ const WebsiteServices = {
         subAdmins.map(async (subAdmin) => {
           const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
           // Insert subadmin details
-          await pool.query(insertSubadmin, [
+          await database.execute(insertSubadmin, [
             approvedWebsiteRequest[0].website_id,
             subAdminId,
             isDeposit,
@@ -36,14 +36,14 @@ const WebsiteServices = {
 
   deleteWebsiteRequest: async (websiteId) => {
     const deleteWebsiteRequestQuery = `DELETE FROM WebsiteRequest WHERE website_id = ?`;
-    const result = await pool.execute(deleteWebsiteRequestQuery, [websiteId]);
+    const result = await database.execute(deleteWebsiteRequestQuery, [websiteId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {
     try {
       const sql = 'SELECT * FROM BankRequest';
-      const result = await pool.execute(sql);
+      const result = await database.execute(sql);
       return result;
     } catch (error) {
       console.error(error);
@@ -54,10 +54,10 @@ const WebsiteServices = {
   getWebsiteBalance: async (websiteId) => {
     try {
       const websiteTransactionsQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ?`;
-      const [websiteTransactions] = await pool.execute(websiteTransactionsQuery, [websiteId]);
+      const [websiteTransactions] = await database.execute(websiteTransactionsQuery, [websiteId]);
 
       const transactionsQuery = `SELECT * FROM Transaction WHERE websiteId = ?`;
-      const [transactions] = await pool.execute(transactionsQuery, [websiteId]);
+      const [transactions] = await database.execute(transactionsQuery, [websiteId]);
 
       let balance = 0;
 
@@ -93,7 +93,7 @@ const WebsiteServices = {
     }
 
     // Check if the website has already been edited
-    const [editHistory] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [
+    const [editHistory] = await database.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [
       existingRequest,
     ]);
     if (editHistory.length > 0) {
@@ -108,14 +108,14 @@ const WebsiteServices = {
     }
 
     // Check if the new website name already exists (case-insensitive)
-    const [duplicateWebsite] = await pool.execute(`SELECT * FROM Website WHERE LOWER(websiteName) = LOWER(?)`, [
+    const [duplicateWebsite] = await database.execute(`SELECT * FROM Website WHERE LOWER(websiteName) = LOWER(?)`, [
       data.websiteName,
     ]);
     if (duplicateWebsite.length > 0) {
       throw { code: 400, message: 'Website name already exists in Website' };
     }
 
-    const [duplicateEditWebsite] = await pool.execute(
+    const [duplicateEditWebsite] = await database.execute(
       `SELECT * FROM EditWebsiteRequest WHERE LOWER(websiteName) = LOWER(?)`,
       [data.websiteName],
     );
@@ -145,7 +145,7 @@ const WebsiteServices = {
     INSERT INTO EditWebsiteRequest (website_id, websiteName, message, type, changedFields, isApproved) 
     VALUES (?, ?, ?, ?, ?, ?)`;
 
-    await pool.execute(editRequestQuery, [
+    await database.execute(editRequestQuery, [
       updatedTransactionData.id,
       updatedTransactionData.websiteName,
       "Website Detail's has been edited",

@@ -19,13 +19,13 @@ export const AuthorizeRole = (roles) => {
       }
 
       // Fetch introducer user from database using username
-      const [introducerUser] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
+      const [introducerUser] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
         decodedToken.userName,
       ]);
 
       // If no introducer user found, fetch user with other roles
       if (!introducerUser || introducerUser.length === 0) {
-        const [otherUser] = await pool.execute('SELECT * FROM User WHERE user_id = ?', [decodedToken.user_id]);
+        const [otherUser] = await database.execute('SELECT * FROM User WHERE user_id = ?', [decodedToken.user_id]);
         if (!otherUser || otherUser.length === 0) {
           return res.status(401).send({ code: 401, message: 'Invalid login attempt (4)' });
         }

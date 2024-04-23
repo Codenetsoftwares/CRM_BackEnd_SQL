@@ -8,7 +8,7 @@ const BankServices = {
         upiAppName, upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, 
         isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-      await pool.query(insertBankDetails, [
+      await database.execute(insertBankDetails, [
         approvedBankRequests[0].bank_id,
         approvedBankRequests[0].bankName,
         approvedBankRequests[0].accountHolderName,
@@ -25,7 +25,7 @@ const BankServices = {
         subAdmins.map(async (subAdmin) => {
           const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
           // Insert subadmin details
-          await pool.query(insertSubadmin, [
+          await database.execute(insertSubadmin, [
             approvedBankRequests[0].bank_id,
             subAdminId,
             isDeposit,
@@ -45,14 +45,14 @@ const BankServices = {
 
   deleteBankRequest: async (bankId) => {
     const deleteBankRequestQuery = `DELETE FROM BankRequest WHERE bank_id = ?`;
-    const [result] = await pool.execute(deleteBankRequestQuery, [bankId]);
+    const [result] = await database.execute(deleteBankRequestQuery, [bankId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {
     try {
       const sql = 'SELECT * FROM BankRequest';
-      const [result] = await pool.execute(sql);
+      const [result] = await database.execute(sql);
       return result;
     } catch (error) {
       console.error(error);
@@ -87,7 +87,7 @@ const BankServices = {
       changedFields.upiNumber = data.upiNumber;
     }
 
-    const [duplicateBank] = await pool.execute(`SELECT * FROM Bank WHERE (bankName) = (?)`, [data.bankName]);
+    const [duplicateBank] = await database.execute(`SELECT * FROM Bank WHERE (bankName) = (?)`, [data.bankName]);
 
     if (duplicateBank.length > 0) {
       throw { code: 400, message: 'Bank name already exists!' };
@@ -111,7 +111,7 @@ const BankServices = {
     const editRequestQuery = `INSERT INTO EditBankRequest 
         (bank_id, accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, changedFields, isApproved, type, message) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, false, 'Edit', "Bank Detail's has been edited")`;
-    await pool.execute(editRequestQuery, [
+    await database.execute(editRequestQuery, [
       updatedTransactionData.id,
       updatedTransactionData.accountHolderName,
       updatedTransactionData.bankName,
@@ -129,13 +129,13 @@ const BankServices = {
     // const pool = await connectToDB();
     try {
       const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;
-      const [bankTransactions] = await pool.execute(bankTransactionsQuery, [bankId]);
+      const [bankTransactions] = await database.execute(bankTransactionsQuery, [bankId]);
 
       const transactionsQuery = `SELECT * FROM Transaction WHERE bankId = ?`;
-      const [transactions] = await pool.execute(transactionsQuery, [bankId]);
+      const [transactions] = await database.execute(transactionsQuery, [bankId]);
 
       // const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
-      // const [editTransaction] = await pool.execute(editTransactionQuery, [bankId]);
+      // const [editTransaction] = await database.execute(editTransactionQuery, [bankId]);
 
       let balance = 0;
 

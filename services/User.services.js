@@ -9,9 +9,9 @@ export const UserServices = {
       if (!data.firstname || !data.lastname || !data.userName || !data.password) {
         throw { code: 400, message: 'Invalid data provided' };
       }
-      const [existingUsers] = await pool.execute('SELECT * FROM User WHERE userName = ?', [data.userName]);
-      const [existingAdmin] = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [data.userName]);
-      const [existingIntroducerUser] = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
+      const [existingUsers] = await database.execute('SELECT * FROM User WHERE userName = ?', [data.userName]);
+      const [existingAdmin] = await database.execute('SELECT * FROM Admin WHERE userName = ?', [data.userName]);
+      const [existingIntroducerUser] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
         data.userName,
       ]);
 
@@ -28,7 +28,7 @@ export const UserServices = {
       const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
       const user_id = uuidv4();
       // Insert new admin into the Admin table
-      const [result] = await pool.execute(
+      const [result] = await database.execute(
         `INSERT INTO User (user_id, firstname, lastname, contactNumber, userName, password, introducersUserName, introducerPercentage,
         introducersUserName1, introducerPercentage1, introducersUserName2, introducerPercentage2, wallet) VALUES (?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?)`,
@@ -68,7 +68,7 @@ export const UserServices = {
         throw { code: 400, message: 'Invalid value for: Password' };
       }
 
-      const [rows] = await pool.execute('SELECT * FROM User WHERE userName = ?', [userName]);
+      const [rows] = await database.execute('SELECT * FROM User WHERE userName = ?', [userName]);
       const existingUser = rows[0];
       console.log('deee', existingUser);
       if (!existingUser) {
@@ -110,7 +110,7 @@ export const UserServices = {
   updateUserProfile: async (userDetails, data) => {
     try {
       const userId = userDetails[0].user_id;
-      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
+      const [existingUser] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -123,7 +123,7 @@ export const UserServices = {
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
       // Update user data in the database
-      await pool.execute(`UPDATE User SET firstname = ?, lastname = ? WHERE user_id = ?`, [
+      await database.execute(`UPDATE User SET firstname = ?, lastname = ? WHERE user_id = ?`, [
         user.firstname,
         user.lastname,
         userId,
@@ -142,7 +142,7 @@ export const UserServices = {
   userPasswordResetCode: async (userName, password) => {
     try {
       // Check if the user exists
-      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE userName = '${userName}';`);
+      const [existingUser] = await database.execute(`SELECT * FROM User WHERE userName = '${userName}';`);
       if (existingUser.length === 0) {
         throw {
           code: 404,
@@ -161,7 +161,7 @@ export const UserServices = {
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(password, passwordSalt);
       // Update the password in the database
-      const updateQuery = await pool.execute(
+      const updateQuery = await database.execute(
         `UPDATE User SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
       );
       return true;

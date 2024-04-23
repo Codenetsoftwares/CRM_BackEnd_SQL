@@ -12,9 +12,9 @@ const AccountServices = {
       }
 
       // Check if the username already exists in any of the relevant tables
-      const existingAdmin = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [data.userName]);
-      const existingUser = await pool.execute('SELECT * FROM User WHERE userName = ?', [data.userName]);
-      const existingIntroducerUser = await pool.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
+      const existingAdmin = await database.execute('SELECT * FROM Admin WHERE userName = ?', [data.userName]);
+      const existingUser = await database.execute('SELECT * FROM User WHERE userName = ?', [data.userName]);
+      const existingIntroducerUser = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
         data.userName,
       ]);
 
@@ -31,7 +31,7 @@ const AccountServices = {
       const rolesArray = Array.isArray(data.roles) ? data.roles : [data.roles];
 
       // Insert new admin into the Admin table
-      const result = await pool.execute(
+      const result = await database.execute(
         'INSERT INTO Admin (admin_id, firstname, lastname, userName, password, roles) VALUES (?, ?, ?, ?, ?, ?)',
         [admin_id, data.firstname, data.lastname, data.userName, encryptedPassword, JSON.stringify(rolesArray)],
       );
@@ -58,7 +58,7 @@ const AccountServices = {
     }
 
     try {
-      const rows = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [userName]);
+      const rows = await database.execute('SELECT * FROM Admin WHERE userName = ?', [userName]);
       const existingUser = rows[0];
       console.log('user', existingUser);
       if (!existingUser) {
@@ -96,7 +96,7 @@ const AccountServices = {
   IntroducerBalance: async (introUserId) => {
     try {
       console.log('introUserId', introUserId);
-      const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
+      const [intorTranasction] = await database.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
         introUserId,
       ]);
       console.log('intorTranasction', intorTranasction);
@@ -118,7 +118,7 @@ const AccountServices = {
   updateUserProfile: async (id, data) => {
     try {
       // Fetch existing user data from the database
-      const [existingUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id[0].user_id]);
+      const [existingUser] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [id[0].user_id]);
       console.log('existingUser', existingUser[0].user_id);
 
       // Check if the user exists
@@ -156,7 +156,7 @@ const AccountServices = {
         introducerPercentage1 = ?, introducersUserName2 = ?, introducerPercentage2 = ? WHERE user_id = ?`;
 
       // Execute the update query with the provided data
-      await pool.execute(updateUserQuery, [
+      await database.execute(updateUserQuery, [
         data.firstname || existingUser[0].firstname,
         data.lastname || existingUser[0].lastname,
         data.introducersUserName || existingUser[0].introducersUserName,
@@ -178,7 +178,7 @@ const AccountServices = {
   SubAdminPasswordResetCode: async (userName, password) => {
     try {
       // Check if the user exists
-      const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE userName = ?`, [userName]);
+      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE userName = ?`, [userName]);
       if (existingUser.length === 0) {
         throw {
           code: 404,
@@ -197,7 +197,7 @@ const AccountServices = {
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(password, passwordSalt);
       // Update the password in the database
-      const updateQuery = await pool.execute(
+      const updateQuery = await database.execute(
         `UPDATE Admin SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
       );
       return true;
@@ -210,7 +210,7 @@ const AccountServices = {
   SuperAdminPasswordResetCode: async (userName, oldPassword, password) => {
     try {
       // Check if the user exists
-      const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
+      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
       if (existingUser.length === 0) {
         throw {
           code: 404,
@@ -229,7 +229,7 @@ const AccountServices = {
       const passwordSalt = await bcrypt.genSalt();
       const encryptedPassword = await bcrypt.hash(password, passwordSalt);
       // Update the password in the database
-      const updateQuery = await pool.execute(
+      const updateQuery = await database.execute(
         `UPDATE Admin SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
       );
       return true;
@@ -242,7 +242,7 @@ const AccountServices = {
   updateSubAdminProfile: async (id, data) => {
     try {
       const userId = id[0].admin_id;
-      const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE admin_id = ?`, [userId]);
+      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE admin_id = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -255,7 +255,7 @@ const AccountServices = {
       user.firstname = data.firstname || user.firstname;
       user.lastname = data.lastname || user.lastname;
       // Update user data in the database
-      await pool.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE admin_id = ?`, [
+      await database.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE admin_id = ?`, [
         user.firstname,
         user.lastname,
         userId,
@@ -274,7 +274,7 @@ const AccountServices = {
   getIntroBalance: async (introUserId) => {
     console.log('introUserId', introUserId);
     try {
-      const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
+      const [intorTranasction] = await database.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
         introUserId,
       ]);
       let balance = 0;
@@ -303,7 +303,7 @@ const AccountServices = {
 
   introducerLiveBalance: async (id) => {
     try {
-      const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE intro_id = ?', [id]);
+      const [introId] = await database.execute('SELECT * FROM IntroducerUser WHERE intro_id = ?', [id]);
 
       if (!introId.length) {
         throw {
@@ -315,7 +315,7 @@ const AccountServices = {
       const IntroducerId = introId[0].userName;
 
       // Check if IntroducerId exists in any of the introducer user names
-      const [userIntroId] = await pool.execute(
+      const [userIntroId] = await database.execute(
         `SELECT *
             FROM User
             WHERE introducersUserName = ?
@@ -343,7 +343,7 @@ const AccountServices = {
           matchedIntroducerPercentage = user.introducerPercentage2;
         }
 
-        const [transDetails] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
+        const [transDetails] = await database.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
           user.userName,
         ]);
 

@@ -26,8 +26,8 @@ const BankRoutes = (app) => {
 
       // Check if the bank name already exists in Bank or BankRequest tables
       const [existingBank, existingBankRequest] = await Promise.all([
-        pool.execute('SELECT * FROM Bank WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
-        pool.execute('SELECT * FROM BankRequest WHERE REPLACE(LOWER(bankName), " ", "") = ?', [
+        database.execute('SELECT * FROM Bank WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
+        database.execute('SELECT * FROM BankRequest WHERE REPLACE(LOWER(bankName), " ", "") = ?', [
           trimmedBankName.toLowerCase(),
         ]),
       ]);
@@ -40,7 +40,7 @@ const BankRoutes = (app) => {
       // Insert new bank name
       const insertBankQuery = `INSERT INTO BankRequest (bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, 
         subAdminName, subAdminId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      const [result] = await pool.execute(insertBankQuery, [
+      const [result] = await database.execute(insertBankQuery, [
         bank_id,
         trimmedBankName,
         accountHolderName || null,
@@ -65,7 +65,7 @@ const BankRoutes = (app) => {
 
       const bankId = req.params.bank_id;
 
-      const approvedBankRequests = (await pool.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]))[0];
+      const approvedBankRequests = (await database.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]))[0];
 
       if (!approvedBankRequests || approvedBankRequests.length === 0) {
         throw { code: 404, message: 'Bank not found in the approval requests!' };
@@ -129,7 +129,7 @@ const BankRoutes = (app) => {
       try {
         // Fetch bank data
         const banksQuery = `SELECT * FROM Bank`;
-        let [bankData] = await pool.execute(banksQuery);
+        let [bankData] = await database.execute(banksQuery);
 
         const userRole = req.user[0]?.roles; // Accessing roles property
         if (userRole.includes('superAdmin')) {
@@ -137,7 +137,7 @@ const BankRoutes = (app) => {
           const balancePromises = bankData.map(async (bank) => {
             bank.balance = await BankServices.getBankBalance(bank.bank_id);
             // Fetch BankSubAdmins for each bank
-            const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
+            const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
             if (subAdmins && subAdmins.length > 0) {
               bank.subAdmins = subAdmins;
             } else {
@@ -154,7 +154,7 @@ const BankRoutes = (app) => {
           console.log('userSubAdminId', userSubAdminId);
           if (userSubAdminId) {
             const filteredBanksPromises = bankData.map(async (bank) => {
-              const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
+              const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
               if (subAdmins && subAdmins.length > 0) {
                 bank.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
@@ -197,8 +197,6 @@ const BankRoutes = (app) => {
       } catch (e) {
         console.error(e);
         res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-      } finally {
-        pool.end();
       }
     },
   );
@@ -210,7 +208,7 @@ const BankRoutes = (app) => {
       try {
         const id = req.params.bank_id;
         console.log('id', id);
-        const [dbBankData] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
+        const [dbBankData] = await database.execute(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
         console.log('bankdata', dbBankData);
         if (!dbBankData) {
           return res.status(404).send({ message: 'Bank not found' });
@@ -250,7 +248,7 @@ const BankRoutes = (app) => {
           throw { code: 400, message: 'Remark is required' };
         }
 
-        const [bank] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id]);
+        const [bank] = await database.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id]);
         console.log('bank', bank);
         if (!bank) {
           return res.status(404).send({ message: 'Bank account not found' });
@@ -280,7 +278,7 @@ const BankRoutes = (app) => {
           depositAmount, subAdminId, subAdminName, createdAt) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        await pool.execute(insertBankRequestQuery, [
+        await database.execute(insertBankRequestQuery, [
           bankTransaction.bankId,
           BankTransaction_Id,
           bankTransaction.accountHolderName,
@@ -324,7 +322,7 @@ const BankRoutes = (app) => {
           throw { code: 400, message: 'Remark is required' };
         }
 
-        const [bank] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
+        const [bank] = await database.execute(`SELECT * FROM Bank WHERE bank_id = (?)`, [id]);
         if (!bank) {
           return res.status(404).send({ message: 'Bank account not found' });
         }
@@ -355,7 +353,7 @@ const BankRoutes = (app) => {
           upiAppName, upiNumber, withdrawAmount, subAdminId, subAdminName, createdAt) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        await pool.execute(insertBankRequestQuery, [
+        await database.execute(insertBankRequestQuery, [
           bankTransaction.bankId,
           BankTransaction_Id,
           bankTransaction.accountHolderName,
@@ -394,7 +392,7 @@ const BankRoutes = (app) => {
     ]),
     async (req, res) => {
       try {
-        const [bankName] = await pool.execute(`SELECT bankName, bank_id FROM Bank `);
+        const [bankName] = await database.execute(`SELECT bankName, bank_id FROM Bank `);
         res.status(200).send(bankName);
       } catch (e) {
         console.error(e);
@@ -413,12 +411,12 @@ const BankRoutes = (app) => {
 
         // Fetch bank transactions from the database for the specified bankId
         const bankSummaryQuery = `SELECT * FROM BankTransaction WHERE bankId = ? ORDER BY createdAt DESC`;
-        const [bankSummaryRows] = await pool.execute(bankSummaryQuery, [bankId]);
+        const [bankSummaryRows] = await database.execute(bankSummaryQuery, [bankId]);
         const bankSummary = bankSummaryRows;
 
         // Fetch account transactions from the database for the specified bankId
         const accountSummaryQuery = `SELECT * FROM Transaction WHERE bankId = ? ORDER BY createdAt DESC`;
-        const [accountSummaryRows] = await pool.execute(accountSummaryQuery, [bankId]);
+        const [accountSummaryRows] = await database.execute(accountSummaryQuery, [bankId]);
         const accountSummary = accountSummaryRows;
 
         // Combine bank and account transactions
@@ -468,7 +466,7 @@ const BankRoutes = (app) => {
   app.get('/api/superadmin/view-bank-edit-requests', Authorize(['superAdmin']), async (req, res) => {
     try {
       const editRequestsQuery = `SELECT * FROM EditBankRequest`;
-      const [editRequestsRows] = await pool.execute(editRequestsQuery);
+      const [editRequestsRows] = await database.execute(editRequestsQuery);
       const resultArray = editRequestsRows;
       res.status(200).send(resultArray);
     } catch (error) {
@@ -486,7 +484,7 @@ const BankRoutes = (app) => {
       }
       // Update bank's isActive status in the database
       const updateBankQuery = `UPDATE Bank SET isActive = ? WHERE bank_id = ?`;
-      await pool.execute(updateBankQuery, [isActive, bankId]);
+      await database.execute(updateBankQuery, [isActive, bankId]);
       res.status(200).send({ message: 'Bank status updated successfully' });
     } catch (e) {
       console.error(e);
@@ -499,7 +497,7 @@ const BankRoutes = (app) => {
       const subadminId = req.params.subadminId;
       const dbBankData = `SELECT Bank.bankName FROM Bank INNER JOIN BankSubAdmins ON Bank.bank_id = BankSubAdmins.bankId
         WHERE BankSubAdmins.subAdminId = ?`;
-      const [bankData] = await pool.execute(dbBankData, [subadminId]);
+      const [bankData] = await database.execute(dbBankData, [subadminId]);
       res.status(200).send(bankData);
     } catch (e) {
       console.error(e);
@@ -515,7 +513,7 @@ const BankRoutes = (app) => {
       // Update subAdmins for the bank
       for (const subAdminData of subAdmins) {
         // Check if the subAdmin already exists in the database for this bank
-        const [existingSubAdmin] = await pool.execute(
+        const [existingSubAdmin] = await database.execute(
           `SELECT * FROM BankSubAdmins WHERE bankId = ? AND subAdminId = ?`,
           [bankId, subAdminData.subAdminId],
         );
@@ -526,7 +524,7 @@ const BankRoutes = (app) => {
                     INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, isRenew, isDelete)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 `;
-          await pool.execute(insertSubAdminQuery, [
+          await database.execute(insertSubAdminQuery, [
             bankId,
             subAdminData.subAdminId,
             subAdminData.isDeposit,
@@ -542,7 +540,7 @@ const BankRoutes = (app) => {
                     SET isDeposit = ?, isWithdraw = ?, isEdit = ?, isRenew = ?, isDelete = ?
                     WHERE bankId = ? AND subAdminId = ?
                 `;
-          await pool.execute(updateSubAdminQuery, [
+          await database.execute(updateSubAdminQuery, [
             subAdminData.isDeposit,
             subAdminData.isWithdraw,
             subAdminData.isEdit,
@@ -558,11 +556,6 @@ const BankRoutes = (app) => {
     } catch (error) {
       console.error(error);
       res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
-    } finally {
-      // Close the database connection
-      if (pool) {
-        pool.end();
-      }
     }
   });
 
@@ -574,13 +567,13 @@ const BankRoutes = (app) => {
         const { bankId, subAdminId } = req.params;
         // Check if the bank exists
         const bankExistQuery = `SELECT * FROM BankSubAdmins WHERE bankid = ?`;
-        const [bank] = await pool.execute(bankExistQuery, [bankId]);
+        const [bank] = await database.execute(bankExistQuery, [bankId]);
         if (!bank) {
           throw { code: 404, message: 'Bank not found!' };
         }
         // Remove the subAdmin with the specified subAdminId
         const deleteSubAdminQuery = `DELETE FROM BankSubAdmins WHERE bankid = ? AND subadminid = ?`;
-        await pool.execute(deleteSubAdminQuery, [bankId, subAdminId]);
+        await database.execute(deleteSubAdminQuery, [bankId, subAdminId]);
         res.status(200).send({ message: 'SubAdmin Permission removed successfully' });
       } catch (error) {
         console.error(error);
@@ -593,10 +586,10 @@ const BankRoutes = (app) => {
     try {
       // Retrieve active banks from the database
       const activeBanksQuery = `SELECT bankName FROM Bank WHERE isActive = true`;
-      const [bankNames] = await pool.execute(activeBanksQuery);
+      const [bankNames] = await database.execute(activeBanksQuery);
       // Retrieve active websites from the database
       const activeWebsitesQuery = `SELECT websiteName FROM Website WHERE isActive = true`;
-      const [websiteNames] = await pool.execute(activeWebsitesQuery);
+      const [websiteNames] = await database.execute(activeWebsitesQuery);
       // Check if active banks and websites exist
       if (bankNames.length === 0) {
         return res.status(404).send({ message: 'No bank found' });
@@ -624,7 +617,7 @@ const BankRoutes = (app) => {
     async (req, res) => {
       try {
         const sqlQuery = `SELECT bankName, isActive FROM Bank WHERE isActive = true`;
-        const [dbBankData] = await pool.execute(sqlQuery);
+        const [dbBankData] = await database.execute(sqlQuery);
         return res.status(200).send(dbBankData);
       } catch (e) {
         console.error(e);

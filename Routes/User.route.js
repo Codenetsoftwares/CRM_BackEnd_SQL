@@ -19,7 +19,7 @@ export const UserRoutes = (app) => {
       if (!accessToken) {
         throw { code: 500, message: 'Failed to generate access token' };
       }
-      const [user] = await pool.execute('SELECT * FROM User WHERE userName = ? LIMIT 1', [userName]);
+      const [user] = await database.execute('SELECT * FROM User WHERE userName = ? LIMIT 1', [userName]);
       if (!user) {
         throw { code: 404, message: 'User not found' };
       }
@@ -43,7 +43,7 @@ export const UserRoutes = (app) => {
     try {
       const bankDetailsArray = req.body.bank_details;
       const user = req.user;
-      const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await database.execute('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
 
       let bankDetails = existingUserData[0].Bank_Details || [];
 
@@ -61,7 +61,7 @@ export const UserRoutes = (app) => {
         });
       }
 
-      const [updateResult] = await pool.query('UPDATE User SET Bank_Details = ? WHERE user_id = ?', [
+      const [updateResult] = await database.execute('UPDATE User SET Bank_Details = ? WHERE user_id = ?', [
         JSON.stringify(bankDetails),
         user[0].user_id,
       ]);
@@ -84,7 +84,7 @@ export const UserRoutes = (app) => {
       const websites = req.body.website_name;
       const user = req.user;
 
-      const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await database.execute('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
 
       if (existingUserData.length === 0) {
         return res.status(404).send({ message: 'User not found' });
@@ -99,7 +99,7 @@ export const UserRoutes = (app) => {
         websitesArray.push(website);
       }
 
-      const [updateResult] = await pool.query('UPDATE User SET Websites_Details = ? WHERE user_id = ?', [
+      const [updateResult] = await database.execute('UPDATE User SET Websites_Details = ? WHERE user_id = ?', [
         JSON.stringify(websitesArray),
         user[0].user_id,
       ]);
@@ -122,7 +122,7 @@ export const UserRoutes = (app) => {
       const upiDetailsArray = req.body.upi_details;
       const user = req.user;
 
-      const [existingUserData] = await pool.query('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await database.execute('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
 
       let upiDetails = existingUserData[0].Upi_Details || [];
 
@@ -137,7 +137,7 @@ export const UserRoutes = (app) => {
         });
       }
 
-      const [updateResult] = await pool.query('UPDATE User SET Upi_Details = ? WHERE user_id = ?', [
+      const [updateResult] = await database.execute('UPDATE User SET Upi_Details = ? WHERE user_id = ?', [
         JSON.stringify(upiDetails),
         user[0].user_id,
       ]);
@@ -158,7 +158,7 @@ export const UserRoutes = (app) => {
   app.put('/api/user-profile-edit/:user_id', AuthorizeRole(['user']), async (req, res) => {
     try {
       const userId = req.params.user_id;
-      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
+      const [userDetails] = await database.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
       const updateResult = await UserServices.updateUserProfile(userDetails, req.body);
       console.log(updateResult);
       if (updateResult) {
@@ -175,13 +175,13 @@ export const UserRoutes = (app) => {
   app.get('/api/user-profile-data/:user_id', AuthorizeRole(['user']), async (req, res) => {
     try {
       const userId = req.params.user_id;
-      const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
+      const [userDetails] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
 
       if (!userDetails || userDetails.length === 0) {
         return res.status(404).send({ message: 'User not found' });
       }
       const user = userDetails[0];
-      const [userTransactionDetail] = await pool.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
+      const [userTransactionDetail] = await database.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
         user.userName,
       ]);
       user.UserTransactionDetail = userTransactionDetail;
@@ -224,7 +224,7 @@ export const UserRoutes = (app) => {
         const selectAllQuery = `
           SELECT *
           FROM User`;
-        const [results] = await pool.execute(selectAllQuery);
+        const [results] = await database.execute(selectAllQuery);
         const introData = results;
         const SecondArray = [];
         const Limit = page * 10;

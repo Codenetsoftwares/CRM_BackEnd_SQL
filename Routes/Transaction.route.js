@@ -50,7 +50,7 @@ const TransactionRoutes = (app) => {
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
       try {
-        const [introEdit] = await pool.execute(`SELECT * FROM IntroducerEditRequest`);
+        const [introEdit] = await database.execute(`SELECT * FROM IntroducerEditRequest`);
         res.status(200).send(introEdit);
       } catch (error) {
         console.log(error);

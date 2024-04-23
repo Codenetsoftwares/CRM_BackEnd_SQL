@@ -12,7 +12,7 @@ const EditAPIRoute = (app) => {
     async (req, res) => {
       try {
         const bankId = req.params.bank_id;
-        const [id] = await pool.execute(
+        const [id] = await database.execute(
           `SELECT * FROM Bank WHERE (bank_id) = (?)`,
           [bankId]
         );
@@ -39,7 +39,7 @@ const EditAPIRoute = (app) => {
     Authorize(["superAdmin", "RequestAdmin"]),
     async (req, res) => {
       try {
-        const [editRequest] = await pool.execute(
+        const [editRequest] = await database.execute(
           `SELECT * FROM EditBankRequest WHERE bank_id = ?`,
           [req.params.requestId]
         );
@@ -57,7 +57,7 @@ const EditAPIRoute = (app) => {
 
         if (!editRequest[0].isApproved) {
           if (isApproved) {
-            const [bankExists] = await pool.execute(
+            const [bankExists] = await database.execute(
               `SELECT * FROM Bank WHERE bankName = ? AND bank_id != ?`,
               [editRequest[0].bankName, req.params.requestId]
             );
@@ -67,7 +67,7 @@ const EditAPIRoute = (app) => {
                 .status(400)
                 .send({ message: "Bank with the same name already exists" });
             }
-            await pool.execute(
+            await database.execute(
               `UPDATE Bank SET accountHolderName = ?, bankName = ?, accountNumber = ?, ifscCode = ?, upiId = ?, upiAppName = ?,
             upiNumber = ? WHERE bank_id = ?`,
               [
@@ -82,12 +82,12 @@ const EditAPIRoute = (app) => {
               ]
             );
 
-            await pool.execute(
+            await database.execute(
               `UPDATE EditBankRequest SET isApproved = TRUE WHERE bank_id = ?`,
               [req.params.requestId]
             );
 
-            await pool.execute(
+            await database.execute(
               `DELETE FROM EditBankRequest WHERE bank_id = ?`,
               [req.params.requestId]
             );
@@ -117,7 +117,7 @@ const EditAPIRoute = (app) => {
     async (req, res) => {
       try {
         const id = req.params.website_id;
-        const [editWebsite] = await pool.execute(
+        const [editWebsite] = await database.execute(
           `SELECT * FROM Website WHERE (website_id) = (?)`,
           [id]
         );
@@ -147,7 +147,7 @@ const EditAPIRoute = (app) => {
     Authorize(["superAdmin", "RequestAdmin"]),
     async (req, res) => {
       try {
-        const [editRequest] = await pool.execute(
+        const [editRequest] = await database.execute(
           `SELECT * FROM EditWebsiteRequest WHERE website_id = ?`,
           [req.params.requestId]
         );
@@ -166,7 +166,7 @@ const EditAPIRoute = (app) => {
 
         if (!editRequest[0].isApproved) {
           if (isApproved) {
-            const [websiteExists] = await pool.execute(
+            const [websiteExists] = await database.execute(
               `SELECT * FROM Website WHERE websiteName = ? AND website_id != ?`,
               [editRequest[0].websiteName, req.params.requestId]
             );
@@ -179,17 +179,17 @@ const EditAPIRoute = (app) => {
                 .send({ message: "Website with the same name already exists" });
             }
 
-            await pool.execute(
+            await database.execute(
               `UPDATE Website SET websiteName = ? WHERE website_id = ?`,
               [editRequest[0].websiteName, req.params.requestId]
             );
 
-            await pool.execute(
+            await database.execute(
               `UPDATE EditWebsiteRequest SET isApproved = TRUE WHERE website_id = ?`,
               [req.params.requestId]
             );
 
-            await pool.execute(
+            await database.execute(
               `DELETE FROM EditWebsiteRequest WHERE website_id = ?`,
               [req.params.requestId]
             );
@@ -198,7 +198,7 @@ const EditAPIRoute = (app) => {
               .status(200)
               .send({ message: "Edit request approved and data updated" });
           } else {
-            await pool.execute(
+            await database.execute(
               `DELETE FROM EditWebsiteRequest WHERE website_id = ?`,
               [req.params.requestId]
             );

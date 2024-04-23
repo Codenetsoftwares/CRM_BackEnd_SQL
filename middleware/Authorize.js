@@ -25,7 +25,7 @@ export const Authorize = (roles) => {
         return res.status(401).send({ code: 401, message: 'Invalid login attempt (4)' });
       }
 
-      const [existingUser] = await pool.execute('SELECT * FROM Admin WHERE userName = ?', [user.userName]);
+      const [existingUser] = await database.execute('SELECT * FROM Admin WHERE userName = ?', [user.userName]);
 
       if (!existingUser || existingUser.length === 0) {
         return res.status(401).send({ code: 401, message: 'Invalid login attempt (5)' });

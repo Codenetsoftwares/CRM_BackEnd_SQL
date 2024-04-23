@@ -12,7 +12,7 @@ const DeleteAPIRoute = (app) => {
         const user = req.user;
         const { requestId } = req.body;
         const transactionQuery = `SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`;
-        const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        const [transaction] = await database.execute(transactionQuery, [requestId]);
         if (!transaction.length) {
           return res.status(404).send('Bank Transaction not found');
         }
@@ -32,7 +32,7 @@ const DeleteAPIRoute = (app) => {
   app.post('/api/delete-bank-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
       const id = req.params.Edit_ID;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
+      const [editRequest] = await database.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Bank Request not found' });
@@ -68,7 +68,7 @@ const DeleteAPIRoute = (app) => {
         const restoreQuery = `INSERT INTO Trash (bankId, transactionType, requesteduserName, subAdminId, subAdminName, depositAmount, 
         withdrawAmount, remarks, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, createdAt, message,
         type, Nametype, isSubmit, BankTransaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await pool.execute(restoreQuery, [
+        const [restoreResult] = await database.execute(restoreQuery, [
           dataToRestore.bankId,
           dataToRestore.transactionType,
           dataToRestore.requesteduserName,
@@ -93,12 +93,12 @@ const DeleteAPIRoute = (app) => {
         ]);
 
         // Delete the bank transaction from the original table
-        await pool.execute(`DELETE FROM BankTransaction WHERE BankTransaction_Id = ?`, [
+        await database.execute(`DELETE FROM BankTransaction WHERE BankTransaction_Id = ?`, [
           editRequest[0].BankTransaction_Id,
         ]);
 
         // Delete the edit request from the original table
-        await pool.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
+        await database.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
         res.status(200).send({ message: 'Bank Transaction Moved To Trash', data: restoreResult });
       } else {
@@ -119,7 +119,7 @@ const DeleteAPIRoute = (app) => {
         const user = req.user;
         const { requestId } = req.body;
         const transactionQuery = `SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`;
-        const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        const [transaction] = await database.execute(transactionQuery, [requestId]);
         // console.log("transactionPOST", transaction[0]);
         if (!transaction) {
           return res.status(404).send('Website Transaction not found');
@@ -141,7 +141,7 @@ const DeleteAPIRoute = (app) => {
   app.post('/api/delete-website-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
       const id = req.params.Edit_ID;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
+      const [editRequest] = await database.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
       console.log('editRequest', editRequest);
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Edit Website Request not found' });
@@ -171,7 +171,7 @@ const DeleteAPIRoute = (app) => {
         const restoreQuery = `INSERT INTO Trash (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
         depositAmount, withdrawAmount, remarks, websiteName, createdAt, message, type, Nametype, WebsiteTransaction_Id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await pool.execute(restoreQuery, [
+        const [restoreResult] = await database.execute(restoreQuery, [
           dataToRestore.websiteId,
           dataToRestore.transactionType,
           dataToRestore.requesteduserName,
@@ -189,12 +189,12 @@ const DeleteAPIRoute = (app) => {
         ]);
 
         // Delete the website transaction from the original table
-        await pool.execute(`DELETE FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`, [
+        await database.execute(`DELETE FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`, [
           editRequest[0].WebsiteTransaction_Id,
         ]);
 
         // Delete the edit request from the original table
-        await pool.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
+        await database.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
         res.status(200).send({ message: 'Website Transaction Moved To Trash', data: restoreResult });
       } else {
@@ -216,7 +216,7 @@ const DeleteAPIRoute = (app) => {
         const user = req.user;
         const { requestId } = req.body;
         const transactionQuery = `SELECT * FROM Transaction WHERE Transaction_Id = ?`;
-        const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        const [transaction] = await database.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Transaction not found');
         }
@@ -237,7 +237,7 @@ const DeleteAPIRoute = (app) => {
   app.post('/api/delete-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
       const id = req.params.Edit_ID;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
+      const [editRequest] = await database.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
       console.log('editRequest', editRequest[0].transId);
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Edit Website Request not found' });
@@ -275,7 +275,7 @@ const DeleteAPIRoute = (app) => {
             userName, subAdminId, subAdminName, bonus, bankCharges, remarks, bankName, websiteName, createdAt, message, 
             type, Nametype, introducerUserName) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await pool.execute(restoreQuery, [
+        const [restoreResult] = await database.execute(restoreQuery, [
           dataToRestore.Transaction_Id,
           dataToRestore.bankId,
           dataToRestore.websiteId,
@@ -299,13 +299,13 @@ const DeleteAPIRoute = (app) => {
         ]);
 
         // Delete the transaction from the original table
-        await pool.execute(`DELETE FROM Transaction WHERE Transaction_Id = ?`, [editRequest[0].Transaction_Id]);
+        await database.execute(`DELETE FROM Transaction WHERE Transaction_Id = ?`, [editRequest[0].Transaction_Id]);
 
         // Delete the edit request from the original table
-        await pool.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
+        await database.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
 
         // Remove the transaction detail from the user
-        await pool.execute(`DELETE FROM UserTransactionDetail WHERE Transaction_id = ?`, [
+        await database.execute(`DELETE FROM UserTransactionDetail WHERE Transaction_id = ?`, [
           editRequest[0].Transaction_Id,
         ]);
 
@@ -328,7 +328,7 @@ const DeleteAPIRoute = (app) => {
         const user = req.user;
         const { requestId } = req.body;
         const transactionQuery = `SELECT * FROM IntroducerTransaction WHERE introTransactionId = ?`;
-        const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        const [transaction] = await database.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Transaction not found');
         }
@@ -351,7 +351,7 @@ const DeleteAPIRoute = (app) => {
     async (req, res) => {
       try {
         const id = req.params.IntroEditID;
-        const [editRequest] = await pool.execute(`SELECT * FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
+        const [editRequest] = await database.execute(`SELECT * FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
         console.log('editRequest', editRequest);
         if (!editRequest || editRequest.length === 0) {
           return res.status(404).send({ message: 'Edit Request not found' });
@@ -374,7 +374,7 @@ const DeleteAPIRoute = (app) => {
 
           const restoreQuery = `INSERT INTO Trash (introTransactionId, introUserId, transactionType, amount, subAdminId, subAdminName, 
           remarks, createdAt, Nametype, introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-          const [restoreResult] = await pool.execute(restoreQuery, [
+          const [restoreResult] = await database.execute(restoreQuery, [
             dataToRestore.introTransactionId,
             dataToRestore.introUserId,
             dataToRestore.transactionType,
@@ -387,10 +387,10 @@ const DeleteAPIRoute = (app) => {
             dataToRestore.introducerUserName,
           ]);
 
-          await pool.execute(`DELETE FROM IntroducerTransaction WHERE introTransactionId = ?`, [
+          await database.execute(`DELETE FROM IntroducerTransaction WHERE introTransactionId = ?`, [
             editRequest[0].introTransactionId,
           ]);
-          await pool.execute(`DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
+          await database.execute(`DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
 
           res.status(200).send({ message: 'Transaction moved to Trash', data: restoreResult });
         } else {
@@ -413,7 +413,7 @@ const DeleteAPIRoute = (app) => {
         const { requestId } = req.body;
         console.log(requestId);
         const transactionQuery = `SELECT * FROM Bank WHERE bank_id = ?`;
-        const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        const [transaction] = await database.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Bank not found');
         }
@@ -435,7 +435,7 @@ const DeleteAPIRoute = (app) => {
   app.post('/api/delete-bank/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
       const id = req.params.bank_id;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bank_id = ?`, [id]);
+      const [editRequest] = await database.execute(`SELECT * FROM EditBankRequest WHERE bank_id = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Bank Request not found' });
@@ -444,8 +444,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await pool.execute(`DELETE FROM Bank WHERE bank_id = ?`, [editRequest[0].bank_id]);
-        await pool.execute(`DELETE FROM EditBankRequest WHERE bank_id = ?`, [id]);
+        await database.execute(`DELETE FROM Bank WHERE bank_id = ?`, [editRequest[0].bank_id]);
+        await database.execute(`DELETE FROM EditBankRequest WHERE bank_id = ?`, [id]);
         res.status(200).send({ message: 'Bank deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });
@@ -466,7 +466,7 @@ const DeleteAPIRoute = (app) => {
         const { requestId } = req.body;
         console.log(requestId);
         const transactionQuery = `SELECT * FROM Website WHERE website_id = ?`;
-        const [transaction] = await pool.execute(transactionQuery, [requestId]);
+        const [transaction] = await database.execute(transactionQuery, [requestId]);
         if (!transaction) {
           return res.status(404).send('Website not found');
         }
@@ -488,7 +488,7 @@ const DeleteAPIRoute = (app) => {
   app.post('/api/delete-website/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
       const id = req.params.website_id;
-      const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
+      const [editRequest] = await database.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
 
       if (!editRequest || editRequest.length === 0) {
         return res.status(404).send({ message: 'Website Request not found' });
@@ -497,8 +497,8 @@ const DeleteAPIRoute = (app) => {
       const isApproved = true;
 
       if (isApproved) {
-        await pool.execute(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].website_id]);
-        await pool.execute(`DELETE FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
+        await database.execute(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].website_id]);
+        await database.execute(`DELETE FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
         res.status(200).send({ message: 'Website deleted' });
       } else {
         res.status(400).send({ message: 'Approval request rejected by super admin' });
@@ -515,7 +515,7 @@ const DeleteAPIRoute = (app) => {
     try {
       const id = req.params.bank_id;
       const deleteQuery = 'DELETE FROM EditBankRequest WHERE bank_id = ?';
-      const [result] = await pool.execute(deleteQuery, [id]);
+      const [result] = await database.execute(deleteQuery, [id]);
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
       } else {
@@ -533,7 +533,7 @@ const DeleteAPIRoute = (app) => {
     try {
       const id = req.params.website_id;
       const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE website_id = ?';
-      const [result] = await pool.execute(deleteQuery, [id]);
+      const [result] = await database.execute(deleteQuery, [id]);
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
       } else {
@@ -548,7 +548,7 @@ const DeleteAPIRoute = (app) => {
   //  API To View Trash Data
   app.get('/api/admin/view-trash', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
-      const [resultArray] = await pool.execute(`SELECT * FROM Trash`);
+      const [resultArray] = await database.execute(`SELECT * FROM Trash`);
       res.status(200).send(resultArray);
     } catch (error) {
       console.log(error);
@@ -562,7 +562,7 @@ const DeleteAPIRoute = (app) => {
       const bankId = req.params.bankId;
 
       // Retrieve deleted data from the Trash table based on bankId
-      const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE bankId = ?`, [bankId]);
+      const [deletedData] = await database.execute(`SELECT * FROM Trash WHERE bankId = ?`, [bankId]);
 
       if (!deletedData || deletedData.length === 0) {
         return res.status(404).send({ message: 'Data not found in Trash' });
@@ -590,7 +590,7 @@ const DeleteAPIRoute = (app) => {
       };
 
       // Insert restored data into the BankTransaction table
-      const [restoredData] = await pool.execute(
+      const [restoredData] = await database.execute(
         `INSERT INTO BankTransaction 
             (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId,
             upiAppName, upiNumber, withdrawAmount, depositAmount, subAdminId, subAdminName, createdAt, isSubmit) 
@@ -617,7 +617,7 @@ const DeleteAPIRoute = (app) => {
       );
 
       // Delete the restored data from the Trash table
-      await pool.execute(`DELETE FROM Trash WHERE bankId = ?`, [bankId]);
+      await database.execute(`DELETE FROM Trash WHERE bankId = ?`, [bankId]);
 
       res.status(200).send({ message: 'Data restored successfully', data: restoredData });
     } catch (e) {
@@ -632,7 +632,7 @@ const DeleteAPIRoute = (app) => {
       const websiteId = req.params.websiteId;
 
       // Retrieve deleted data from the Trash table based on websiteId
-      const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE websiteId = ?`, [websiteId]);
+      const [deletedData] = await database.execute(`SELECT * FROM Trash WHERE websiteId = ?`, [websiteId]);
 
       if (!deletedData || deletedData.length === 0) {
         return res.status(404).send({ message: 'Data not found in Trash' });
@@ -653,7 +653,7 @@ const DeleteAPIRoute = (app) => {
       };
 
       // Insert restored data into the WebsiteTransaction table
-      const [restoredData] = await pool.execute(
+      const [restoredData] = await database.execute(
         `INSERT INTO WebsiteTransaction
           (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, withdrawAmount, depositAmount, subAdminId, 
           subAdminName, createdAt) 
@@ -673,7 +673,7 @@ const DeleteAPIRoute = (app) => {
       );
 
       // Delete the restored data from the Trash table
-      await pool.execute(`DELETE FROM Trash WHERE websiteId = ?`, [websiteId]);
+      await database.execute(`DELETE FROM Trash WHERE websiteId = ?`, [websiteId]);
 
       res.status(200).send({ message: 'Data restored successfully', data: restoredData });
     } catch (e) {
@@ -691,7 +691,7 @@ const DeleteAPIRoute = (app) => {
         const transactionID = req.params.Transaction_Id;
 
         // Retrieve deleted data from the Trash table based on transactionID
-        const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE Transaction_Id = ?`, [transactionID]);
+        const [deletedData] = await database.execute(`SELECT * FROM Trash WHERE Transaction_Id = ?`, [transactionID]);
         console.log('deletedData', deletedData);
         if (!deletedData || deletedData.length === 0) {
           return res.status(404).send({ message: 'Data not found in Trash' });
@@ -721,7 +721,7 @@ const DeleteAPIRoute = (app) => {
         };
 
         // Insert restored data into the Transaction table
-        const [restoredData] = await pool.execute(
+        const [restoredData] = await database.execute(
           `INSERT INTO Transaction 
           (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, amount, paymentMethod, userName, 
           introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, createdAt, Transaction_Id) 
@@ -749,7 +749,7 @@ const DeleteAPIRoute = (app) => {
         );
 
         // Update the user's transaction detail
-        await pool.execute(
+        await database.execute(
           `INSERT INTO UserTransactionDetail 
           (user_ID, Transaction_id, bankId, websiteId, subAdminName, transactionID, transactionType, amount, paymentMethod, userName, 
           introducerUserName, bonus, bankCharges, remarks, accountNumber, bankName, websiteName, createdAt) 
@@ -777,7 +777,7 @@ const DeleteAPIRoute = (app) => {
         );
 
         // Delete the restored data from the Trash table
-        await pool.execute(`DELETE FROM Trash WHERE Transaction_Id = ?`, [transactionID]);
+        await database.execute(`DELETE FROM Trash WHERE Transaction_Id = ?`, [transactionID]);
 
         res.status(200).send({ message: 'Data restored successfully', data: restoredData });
       } catch (e) {
@@ -796,7 +796,7 @@ const DeleteAPIRoute = (app) => {
         const introUserId = req.params.introTransactionId;
 
         // Retrieve deleted data from the Trash table based on introUserId
-        const [deletedData] = await pool.execute(`SELECT * FROM Trash WHERE introTransactionId = ?`, [introUserId]);
+        const [deletedData] = await database.execute(`SELECT * FROM Trash WHERE introTransactionId = ?`, [introUserId]);
         console.log('deletedData', deletedData);
         if (!deletedData || deletedData.length === 0) {
           return res.status(404).send({ message: 'Data not found in Trash' });
@@ -816,7 +816,7 @@ const DeleteAPIRoute = (app) => {
         };
         console.log('dataToRestore', dataToRestore);
         // Insert restored data into the IntroducerTransaction table
-        const [restoredData] = await pool.execute(
+        const [restoredData] = await database.execute(
           `INSERT INTO IntroducerTransaction 
           (introTransactionId, introUserId, amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName, 
           createdAt) 
@@ -835,7 +835,7 @@ const DeleteAPIRoute = (app) => {
         );
 
         // Delete the restored data from the Trash table
-        await pool.execute(`DELETE FROM Trash WHERE introTransactionId = ?`, [introUserId]);
+        await database.execute(`DELETE FROM Trash WHERE introTransactionId = ?`, [introUserId]);
 
         res.status(200).send({ message: 'Data restored successfully', data: restoredData });
       } catch (e) {
@@ -852,7 +852,7 @@ const DeleteAPIRoute = (app) => {
       try {
         const id = req.params.IntroEditID;
         const deleteQuery = 'DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?';
-        const [result] = await pool.execute(deleteQuery, [id]);
+        const [result] = await database.execute(deleteQuery, [id]);
         if (result.affectedRows === 1) {
           res.status(200).send({ message: 'Data deleted successfully' });
         } else {
@@ -867,7 +867,7 @@ const DeleteAPIRoute = (app) => {
 
   app.get('/api/admin/view-Delete-Request', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
-      const [resultArray] = await pool.execute(`SELECT * FROM EditRequest`);
+      const [resultArray] = await database.execute(`SELECT * FROM EditRequest`);
       res.status(200).send(resultArray);
     } catch (error) {
       console.log(error);
@@ -880,7 +880,7 @@ const DeleteAPIRoute = (app) => {
     try {
       const id = req.params.Edit_ID;
       const deleteQuery = 'DELETE FROM EditRequest WHERE Edit_ID = ?';
-      const [result] = await pool.execute(deleteQuery, [id]);
+      const [result] = await database.execute(deleteQuery, [id]);
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });
       }
@@ -894,7 +894,7 @@ const DeleteAPIRoute = (app) => {
   app.delete('/api/reject/trash/transactions/:_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
       const id = req.params._id;
-      const [result] = await pool.execute(`DELETE FROM Trash WHERE _id = ?`, [id]);
+      const [result] = await database.execute(`DELETE FROM Trash WHERE _id = ?`, [id]);
       if (result.affectedRows > 0) {
         res.status(200).send({ message: 'Data deleted successfully' });
       } else {
