@@ -1,4 +1,4 @@
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {

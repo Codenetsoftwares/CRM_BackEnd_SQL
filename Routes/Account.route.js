@@ -1,4 +1,4 @@
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 import bcrypt from 'bcrypt';
 import AccountServices from '../services/Account.Services.js';
 import { introducerUser } from '../services/introducer.services.js';

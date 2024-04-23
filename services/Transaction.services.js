@@ -1,7 +1,7 @@
 import AccountServices from '../services/Account.Services.js';
 import WebsiteServices from '../services/WebSite.Service.js';
 import BankServices from '../services/Bank.services.js';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const TransactionServices = {

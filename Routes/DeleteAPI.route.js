@@ -1,6 +1,6 @@
 import { Authorize } from '../middleware/Authorize.js';
 import DeleteApiService from '../services/DeleteAPI.service.js';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 const DeleteAPIRoute = (app) => {
   // API To Move The Bank Transaction Into Trash

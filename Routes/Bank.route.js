@@ -1,7 +1,7 @@
 import { Authorize } from '../middleware/Authorize.js';
 import BankServices from '../services/Bank.services.js';
 import AccountServices from '../services/Account.Services.js';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const BankRoutes = (app) => {

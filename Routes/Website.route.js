@@ -1,4 +1,4 @@
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 import { Authorize } from '../middleware/Authorize.js';
 import WebsiteServices from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';

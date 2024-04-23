@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 const AccountServices = {
   createAdmin: async (data) => {

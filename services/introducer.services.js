@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export const introducerUser = {

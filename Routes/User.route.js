@@ -1,7 +1,7 @@
 import { AuthorizeRole } from '../middleware/auth.js';
 import { Authorize } from '../middleware/Authorize.js';
 import UserServices from '../services/User.services.js';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 export const UserRoutes = (app) => {
   app.post('/api/accounts/user/login', async (req, res) => {

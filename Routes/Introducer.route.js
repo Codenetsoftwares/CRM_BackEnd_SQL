@@ -2,7 +2,7 @@ import mysql from 'mysql2/promise';
 import { introducerUser } from '../services/introducer.services.js';
 import AccountServices from '../services/Account.Services.js';
 import { AuthorizeRole } from '../middleware/auth.js';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 export const IntroducerRoutes = (app) => {
   app.post('/api/introducer/user/login', async (req, res) => {

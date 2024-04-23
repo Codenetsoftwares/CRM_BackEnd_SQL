@@ -1,6 +1,6 @@
 import TransactionServices from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 const TransactionRoutes = (app) => {
   app.post(

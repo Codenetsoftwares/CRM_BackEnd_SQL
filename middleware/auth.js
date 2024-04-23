@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 // Export the middleware function
 export const AuthorizeRole = (roles) => {

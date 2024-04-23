@@ -1,4 +1,4 @@
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const DeleteApiService = {

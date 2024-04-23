@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
-import connectToDB from '../db/db.js';
+import { database } from '../services/database.service.js';
 
 export const Authorize = (roles) => {
   return async (req, res, next) => {

@@ -2,7 +2,7 @@ import mysql from "mysql2/promise";
 import { Authorize } from "../middleware/Authorize.js";
 import BankServices from "../services/Bank.services.js";
 import WebsiteServices from "../services/WebSite.Service.js";
-import connectToDB from "../db/db.js";
+import { database } from "../services/database.service.js";
 
 const EditAPIRoute = (app) => {
   //   API To Edit Bank Detail
