@@ -1,4 +1,3 @@
-import mysql from 'mysql2/promise';
 import { introducerUser } from '../services/introducer.services.js';
 import AccountServices from '../services/Account.Services.js';
 import { AuthorizeRole } from '../middleware/auth.js';
@@ -6,7 +5,6 @@ import { database } from '../services/database.service.js';
 
 export const IntroducerRoutes = (app) => {
   app.post('/api/introducer/user/login', async (req, res) => {
-    const pool = await connectToDB();
     try {
       const { userName, password, persist } = req.body;
       if (!userName) {
@@ -39,7 +37,6 @@ export const IntroducerRoutes = (app) => {
   });
 
   app.get('/api/intoducer/profile', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.user[0].intro_id;
       const [IntroUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [id]);
@@ -64,7 +61,6 @@ export const IntroducerRoutes = (app) => {
   });
 
   app.put('/api/intoducer-profile-edit/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const userId = req.params.intro_id;
       const [introUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [userId]);
@@ -102,7 +98,6 @@ export const IntroducerRoutes = (app) => {
   // });
 
   app.get('/api/list-introducer-user/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.intro_id;
       const [introducerUser] = await pool.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [id]);
@@ -146,7 +141,6 @@ export const IntroducerRoutes = (app) => {
   // });
 
   app.get('/api/introducer-user-single-data/:user_id', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.user_id;
       const user = req.user;
@@ -209,7 +203,6 @@ export const IntroducerRoutes = (app) => {
   });
 
   app.get('/api/introducer/introducer-live-balance/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const introId = req.params.intro_id;
       const [introData] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [introId]);
@@ -224,7 +217,6 @@ export const IntroducerRoutes = (app) => {
   });
 
   app.get('/api/introducer-account-summary/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const introUserId = req.params.intro_id;
       const query = `
@@ -256,7 +248,6 @@ export const IntroducerRoutes = (app) => {
     '/api/introducer-user/accountsummary/:introducerUsername',
     AuthorizeRole(['introducer']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const introUserName = req.params.introducerUsername;
         const [users] = await pool.execute(

@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 const WebisteRoutes = (app) => {
   app.post('/api/add-website-name', Authorize(['superAdmin', 'Transaction-View', 'Website-View']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const userData = req.user;
       let websiteName = req.body.websiteName;
@@ -44,7 +43,6 @@ const WebisteRoutes = (app) => {
   });
 
   app.post('/api/approve-website/:website_id', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const { isApproved, subAdmins } = req.body;
 
@@ -76,7 +74,6 @@ const WebisteRoutes = (app) => {
 
   // API To View Website-Requests
   app.get('/api/superadmin/view-website-requests', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const [resultArray] = await pool.execute('SELECT * FROM WebsiteRequest');
       res.status(200).send(resultArray);
@@ -87,7 +84,6 @@ const WebisteRoutes = (app) => {
   });
 
   app.delete('/api/reject/:website_id', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.website_id;
       // Construct SQL DELETE query
@@ -107,7 +103,6 @@ const WebisteRoutes = (app) => {
   });
 
   app.delete('/api/website/reject/:website_id', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.website_id;
       // Construct SQL DELETE query
@@ -127,7 +122,6 @@ const WebisteRoutes = (app) => {
   });
 
   app.delete('/api/reject-website-edit/:website_id', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.website_id;
       // Construct SQL DELETE query
@@ -157,7 +151,6 @@ const WebisteRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const sqlQuery = `SELECT websiteName, isActive FROM Website WHERE isActive = true`;
         const [dbBankData] = await pool.execute(sqlQuery);
@@ -180,7 +173,6 @@ const WebisteRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const websiteQuery = `SELECT * FROM Website`;
         let [websiteData] = await pool.execute(websiteQuery);
@@ -188,7 +180,7 @@ const WebisteRoutes = (app) => {
         const userRole = req.user[0]?.roles;
         if (userRole.includes('superAdmin')) {
           const balancePromises = websiteData.map(async (website) => {
-            website.balance = await WebsiteServices.getWebsiteBalance(pool, website.website_id);
+            website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
             const [subAdmins] = await pool.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
               website.website_id,
             ]);
@@ -213,7 +205,7 @@ const WebisteRoutes = (app) => {
                 website.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
-                  website.balance = await WebsiteServices.getWebsiteBalance(pool, website.website_id);
+                  website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
                   website.isDeposit = userSubAdmin.isDeposit;
                   website.isWithdraw = userSubAdmin.isWithdraw;
                   website.isRenew = userSubAdmin.isRenew;
@@ -253,7 +245,6 @@ const WebisteRoutes = (app) => {
     '/api/website/delete-subadmin/:websiteId/:subAdminId',
     Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const { websiteId, subAdminId } = req.params;
         const websiteQuery = `SELECT * FROM WebsiteSubAdmins WHERE websiteId = ?`;
@@ -275,7 +266,6 @@ const WebisteRoutes = (app) => {
     '/api/get-single-webiste-name/:website_id',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.website_id;
         const [dbWebsiteData] = await pool.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
@@ -283,7 +273,7 @@ const WebisteRoutes = (app) => {
           return res.status(404).send({ message: 'Website not found' });
         }
         const websiteId = dbWebsiteData[0].website_id;
-        const websiteBalance = await WebsiteServices.getWebsiteBalance(pool, websiteId);
+        const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
         const response = {
           website_id: dbWebsiteData[0].website_id,
           websiteName: dbWebsiteData[0].websiteName,
@@ -303,7 +293,6 @@ const WebisteRoutes = (app) => {
     '/api/admin/add-website-balance/:website_id',
     Authorize(['superAdmin', 'Website-View', 'Transaction-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.website_id;
         const userName = req.user;
@@ -359,7 +348,6 @@ const WebisteRoutes = (app) => {
     '/api/admin/withdraw-website-balance/:website_id',
     Authorize(['superAdmin', 'Website-View', 'Transaction-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.website_id;
         console.log('id', id);
@@ -379,7 +367,7 @@ const WebisteRoutes = (app) => {
         if (!website) {
           return res.status(404).send({ message: 'Websitet not found' });
         }
-        if ((await WebsiteServices.getWebsiteBalance(pool, id)) < Number(amount)) {
+        if ((await WebsiteServices.getWebsiteBalance(id)) < Number(amount)) {
           return res.status(400).send({ message: 'Insufficient Website Balance' });
         }
         const websiteTransaction = {
@@ -426,7 +414,6 @@ const WebisteRoutes = (app) => {
       'Transaction-Delete-Request',
     ]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const [websiteName] = await pool.execute('SELECT websiteName FROM Website');
         res.status(200).send(websiteName);
@@ -441,7 +428,6 @@ const WebisteRoutes = (app) => {
     '/api/admin/manual-user-website-account-summary/:websiteId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View', 'Website-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         let balances = 0;
         const websiteId = req.params.websiteId;
@@ -497,7 +483,6 @@ const WebisteRoutes = (app) => {
 
   app.get('/api/superadmin/view-website-edit-requests', Authorize(['superAdmin']), async (req, res) => {
     try {
-      const pool = await connectToDB();
       const editRequestsQuery = `SELECT * FROM EditWebsiteRequest`;
       const [editRequestsRows] = await pool.execute(editRequestsQuery);
       const resultArray = editRequestsRows;
@@ -510,7 +495,6 @@ const WebisteRoutes = (app) => {
 
   app.post('/api/admin/website/isactive/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
-      const pool = await connectToDB();
       const websiteId = req.params.website_id;
       const { isActive } = req.body;
       if (typeof isActive !== 'boolean') {
@@ -530,7 +514,6 @@ const WebisteRoutes = (app) => {
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
       try {
-        const pool = await connectToDB();
         const subadminId = req.params.subadminId;
         const dbWebsiteData = `SELECT Website.websiteName FROM Website INNER JOIN WebsiteSubAdmins ON Website.website_id = 
         WebsiteSubAdmins.websiteId WHERE WebsiteSubAdmins.subAdminId = ?`;
@@ -547,7 +530,6 @@ const WebisteRoutes = (app) => {
     '/api/website/edit-request/:websiteId',
     Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const { subAdmins } = req.body;
         const websiteId = req.params.websiteId;

@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 const TransactionServices = {
   createTransaction: async (req, res, subAdminName) => {
-    const pool = await connectToDB();
     try {
       const {
         transactionID,
@@ -54,7 +53,7 @@ const TransactionServices = {
       }
       const websiteId = dbWebsiteData[0].website_id;
 
-      const websiteBalance = await WebsiteServices.getWebsiteBalance(pool, websiteId);
+      const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
       const totalBalance = parseFloat(bonus) + parseFloat(amount);
       if (websiteBalance < totalBalance) {
         throw { code: 400, message: 'Insufficient Website balance' };
@@ -67,7 +66,7 @@ const TransactionServices = {
         throw { code: 404, message: 'Bank data not found' };
       }
       const bankId = dbBankData[0].bank_id;
-      const bankBalance = await BankServices.getBankBalance(pool, bankId);
+      const bankBalance = await BankServices.getBankBalance(bankId);
       const totalBankBalance = parseFloat(bankCharges) + parseFloat(amount);
       if (bankBalance < totalBankBalance) {
         throw { code: 400, message: 'Insufficient Bank balance' };
@@ -247,7 +246,6 @@ const TransactionServices = {
   },
 
   withdrawView: async (req, res) => {
-    const pool = await connectToDB();
     try {
       const [withdraws] = await pool.execute(
         'SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC',
@@ -264,7 +262,6 @@ const TransactionServices = {
   },
 
   depositView: async (req, res) => {
-    const pool = await connectToDB();
     try {
       const [deposits] = await pool.execute(
         'SELECT * FROM `Transaction` WHERE transactionType = ? ORDER BY createdAt DESC',
@@ -282,7 +279,6 @@ const TransactionServices = {
   },
 
   createIntroducerDepositTransaction: async (req, res, subAdminDetail) => {
-    const pool = await connectToDB();
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
       const name = subAdminDetail[0].firstname;
@@ -326,7 +322,6 @@ const TransactionServices = {
   },
 
   createIntroducerWithdrawTransaction: async (req, res, subAdminDetail) => {
-    const pool = await connectToDB();
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
       const name = subAdminDetail[0].firstname;

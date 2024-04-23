@@ -2,7 +2,6 @@ import { database } from '../services/database.service.js';
 
 const WebsiteServices = {
   approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdmins) => {
-    const pool = await connectToDB();
     try {
       const insertWebsiteDetails = `INSERT INTO Website (website_id, websiteName, subAdminName, isActive) 
       VALUES (?, ?, ?, ?)`;
@@ -36,14 +35,12 @@ const WebsiteServices = {
   },
 
   deleteWebsiteRequest: async (websiteId) => {
-    const pool = await connectToDB();
     const deleteWebsiteRequestQuery = `DELETE FROM WebsiteRequest WHERE website_id = ?`;
     const result = await pool.execute(deleteWebsiteRequestQuery, [websiteId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {
-    const pool = await connectToDB();
     try {
       const sql = 'SELECT * FROM BankRequest';
       const result = await pool.execute(sql);
@@ -54,8 +51,7 @@ const WebsiteServices = {
     }
   },
 
-  getWebsiteBalance: async (pool, websiteId) => {
-    // const pool = await connectToDB();
+  getWebsiteBalance: async (websiteId) => {
     try {
       const websiteTransactionsQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ?`;
       const [websiteTransactions] = await pool.execute(websiteTransactionsQuery, [websiteId]);
@@ -90,7 +86,6 @@ const WebsiteServices = {
   },
 
   updateWebsite: async (response, data) => {
-    const pool = await connectToDB();
     const existingRequest = response;
     console.log('existingRequest', existingRequest);
     if (!existingRequest) {

@@ -5,7 +5,6 @@ const DeleteApiService = {
   // Functions For Moveing The Transaction Into Trash
 
   deleteBankTransaction: async (transaction, user) => {
-    const pool = await connectToDB();
     const [existingTransaction] = await pool.execute(`SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`, [
       transaction.BankTransaction_Id,
     ]);
@@ -82,8 +81,6 @@ const DeleteApiService = {
   },
 
   deleteWebsiteTransaction: async (transaction, user) => {
-    const pool = await connectToDB();
-
     const [existingTransaction] = await pool.execute(
       `SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`,
       [transaction.WebsiteTransaction_Id],
@@ -150,7 +147,6 @@ const DeleteApiService = {
 
   deleteTransaction: async (transaction, user) => {
     console.log('transaction', transaction);
-    const pool = await connectToDB();
     const [existingTransaction] = await pool.execute(`SELECT * FROM Transaction WHERE Transaction_Id = ?`, [
       transaction.Transaction_Id,
     ]);
@@ -233,7 +229,7 @@ const DeleteApiService = {
   deleteIntroducerTransaction: async (transaction, user) => {
     console.log('user', user);
     console.log('transaction', transaction);
-    const pool = await connectToDB();
+    
     const [existingTransaction] = await pool.execute(
       `SELECT * FROM IntroducerTransaction WHERE introTransactionId = ?`,
       [transaction.introTransactionId],
@@ -289,7 +285,6 @@ const DeleteApiService = {
 
   deleteBank: async (id) => {
     console.log('iddd', id);
-    const pool = await connectToDB();
     const [existingTransaction] = await pool.execute(`SELECT * FROM Bank WHERE bank_id = ?`, [id.bank_id]);
     console.log('existingTransaction', existingTransaction);
 
@@ -347,7 +342,6 @@ const DeleteApiService = {
 
   deleteWebsite: async (id) => {
     console.log('Transaction found', id);
-    const pool = await connectToDB();
     const [existingTransaction] = await pool.execute(`SELECT * FROM Website WHERE website_id = ?`, [id.website_id]);
     console.log('Transaction found', existingTransaction);
     if (!existingTransaction.length) {

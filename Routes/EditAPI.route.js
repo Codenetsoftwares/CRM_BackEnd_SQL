@@ -10,7 +10,6 @@ const EditAPIRoute = (app) => {
     "/api/bank-edit/:bank_id",
     Authorize(["superAdmin", "Bank-View", "Transaction-View"]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const bankId = req.params.bank_id;
         const [id] = await pool.execute(
@@ -39,7 +38,6 @@ const EditAPIRoute = (app) => {
     "/api/admin/approve-bank-detail-edit-request/:requestId",
     Authorize(["superAdmin", "RequestAdmin"]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const [editRequest] = await pool.execute(
           `SELECT * FROM EditBankRequest WHERE bank_id = ?`,
@@ -117,7 +115,6 @@ const EditAPIRoute = (app) => {
     "/api/website-edit/:website_id",
     Authorize(["superAdmin", "Transaction-View", "Website-View"]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.website_id;
         const [editWebsite] = await pool.execute(
@@ -149,7 +146,6 @@ const EditAPIRoute = (app) => {
     "/api/admin/approve-website-detail-edit-request/:requestId",
     Authorize(["superAdmin", "RequestAdmin"]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const [editRequest] = await pool.execute(
           `SELECT * FROM EditWebsiteRequest WHERE website_id = ?`,

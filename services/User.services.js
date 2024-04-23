@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const UserServices = {
   createUser: async (data) => {
-    const pool = await connectToDB();
     try {
       if (!data.firstname || !data.lastname || !data.userName || !data.password) {
         throw { code: 400, message: 'Invalid data provided' };
@@ -61,7 +60,6 @@ export const UserServices = {
   },
 
   generateAccessToken: async (userName, password, persist) => {
-    const pool = await connectToDB();
     try {
       if (!userName) {
         throw { code: 400, message: 'Invalid value for: User Name' };
@@ -110,7 +108,6 @@ export const UserServices = {
   },
 
   updateUserProfile: async (userDetails, data) => {
-    const pool = await connectToDB();
     try {
       const userId = userDetails[0].user_id;
       const [existingUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
@@ -143,7 +140,6 @@ export const UserServices = {
   },
 
   userPasswordResetCode: async (userName, password) => {
-    const pool = await connectToDB();
     try {
       // Check if the user exists
       const [existingUser] = await pool.execute(`SELECT * FROM User WHERE userName = '${userName}';`);

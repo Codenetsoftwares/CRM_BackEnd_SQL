@@ -49,7 +49,6 @@ const TransactionRoutes = (app) => {
     '/api/superadmin/view-edit-introducer-transaction-requests',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const [introEdit] = await pool.execute(`SELECT * FROM IntroducerEditRequest`);
         res.status(200).send(introEdit);

@@ -5,7 +5,6 @@ import { database } from '../services/database.service.js';
 
 const AccountServices = {
   createAdmin: async (data) => {
-    const pool = await connectToDB();
     try {
       // Check if required data is provided
       if (!data.firstname || !data.lastname || !data.userName || !data.password || !data.roles) {
@@ -51,7 +50,6 @@ const AccountServices = {
   },
 
   generateAdminAccessToken: async (userName, password, persist) => {
-    const pool = await connectToDB();
     if (!userName) {
       throw { code: 400, message: 'Invalid value for: User Name' };
     }
@@ -96,7 +94,6 @@ const AccountServices = {
   },
 
   IntroducerBalance: async (introUserId) => {
-    const pool = await connectToDB();
     try {
       console.log('introUserId', introUserId);
       const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
@@ -119,7 +116,6 @@ const AccountServices = {
   },
 
   updateUserProfile: async (id, data) => {
-    const pool = await connectToDB();
     try {
       // Fetch existing user data from the database
       const [existingUser] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [id[0].user_id]);
@@ -180,7 +176,6 @@ const AccountServices = {
   },
 
   SubAdminPasswordResetCode: async (userName, password) => {
-    const pool = await connectToDB();
     try {
       // Check if the user exists
       const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE userName = ?`, [userName]);
@@ -213,7 +208,6 @@ const AccountServices = {
   },
 
   SuperAdminPasswordResetCode: async (userName, oldPassword, password) => {
-    const pool = await connectToDB();
     try {
       // Check if the user exists
       const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
@@ -246,7 +240,6 @@ const AccountServices = {
   },
 
   updateSubAdminProfile: async (id, data) => {
-    const pool = await connectToDB();
     try {
       const userId = id[0].admin_id;
       const [existingUser] = await pool.execute(`SELECT * FROM Admin WHERE admin_id = ?`, [userId]);
@@ -280,7 +273,6 @@ const AccountServices = {
 
   getIntroBalance: async (introUserId) => {
     console.log('introUserId', introUserId);
-    const pool = await connectToDB();
     try {
       const [intorTranasction] = await pool.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
         introUserId,
@@ -310,7 +302,6 @@ const AccountServices = {
   },
 
   introducerLiveBalance: async (id) => {
-    const pool = await connectToDB();
     try {
       const [introId] = await pool.execute('SELECT * FROM IntroducerUser WHERE intro_id = ?', [id]);
 

@@ -2,7 +2,6 @@ import { database } from '../services/database.service.js';
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
-    const pool = await connectToDB();
     try {
       console.log('approvedBankRequests', approvedBankRequests);
       const insertBankDetails = `INSERT INTO Bank (bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, 
@@ -45,14 +44,12 @@ const BankServices = {
   },
 
   deleteBankRequest: async (bankId) => {
-    const pool = await connectToDB();
     const deleteBankRequestQuery = `DELETE FROM BankRequest WHERE bank_id = ?`;
     const [result] = await pool.execute(deleteBankRequestQuery, [bankId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {
-    const pool = await connectToDB();
     try {
       const sql = 'SELECT * FROM BankRequest';
       const [result] = await pool.execute(sql);
@@ -64,8 +61,6 @@ const BankServices = {
   },
 
   updateBank: async (responese, data) => {
-    const pool = await connectToDB();
-
     const existingTransaction = responese;
 
     let changedFields = {};
@@ -130,7 +125,7 @@ const BankServices = {
     return true;
   },
 
-  getBankBalance: async (pool, bankId) => {
+  getBankBalance: async (bankId) => {
     // const pool = await connectToDB();
     try {
       const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;

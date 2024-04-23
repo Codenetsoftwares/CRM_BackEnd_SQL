@@ -1,11 +1,9 @@
-import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
 import { database } from '../services/database.service.js';
 
 // Export the middleware function
 export const AuthorizeRole = (roles) => {
   return async (req, res, next) => {
-    const pool = await connectToDB();
     try {
       const authToken = req.headers.authorization;
       if (!authToken) {

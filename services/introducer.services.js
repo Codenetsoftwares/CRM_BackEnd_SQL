@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const introducerUser = {
   generateIntroducerAccessToken: async (userName, password, persist) => {
-    const pool = await connectToDB();
     try {
       if (!userName || !password) {
         throw { code: 400, message: 'User Name and Password are required' };
@@ -48,7 +47,6 @@ export const introducerUser = {
   },
 
   createintroducerUser: async (data, user) => {
-    const pool = await connectToDB();
     if (!data.firstname) {
       throw { code: 400, message: 'Firstname is required' };
     }
@@ -141,7 +139,6 @@ export const introducerUser = {
   // },
 
   updateIntroducerProfile: async (introUserId, data) => {
-    const pool = await connectToDB();
     try {
       const userId = introUserId[0].intro_id;
       const [existingUser] = await pool.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [userId]);
@@ -170,7 +167,6 @@ export const introducerUser = {
   },
 
   introducerPasswordResetCode: async (userName, password) => {
-    const pool = await connectToDB();
     try {
       // Fetch user from the database
       const [existingUser] = await pool.query('SELECT * FROM IntroducerUser WHERE userName = ?', [userName]);

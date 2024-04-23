@@ -5,7 +5,6 @@ import { database } from '../services/database.service.js';
 
 export const UserRoutes = (app) => {
   app.post('/api/accounts/user/login', async (req, res) => {
-    const pool = await connectToDB();
     try {
       const { userName, password } = req.body;
       if (!userName) {
@@ -41,7 +40,6 @@ export const UserRoutes = (app) => {
   // API To Add Bank Name
 
   app.post('/api/user/add-bank-name', AuthorizeRole(['user']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const bankDetailsArray = req.body.bank_details;
       const user = req.user;
@@ -82,7 +80,6 @@ export const UserRoutes = (app) => {
   // API To Add Website Name
 
   app.post('/api/user/add-website-name', AuthorizeRole(['user']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const websites = req.body.website_name;
       const user = req.user;
@@ -121,7 +118,6 @@ export const UserRoutes = (app) => {
   // API To Add UPI Details
 
   app.post('/api/user/add-upi-name', AuthorizeRole(['user']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const upiDetailsArray = req.body.upi_details;
       const user = req.user;
@@ -160,7 +156,6 @@ export const UserRoutes = (app) => {
   // API To Edit User Profiles
 
   app.put('/api/user-profile-edit/:user_id', AuthorizeRole(['user']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const userId = req.params.user_id;
       const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
@@ -179,7 +174,6 @@ export const UserRoutes = (app) => {
 
   app.get('/api/user-profile-data/:user_id', AuthorizeRole(['user']), async (req, res) => {
     try {
-      const pool = await connectToDB();
       const userId = req.params.user_id;
       const [userDetails] = await pool.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
 
@@ -213,7 +207,6 @@ export const UserRoutes = (app) => {
   app.get('/api/super-admin/user-profile/:page', Authorize(['superAdmin']), async (req, res) => {
     const page = req.params.page;
     const searchQuery = req.query.search;
-    const pool = await connectToDB();
     try {
       if (searchQuery) {
         console.log('first');

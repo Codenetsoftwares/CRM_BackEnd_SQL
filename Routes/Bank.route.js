@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 const BankRoutes = (app) => {
   app.post('/api/add-bank-name', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const userName = req.user;
       console.log('userName', userName);
@@ -61,7 +60,6 @@ const BankRoutes = (app) => {
   });
 
   app.post('/api/approve-bank/:bank_id', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const { isApproved, subAdmins } = req.body;
 
@@ -128,7 +126,6 @@ const BankRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         // Fetch bank data
         const banksQuery = `SELECT * FROM Bank`;
@@ -138,7 +135,7 @@ const BankRoutes = (app) => {
         if (userRole.includes('superAdmin')) {
           // For superAdmin, fetch balances for all banks
           const balancePromises = bankData.map(async (bank) => {
-            bank.balance = await BankServices.getBankBalance(pool, bank.bank_id);
+            bank.balance = await BankServices.getBankBalance(bank.bank_id);
             // Fetch BankSubAdmins for each bank
             const [subAdmins] = await pool.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
             if (subAdmins && subAdmins.length > 0) {
@@ -163,7 +160,7 @@ const BankRoutes = (app) => {
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
                   // Update balance for the specific bank
-                  bank.balance = await BankServices.getBankBalance(pool, bank.bank_id);
+                  bank.balance = await BankServices.getBankBalance(bank.bank_id);
 
                   // Set permissions for the specific bank
                   bank.isDeposit = userSubAdmin.isDeposit;
@@ -210,7 +207,6 @@ const BankRoutes = (app) => {
     '/api/get-single-bank-name/:bank_id',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.bank_id;
         console.log('id', id);
@@ -220,7 +216,7 @@ const BankRoutes = (app) => {
           return res.status(404).send({ message: 'Bank not found' });
         }
         const [bankId] = dbBankData[0].bank_id;
-        const bankBalance = await BankServices.getBankBalance(pool,bankId);
+        const bankBalance = await BankServices.getBankBalance(bankId);
         const response = {
           bank_id: dbBankData[0].bank_id,
           bankName: dbBankData[0].bankName,
@@ -240,7 +236,6 @@ const BankRoutes = (app) => {
     '/api/admin/add-bank-balance/:bank_id',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.bank_id;
         const userName = req.user;
@@ -315,7 +310,6 @@ const BankRoutes = (app) => {
     '/api/admin/withdraw-bank-balance/:bank_id',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.bank_id;
         const userName = req.user;
@@ -335,7 +329,7 @@ const BankRoutes = (app) => {
           return res.status(404).send({ message: 'Bank account not found' });
         }
         // console.log('bank', BankServices.getBankBalance(id));
-        if ((await BankServices.getBankBalance(pool, id)) < Number(amount)) {
+        if ((await BankServices.getBankBalance(id)) < Number(amount)) {
           return res.status(400).send({ message: 'Insufficient Bank Balance' });
         }
         const bankTransaction = {
@@ -399,7 +393,6 @@ const BankRoutes = (app) => {
       'Transaction-Delete-Request',
     ]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const [bankName] = await pool.execute(`SELECT bankName, bank_id FROM Bank `);
         res.status(200).send(bankName);
@@ -414,7 +407,6 @@ const BankRoutes = (app) => {
     '/api/admin/manual-user-bank-account-summary/:bankId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         let balances = 0;
         const bankId = req.params.bankId;
@@ -474,7 +466,6 @@ const BankRoutes = (app) => {
   );
 
   app.get('/api/superadmin/view-bank-edit-requests', Authorize(['superAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const editRequestsQuery = `SELECT * FROM EditBankRequest`;
       const [editRequestsRows] = await pool.execute(editRequestsQuery);
@@ -487,7 +478,6 @@ const BankRoutes = (app) => {
   });
 
   app.post('/api/admin/bank/isactive/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const bankId = req.params.bank_id;
       const { isActive } = req.body;
@@ -505,7 +495,6 @@ const BankRoutes = (app) => {
   });
 
   app.get('/api/admin/bank/view-subadmin/:subadminId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const subadminId = req.params.subadminId;
       const dbBankData = `SELECT Bank.bankName FROM Bank INNER JOIN BankSubAdmins ON Bank.bank_id = BankSubAdmins.bankId
@@ -519,7 +508,6 @@ const BankRoutes = (app) => {
   });
 
   app.put('/api/bank/edit-request/:bankId', Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const { subAdmins } = req.body;
       const bankId = req.params.bankId;
@@ -582,7 +570,6 @@ const BankRoutes = (app) => {
     '/api/bank/delete-subadmin/:bankId/:subAdminId',
     Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const { bankId, subAdminId } = req.params;
         // Check if the bank exists
@@ -603,7 +590,6 @@ const BankRoutes = (app) => {
   );
 
   app.get('/api/active-visible-bank', Authorize(['superAdmin', 'RequstAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       // Retrieve active banks from the database
       const activeBanksQuery = `SELECT bankName FROM Bank WHERE isActive = true`;
@@ -636,7 +622,6 @@ const BankRoutes = (app) => {
       'Create-Withdraw-Transaction',
     ]),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const sqlQuery = `SELECT bankName, isActive FROM Bank WHERE isActive = true`;
         const [dbBankData] = await pool.execute(sqlQuery);

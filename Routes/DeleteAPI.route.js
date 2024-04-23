@@ -8,7 +8,6 @@ const DeleteAPIRoute = (app) => {
     '/api/admin/save-bank-transaction-request',
     Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const user = req.user;
         const { requestId } = req.body;
@@ -31,7 +30,6 @@ const DeleteAPIRoute = (app) => {
   // API To Approve Bank Transaction To Move Into Trash Request
 
   app.post('/api/delete-bank-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.Edit_ID;
       const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
@@ -117,7 +115,6 @@ const DeleteAPIRoute = (app) => {
     '/api/admin/save-website-transaction-request',
     Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const user = req.user;
         const { requestId } = req.body;
@@ -142,7 +139,6 @@ const DeleteAPIRoute = (app) => {
   // API To Approve Website Transaction To Move Into Trash Request
 
   app.post('/api/delete-website-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.Edit_ID;
       const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
@@ -216,7 +212,6 @@ const DeleteAPIRoute = (app) => {
     '/api/admin/save-transaction-request',
     Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const user = req.user;
         const { requestId } = req.body;
@@ -240,7 +235,6 @@ const DeleteAPIRoute = (app) => {
   // API To Approve Transaction To Move Into Trash Request
 
   app.post('/api/delete-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.Edit_ID;
       const [editRequest] = await pool.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
@@ -330,7 +324,6 @@ const DeleteAPIRoute = (app) => {
     '/api/admin/save-introducer-transaction-request',
     Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const user = req.user;
         const { requestId } = req.body;
@@ -356,7 +349,6 @@ const DeleteAPIRoute = (app) => {
     '/api/delete-introducer-transaction/:IntroEditID',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.IntroEditID;
         const [editRequest] = await pool.execute(`SELECT * FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
@@ -417,7 +409,6 @@ const DeleteAPIRoute = (app) => {
     '/api/admin/save-bank-request',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const { requestId } = req.body;
         console.log(requestId);
@@ -442,7 +433,6 @@ const DeleteAPIRoute = (app) => {
   // API For Bank Delete Request
 
   app.post('/api/delete-bank/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.bank_id;
       const [editRequest] = await pool.execute(`SELECT * FROM EditBankRequest WHERE bank_id = ?`, [id]);
@@ -472,7 +462,6 @@ const DeleteAPIRoute = (app) => {
     '/api/admin/save-website-request',
     Authorize(['superAdmin', 'Transaction-View', 'Website-View']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const { requestId } = req.body;
         console.log(requestId);
@@ -497,7 +486,6 @@ const DeleteAPIRoute = (app) => {
   // API For Website Delet Request
 
   app.post('/api/delete-website/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.website_id;
       const [editRequest] = await pool.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
@@ -524,7 +512,6 @@ const DeleteAPIRoute = (app) => {
   // API For Rejecting Bank Detail
 
   app.delete('/api/reject/bank-detail/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.bank_id;
       const deleteQuery = 'DELETE FROM EditBankRequest WHERE bank_id = ?';
@@ -543,7 +530,6 @@ const DeleteAPIRoute = (app) => {
   // API For Rejecting Website Detail
 
   app.delete('/api/reject/website-detail/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.website_id;
       const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE website_id = ?';
@@ -561,7 +547,6 @@ const DeleteAPIRoute = (app) => {
 
   //  API To View Trash Data
   app.get('/api/admin/view-trash', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const [resultArray] = await pool.execute(`SELECT * FROM Trash`);
       res.status(200).send(resultArray);
@@ -573,7 +558,6 @@ const DeleteAPIRoute = (app) => {
 
   // API To Re-Store The Bank Transaction Data
   app.post('/api/restore/bank/data/:bankId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const bankId = req.params.bankId;
 
@@ -644,7 +628,6 @@ const DeleteAPIRoute = (app) => {
 
   // API To Re-Store The Website Transaction Data
   app.post('/api/restore/website/data/:websiteId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const websiteId = req.params.websiteId;
 
@@ -704,7 +687,6 @@ const DeleteAPIRoute = (app) => {
     '/api/restore/transaction/data/:Transaction_Id',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const transactionID = req.params.Transaction_Id;
 
@@ -810,7 +792,6 @@ const DeleteAPIRoute = (app) => {
     '/api/restore/Introducer/data/:introTransactionId',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const introUserId = req.params.introTransactionId;
 
@@ -868,7 +849,6 @@ const DeleteAPIRoute = (app) => {
     '/api/reject/introducer-detail/:IntroEditID',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
-      const pool = await connectToDB();
       try {
         const id = req.params.IntroEditID;
         const deleteQuery = 'DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?';
@@ -886,7 +866,6 @@ const DeleteAPIRoute = (app) => {
   );
 
   app.get('/api/admin/view-Delete-Request', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const [resultArray] = await pool.execute(`SELECT * FROM EditRequest`);
       res.status(200).send(resultArray);
@@ -898,7 +877,6 @@ const DeleteAPIRoute = (app) => {
 
   // API To Reject EditRequest Data
   app.delete('/api/reject/DeleteRequest/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params.Edit_ID;
       const deleteQuery = 'DELETE FROM EditRequest WHERE Edit_ID = ?';
@@ -914,7 +892,6 @@ const DeleteAPIRoute = (app) => {
 
   // API To Reject Trash Data
   app.delete('/api/reject/trash/transactions/:_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    const pool = await connectToDB();
     try {
       const id = req.params._id;
       const [result] = await pool.execute(`DELETE FROM Trash WHERE _id = ?`, [id]);
