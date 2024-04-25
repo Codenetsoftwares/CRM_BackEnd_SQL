@@ -99,7 +99,7 @@ const TransactionServices = {
           bonus: bonus,
           remarks: remarks,
           introducerUserName: introducersUserName,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         const Transaction_Id = uuidv4();
         const incertData = `INSERT INTO Transaction (bankId, websiteId, subAdminId, subAdminName, transactionID, transactionType, 
@@ -177,7 +177,7 @@ const TransactionServices = {
           bankCharges: bankCharges,
           remarks: remarks,
           introducerUserName: introducersUserName,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
           isSubmit: false,
         };
         const Transaction_Id = uuidv4();
@@ -298,7 +298,7 @@ const TransactionServices = {
           subAdminId: id,
           subAdminName: name,
           introducerUserName: introducerUserName,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         const incertData = `INSERT INTO IntroducerTransaction (introTransactionId, introUserId, amount, transactionType, remarks, 
         subAdminId, subAdminName, introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -338,7 +338,7 @@ const TransactionServices = {
           subAdminId: id,
           subAdminName: name,
           introducerUserName: introducerUserName,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         const incertData = `INSERT INTO IntroducerTransaction (introTransactionId, introUserId, amount, transactionType, remarks, 
           subAdminId, subAdminName, introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;

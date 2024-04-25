@@ -316,7 +316,7 @@ const WebisteRoutes = (app) => {
           depositAmount: Math.round(parseFloat(amount)),
           subAdminId: userName[0].userName,
           subAdminName: userName[0].firstname,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         const WebsiteTransaction_Id = uuidv4();
         const insertWebsiteRequestQuery = `
@@ -376,7 +376,7 @@ const WebisteRoutes = (app) => {
           subAdminId: userName[0].userName,
           subAdminName: userName[0].firstname,
           remarks: remarks,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         const WebsiteTransaction_Id = uuidv4();
         const insertWebsiteRequestQuery = `
