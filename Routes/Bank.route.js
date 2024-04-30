@@ -268,7 +268,7 @@ const BankRoutes = (app) => {
           subAdminId: userName[0].userName,
           subAdminName: userName[0].firstname,
           remarks: remarks,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         console.log('bankTransaction', bankTransaction);
         const BankTransaction_Id = uuidv4();
@@ -344,7 +344,7 @@ const BankRoutes = (app) => {
           subAdminId: userName[0].userName,
           subAdminName: userName[0].firstname,
           remarks: remarks,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         const BankTransaction_Id = uuidv4();
         const insertBankRequestQuery = `
