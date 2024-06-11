@@ -43,7 +43,7 @@ const AccountRoute = (app) => {
     }
   });
 
-  app.post('/api/create/user-admin', async (req, res) => {
+  app.post('/api/create/user-admin', Authorize(["superAdmin", "Create-SubAdmin"]), async (req, res) => {
     try {
       await AccountServices.createAdmin(req.body);
       res.status(200).send({ code: 200, message: 'Admin registered successfully!' });
