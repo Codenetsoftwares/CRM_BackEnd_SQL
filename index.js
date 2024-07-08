@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import sequelize from './db.js';
+
 
 // Route Imports
 import AccountRoute from './Routes/Account.route.js';
@@ -12,6 +14,7 @@ import BankRoutes from './Routes/Bank.route.js';
 import TransactionRoutes from './Routes/Transaction.route.js';
 import DeleteAPIRoute from './Routes/DeleteAPI.route.js';
 import EditAPIRoute from './Routes/EditAPI.route.js';
+import { AuthRoute } from './Routes/Auth.route.js';
 
 dotenv.config();
 const app = express();
@@ -34,7 +37,17 @@ UserRoutes(app);
 TransactionRoutes(app);
 DeleteAPIRoute(app);
 EditAPIRoute(app);
+AuthRoute(app);
+
+sequelize
+  .sync({ alter: true })
+  .then(() => {
+    console.log('Database & tables created!');
+  })
+  .catch((err) => {
+    console.error('Unable to create tables:', err);
+  });
 
 app.listen(process.env.PORT, () => {
-  console.log(`Server listening in http://localhost:${process.env.PORT || 8000}`);
+  console.log(`App is running on  - http://localhost:${process.env.PORT || 8000}`);
 });

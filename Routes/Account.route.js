@@ -7,43 +7,43 @@ import UserServices from '../services/User.services.js';
 import TransactionServices from '../services/Transaction.services.js';
 
 const AccountRoute = (app) => {
-  app.post('/admin/login', async (req, res) => {
-    try {
-      const { userName, password } = req.body;
-      if (!userName) {
-        throw { code: 400, message: 'User Name is required' };
-      }
+  // app.post('/admin/login', async (req, res) => {
+  //   try {
+  //     const { userName, password } = req.body;
+  //     if (!userName) {
+  //       throw { code: 400, message: 'User Name is required' };
+  //     }
 
-      if (!password) {
-        throw { code: 400, message: 'Password is required' };
-      }
+  //     if (!password) {
+  //       throw { code: 400, message: 'Password is required' };
+  //     }
 
-      const [admin] = await database.execute('SELECT * FROM Admin WHERE userName = ?', [userName]);
+  //     const [admin] = await database.execute('SELECT * FROM Admin WHERE userName = ?', [userName]);
 
-      if (admin.length === 0) {
-        throw { code: 404, message: 'User not found' };
-      }
+  //     if (admin.length === 0) {
+  //       throw { code: 404, message: 'User not found' };
+  //     }
 
-      const user = admin[0];
-      const passwordMatch = await bcrypt.compare(password, user.password);
+  //     const user = admin[0];
+  //     const passwordMatch = await bcrypt.compare(password, user.password);
 
-      if (!passwordMatch) {
-        throw { code: 401, message: 'Incorrect password' };
-      }
+  //     if (!passwordMatch) {
+  //       throw { code: 401, message: 'Incorrect password' };
+  //     }
 
-      const accessToken = await AccountServices.generateAdminAccessToken(userName, password);
+  //     const accessToken = await AccountServices.generateAdminAccessToken(userName, password);
 
-      if (!accessToken) {
-        throw { code: 500, message: 'Failed to generate access token' };
-      }
-      res.status(200).send({ code: 200, message: 'Login Successfully', token: accessToken });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-    }
-  });
+  //     if (!accessToken) {
+  //       throw { code: 500, message: 'Failed to generate access token' };
+  //     }
+  //     res.status(200).send({ code: 200, message: 'Login Successfully', token: accessToken });
+  //   } catch (e) {
+  //     console.error(e);
+  //     res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
+  //   }
+  // });
 
-  app.post('/api/create/user-admin', Authorize(["superAdmin", "Create-SubAdmin"]), async (req, res) => {
+  app.post('/api/create/user-admin',  async (req, res) => {
     try {
       await AccountServices.createAdmin(req.body);
       res.status(200).send({ code: 200, message: 'Admin registered successfully!' });

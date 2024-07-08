@@ -1,0 +1,45 @@
+// models/EditRequest.js
+import { DataTypes } from 'sequelize';
+import sequelize from '../db.js';
+
+const EditRequest = sequelize.define('EditRequest', {
+  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+  bankId: { type: DataTypes.STRING },
+  websiteId: { type: DataTypes.STRING },
+  Transaction_Id: { type: DataTypes.STRING },
+  transactionID: { type: DataTypes.STRING },
+  transactionType: { type: DataTypes.STRING },
+  amount: { type: DataTypes.INTEGER },
+  paymentMethod: { type: DataTypes.STRING },
+  introducerUserName: { type: DataTypes.STRING },
+  userName: { type: DataTypes.STRING },
+  requesteduserName: { type: DataTypes.STRING },
+  subAdminId: { type: DataTypes.STRING },
+  subAdminName: { type: DataTypes.STRING },
+  depositAmount: { type: DataTypes.INTEGER },
+  withdrawAmount: { type: DataTypes.INTEGER },
+  bonus: { type: DataTypes.INTEGER },
+  bankCharges: { type: DataTypes.INTEGER },
+  remarks: { type: DataTypes.STRING },
+  bankName: { type: DataTypes.STRING },
+  websiteName: { type: DataTypes.STRING },
+  accountHolderName: { type: DataTypes.STRING },
+  accountNumber: { type: DataTypes.BIGINT },
+  ifscCode: { type: DataTypes.STRING },
+  upiId: { type: DataTypes.STRING },
+  upiAppName: { type: DataTypes.STRING },
+  upiNumber: { type: DataTypes.STRING },
+  createdAt: { type: DataTypes.DATE },
+  message: { type: DataTypes.STRING },
+  type: { type: DataTypes.STRING },
+  Nametype: { type: DataTypes.STRING },
+  changedFields: { type: DataTypes.JSON },
+  originalData: { type: DataTypes.JSON },
+  isSubmit: { type: DataTypes.BOOLEAN },
+  isApproved: { type: DataTypes.BOOLEAN },
+  WebsiteTransaction_Id: { type: DataTypes.STRING },
+  Edit_ID: { type: DataTypes.STRING },
+  BankTransaction_Id: { type: DataTypes.STRING },
+});
+
+export default EditRequest;
