@@ -1,57 +1,16 @@
 import { database } from '../services/database.service.js';
 import bcrypt from 'bcrypt';
-import AccountServices from '../services/Account.Services.js';
+import { createAdmin } from '../services/Account.Services.js';
 import { introducerUser } from '../services/introducer.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 import UserServices from '../services/User.services.js';
 import TransactionServices from '../services/Transaction.services.js';
+import { validateAdminCreate } from '../utils/commonSchema.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 const AccountRoute = (app) => {
-  // app.post('/admin/login', async (req, res) => {
-  //   try {
-  //     const { userName, password } = req.body;
-  //     if (!userName) {
-  //       throw { code: 400, message: 'User Name is required' };
-  //     }
 
-  //     if (!password) {
-  //       throw { code: 400, message: 'Password is required' };
-  //     }
-
-  //     const [admin] = await database.execute('SELECT * FROM Admin WHERE userName = ?', [userName]);
-
-  //     if (admin.length === 0) {
-  //       throw { code: 404, message: 'User not found' };
-  //     }
-
-  //     const user = admin[0];
-  //     const passwordMatch = await bcrypt.compare(password, user.password);
-
-  //     if (!passwordMatch) {
-  //       throw { code: 401, message: 'Incorrect password' };
-  //     }
-
-  //     const accessToken = await AccountServices.generateAdminAccessToken(userName, password);
-
-  //     if (!accessToken) {
-  //       throw { code: 500, message: 'Failed to generate access token' };
-  //     }
-  //     res.status(200).send({ code: 200, message: 'Login Successfully', token: accessToken });
-  //   } catch (e) {
-  //     console.error(e);
-  //     res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-  //   }
-  // });
-
-  app.post('/api/create/user-admin',  async (req, res) => {
-    try {
-      await AccountServices.createAdmin(req.body);
-      res.status(200).send({ code: 200, message: 'Admin registered successfully!' });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).json({ message: e.message || 'Internal Server Error' });
-    }
-  });
+  app.post('/api/create/user-admin', validateAdminCreate, customErrorHandler, Authorize(["superAdmin", "Create-SubAdmin"]), createAdmin);
 
   app.post(
     '/api/admin/accounts/introducer/register',

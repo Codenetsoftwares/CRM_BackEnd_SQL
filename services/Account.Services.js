@@ -5,102 +5,106 @@ import { database } from '../services/database.service.js';
 import Admin from '../models/admin.model.js';
 import User from '../models/user.model.js';
 import IntroducerUser from '../models/introducerUser.model.js';
+import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
+import CustomError from '../utils/extendError.js';
+
+export const createAdmin = async (req, res) => {
+  try {
+    const { firstname, lastname, userName, password, roles } = req.body;
+
+    // Check if the username already exists in any of the relevant tables
+    const existingAdmin = await Admin.findOne({ where: { userName } });
+
+    if (existingAdmin) {
+      throw new Error(`Admin already exists with user name: ${userName}`);
+    }
+
+    // Generate salt and hash the password
+    const passwordSalt = await bcrypt.genSalt();
+    const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+    const admin_id = uuidv4();
+
+    // Convert roles data into an array if it's not already an array
+    const rolesArray = Array.isArray(roles) ? roles : [roles];
+
+    // Insert new admin into the Admin table
+    const newAdmin = await Admin.create({
+      admin_id,
+      firstname,
+      lastname,
+      userName,
+      password: encryptedPassword,
+      roles: JSON.stringify(rolesArray),
+    });
+
+    if (newAdmin) {
+      // Admin creation successful, return success status
+      return apiResponseSuccess(newAdmin, true, statusCode.create, 'Admin create successfully', res);
+    } else {
+      // Admin creation failed, throw error
+      throw new CustomError('Failed to create new admin', null, 400);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const generateAdminAccessToken = async (userName, password, persist) => {
+  if (!userName) {
+    throw new Error('Invalid value for: User Name');
+  }
+  if (!password) {
+    throw new Error('Invalid value for: Password');
+  }
+
+  try {
+    // Find the admin by username using Sequelize
+    const admin = await Admin.findOne({ where: { userName } });
+
+    if (!admin) {
+      throw new Error('Invalid User Name or password');
+    }
+
+    // Compare the provided password with the hashed password stored in the database
+    const passwordValid = await bcrypt.compare(password, admin.password);
+
+    if (!passwordValid) {
+      throw new Error('Invalid User Name or password');
+    }
+
+    // Prepare the payload for the access token
+    const accessTokenPayload = {
+      admin_id: admin.admin_id,
+      userName: admin.userName,
+      roles: admin.roles,
+    };
+
+    // Generate the JWT access token
+    const accessToken = jwt.sign(accessTokenPayload, process.env.JWT_SECRET_KEY, {
+      expiresIn: persist ? '1y' : '8h',
+    });
+
+    return {
+      accessToken,
+      admin_id: admin.admin_id,
+      userName: admin.userName,
+      roles: admin.roles,
+    };
+  } catch (error) {
+    throw new Error(error.message || 'Internal Server Error');
+  }
+};
+
 
 const AccountServices = {
-   createAdmin : async (data) => {
-    try {
-      // Check if required data is provided
-      if (!data.firstname || !data.lastname || !data.userName || !data.password || !data.roles) {
-        throw { code: 400, message: 'Invalid data provided' };
-      }
-  
-      // Check if the username already exists in any of the relevant tables
-      const existingAdmin = await Admin.findOne({ where: { userName: data.userName } });
-      const existingUser = await User.findOne({ where: { userName: data.userName } });
-      const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName: data.userName } });
-  
-      if (existingAdmin || existingUser || existingIntroducerUser) {
-        throw { code: 409, message: `Admin already exists with user name: ${data.userName}` };
-      }
-  
-      // Generate salt and hash the password
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
-      const admin_id = uuidv4();
-  
-      // Convert roles data into an array if it's not already an array
-      const rolesArray = Array.isArray(data.roles) ? data.roles : [data.roles];
-  
-      // Insert new admin into the Admin table
-      const newAdmin = await Admin.create({
-        admin_id: admin_id,
-        firstname: data.firstname,
-        lastname: data.lastname,
-        userName: data.userName,
-        password: encryptedPassword,
-        roles: JSON.stringify(rolesArray),
-      });
-  
-      if (newAdmin) {
-        // Admin creation successful, return success status
-        return { code: 201, message: 'Admin created successfully' };
-      } else {
-        // Admin creation failed, throw error
-        throw { code: 500, message: 'Failed to create new admin' };
-      }
-    } catch (err) {
-      console.error(err);
-      throw { code: err.code || 500, message: err.message || 'Internal Server Error' };
-    }
-  },
-  
 
-  generateAdminAccessToken: async (userName, password, persist) => {
-    if (!userName) {
-      throw { code: 400, message: 'Invalid value for: User Name' };
-    }
-    if (!password) {
-      throw { code: 400, message: 'Invalid value for: password' };
-    }
-  
-    try {
-      // Find the admin by username using Sequelize
-      const admin = await Admin.findOne({ where: { userName } });
-  
-      if (!admin) {
-        throw { code: 401, message: 'Invalid User Name or password' };
-      }
-  
-      // Compare the provided password with the hashed password stored in the database
-      const passwordValid = await bcrypt.compare(password, admin.password);
-  
-      if (!passwordValid) {
-        throw { code: 401, message: 'Invalid User Name or password' };
-      }
-  
-      // Prepare the payload for the access token
-      const accessTokenPayload = {
-        admin_id: admin.admin_id,
-        userName: admin.userName,
-        roles: admin.roles,
-      };
-  
-      // Generate the JWT access token
-      const accessToken = jwt.sign(accessTokenPayload, process.env.JWT_SECRET_KEY, {
-        expiresIn: persist ? '1y' : '8h',
-      });
-  
-      return {
-        accessToken,
-        admin_id: admin.admin_id,
-        userName: admin.userName,
-        roles: admin.roles,
-      };
-    } catch (err) {
-      console.error(err);
-      throw { code: err.code || 500, message: err.message || 'Internal Server Error' };
-    }
-  },
+
 
   IntroducerBalance: async (introUserId) => {
     try {

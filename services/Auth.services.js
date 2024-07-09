@@ -1,5 +1,5 @@
 import Admin from "../models/admin.model.js";
-import AccountServices from "./Account.Services.js";
+import  { generateAdminAccessToken } from "./Account.Services.js";
 import bcrypt from 'bcrypt';
 
 export const loginAdmin = async (req, res) => {
@@ -25,7 +25,7 @@ export const loginAdmin = async (req, res) => {
             throw { code: 401, message: 'Incorrect password' };
         }
 
-        const accessToken = await AccountServices.generateAdminAccessToken(userName, password);
+        const accessToken = await generateAdminAccessToken(userName, password);
 
         if (!accessToken) {
             throw { code: 500, message: 'Failed to generate access token' };
