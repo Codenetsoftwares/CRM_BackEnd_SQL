@@ -1,6 +1,8 @@
-import { loginAdmin } from "../services/Auth.services.js";
+import { generateIntroducerAccessToken, loginAdmin } from "../services/Auth.services.js";
+import customErrorHandler from "../utils/customErrorHandler.js";
 
-export const AuthRoute = (app) =>
-{
-    app.post('/admin/login', loginAdmin);
+export const AuthRoute = (app) => {
+    app.post('/admin/login', customErrorHandler, loginAdmin);
+    app.post('/api/introducer/user/login', customErrorHandler, generateIntroducerAccessToken)
+
 }

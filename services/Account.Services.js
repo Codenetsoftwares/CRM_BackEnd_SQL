@@ -8,27 +8,24 @@ import IntroducerUser from '../models/introducerUser.model.js';
 import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
+import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 
 export const createAdmin = async (req, res) => {
   try {
     const { firstname, lastname, userName, password, roles } = req.body;
 
-    // Check if the username already exists in any of the relevant tables
     const existingAdmin = await Admin.findOne({ where: { userName } });
 
     if (existingAdmin) {
-      throw new Error(`Admin already exists with user name: ${userName}`);
+      throw new CustomError(`Admin already exists with user name: ${userName}`,null, 409);
     }
 
-    // Generate salt and hash the password
     const passwordSalt = await bcrypt.genSalt();
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
     const admin_id = uuidv4();
 
-    // Convert roles data into an array if it's not already an array
     const rolesArray = Array.isArray(roles) ? roles : [roles];
 
-    // Insert new admin into the Admin table
     const newAdmin = await Admin.create({
       admin_id,
       firstname,
@@ -39,10 +36,8 @@ export const createAdmin = async (req, res) => {
     });
 
     if (newAdmin) {
-      // Admin creation successful, return success status
       return apiResponseSuccess(newAdmin, true, statusCode.create, 'Admin create successfully', res);
     } else {
-      // Admin creation failed, throw error
       throw new CustomError('Failed to create new admin', null, 400);
     }
   } catch (error) {
@@ -64,28 +59,24 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
   }
 
   try {
-    // Find the admin by username using Sequelize
     const admin = await Admin.findOne({ where: { userName } });
 
     if (!admin) {
       throw new Error('Invalid User Name or password');
     }
 
-    // Compare the provided password with the hashed password stored in the database
     const passwordValid = await bcrypt.compare(password, admin.password);
 
     if (!passwordValid) {
       throw new Error('Invalid User Name or password');
     }
 
-    // Prepare the payload for the access token
     const accessTokenPayload = {
       admin_id: admin.admin_id,
       userName: admin.userName,
       roles: admin.roles,
     };
 
-    // Generate the JWT access token
     const accessToken = jwt.sign(accessTokenPayload, process.env.JWT_SECRET_KEY, {
       expiresIn: persist ? '1y' : '8h',
     });
@@ -101,10 +92,108 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
   }
 };
 
+export const updateUserProfile = async (req, res) => {
+  const { user_id } = req.params;
+  const {
+    firstname,
+    lastname,
+    introducersUserName,
+    introducerPercentage,
+    introducersUserName1,
+    introducerPercentage1,
+    introducersUserName2,
+    introducerPercentage2,
+  } = req.body;
+
+  try {
+    const existingUser = await User.findByPk(user_id);
+
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${user_id}`, res);
+    }
+
+    const validatePercentage = (percentage) => {
+      return typeof percentage === 'number' && !isNaN(percentage) && percentage >= 0 && percentage <= 100;
+    };
+
+    if (!validatePercentage(introducerPercentage) || !validatePercentage(introducerPercentage1) || !validatePercentage(introducerPercentage2)) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer percentages must be valid numbers between 0 and 100.', res);
+    }
+
+    existingUser.firstname = firstname || existingUser.firstname;
+    existingUser.lastname = lastname || existingUser.lastname;
+    existingUser.introducersUserName = introducersUserName || existingUser.introducersUserName;
+    existingUser.introducerPercentage = introducerPercentage || existingUser.introducerPercentage;
+    existingUser.introducersUserName1 = introducersUserName1 || existingUser.introducersUserName1;
+    existingUser.introducerPercentage1 = introducerPercentage1 || existingUser.introducerPercentage1;
+    existingUser.introducersUserName2 = introducersUserName2 || existingUser.introducersUserName2;
+    existingUser.introducerPercentage2 = introducerPercentage2 || existingUser.introducerPercentage2;
+
+    await existingUser.save();
+    return apiResponseSuccess({user: existingUser } , true, statusCode.success, 'Profile updated successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getUserProfile = async (req, res) => {
+  const page = parseInt(req.params.page);
+  const searchQuery = req.query.search;
+  
+  try {
+    let users;
+    let allIntroDataLength;
+
+    if (searchQuery) {
+      users = await User.findAll({
+        where: {
+          userName: {
+            [Op.like]: `%${searchQuery}%`,
+          },
+        },
+      });
+    } else {
+      users = await User.findAll();
+    }
+
+    const pageSize = 10;
+    const offset = (page - 1) * pageSize;
+    const paginatedUsers = users.slice(offset, offset + pageSize);
+
+    const SecondArray = [];
+    for (const user of paginatedUsers) {
+      const userWithTransaction = await User.findOne({
+        where: { userName: user.userName },
+        include: { model: UserTransactionDetail, as: 'transactionDetails' }, 
+      });
+      SecondArray.push(userWithTransaction);
+    }
+
+    allIntroDataLength = users.length;
+    const pageNumber = Math.ceil(allIntroDataLength / pageSize);
+
+    if (SecondArray.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No data found for the selected criteria.', res);
+    }
+
+    return apiResponseSuccess({ SecondArray, pageNumber, allIntroDataLength }, true, statusCode.success, 'Profile retrieved successfully', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
 
 const AccountServices = {
-
-
 
   IntroducerBalance: async (introUserId) => {
     try {
@@ -128,65 +217,6 @@ const AccountServices = {
     }
   },
 
-  updateUserProfile: async (id, data) => {
-    try {
-      // Fetch existing user data from the database
-      const [existingUser] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [id[0].user_id]);
-      console.log('existingUser', existingUser[0].user_id);
-
-      // Check if the user exists
-      if (!existingUser) {
-        throw { code: 404, message: `Existing User not found with id: ${id}` };
-      }
-
-      // Validate introducerPercentage, introducerPercentage1, and introducerPercentage2
-      const introducerPercentage =
-        data.introducerPercentage !== undefined
-          ? parseFloat(data.introducerPercentage)
-          : existingUser[0].introducerPercentage;
-      const introducerPercentage1 =
-        data.introducerPercentage1 !== undefined
-          ? parseFloat(data.introducerPercentage1)
-          : existingUser[0].introducerPercentage1;
-      const introducerPercentage2 =
-        data.introducerPercentage2 !== undefined
-          ? parseFloat(data.introducerPercentage2)
-          : existingUser[0].introducerPercentage2;
-
-      if (isNaN(introducerPercentage) || isNaN(introducerPercentage1) || isNaN(introducerPercentage2)) {
-        throw { code: 400, message: 'Introducer percentages must be valid numbers.' };
-      }
-
-      const totalIntroducerPercentage = introducerPercentage + introducerPercentage1 + introducerPercentage2;
-
-      if (totalIntroducerPercentage < 0 || totalIntroducerPercentage > 100) {
-        throw { code: 400, message: 'The sum of introducer percentages must be between 0 and 100.' };
-      }
-
-      // Construct the SQL update query
-      const updateUserQuery = `UPDATE User SET firstname = ?, lastname = ?, introducersUserName = ?,
-        introducerPercentage = ?, introducersUserName1 = ?,
-        introducerPercentage1 = ?, introducersUserName2 = ?, introducerPercentage2 = ? WHERE user_id = ?`;
-
-      // Execute the update query with the provided data
-      await database.execute(updateUserQuery, [
-        data.firstname || existingUser[0].firstname,
-        data.lastname || existingUser[0].lastname,
-        data.introducersUserName || existingUser[0].introducersUserName,
-        introducerPercentage,
-        data.introducersUserName1 || existingUser[0].introducersUserName1,
-        introducerPercentage1,
-        data.introducersUserName2 || existingUser[0].introducersUserName2,
-        introducerPercentage2,
-        id[0].user_id,
-      ]);
-
-      return true;
-    } catch (e) {
-      console.error(e);
-      throw { code: e.code || 500, message: e.message || 'Internal server error' };
-    }
-  },
 
   SubAdminPasswordResetCode: async (userName, password) => {
     try {

@@ -15,6 +15,8 @@ import TransactionRoutes from './Routes/Transaction.route.js';
 import DeleteAPIRoute from './Routes/DeleteAPI.route.js';
 import EditAPIRoute from './Routes/EditAPI.route.js';
 import { AuthRoute } from './Routes/Auth.route.js';
+import User from './models/user.model.js';
+import UserTransactionDetail from './models/userTransactionDetail.model.js';
 
 dotenv.config();
 const app = express();
@@ -28,6 +30,9 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('Status : OK');
 });
+
+User.hasMany(UserTransactionDetail, { foreignKey: 'userId', as: 'transactionDetails' });
+UserTransactionDetail.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 AccountRoute(app);
 BankRoutes(app);

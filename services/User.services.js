@@ -2,63 +2,73 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
+import User from '../models/user.model.js';
+import Admin from '../models/admin.model.js';
+import IntroducerUser from '../models/introducerUser.model.js';
+import sequelize from '../db.js';
+import CustomError from '../utils/extendError.js';
+
+export const createUser = async (req, res) => {
+  const {
+    firstname,
+    lastname,
+    contactNumber,
+    userName,
+    password,
+    introducersUserName,
+    introducerPercentage,
+    introducersUserName1,
+    introducerPercentage1,
+    introducersUserName2,
+    introducerPercentage2,
+  } = req.body;
+
+  try {
+
+    const existingUser = await User.findOne({ where: { userName } });
+    const existingAdmin = await Admin.findOne({ where: { userName } });
+    const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
+
+    if (existingUser || existingAdmin || existingIntroducerUser) {
+      throw new CustomError(`User already exists with username: ${userName}`, null, 409);
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const transaction = await sequelize.transaction();
+
+    try {
+      const user_id = uuidv4();
+      await User.create({
+        user_id,
+        firstname,
+        lastname,
+        contactNumber,
+        userName,
+        password: hashedPassword,
+        introducersUserName,
+        introducerPercentage,
+        introducersUserName1,
+        introducerPercentage1,
+        introducersUserName2,
+        introducerPercentage2,
+      }, { transaction });
+
+      await transaction.commit();
+      return apiResponseSuccess(newAdmin, true, statusCode.create, 'User created successfully', res);
+
+    } catch (error) {
+      await transaction.rollback();
+      throw { code: 500, message: 'Failed to create user. Please try again later.' };
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(error.code || 500).json({ message: error.message || 'Internal server error' });
+  }
+};
 
 export const UserServices = {
-  createUser: async (data) => {
-    try {
-      if (!data.firstname || !data.lastname || !data.userName || !data.password) {
-        throw { code: 400, message: 'Invalid data provided' };
-      }
-      const [existingUsers] = await database.execute('SELECT * FROM User WHERE userName = ?', [data.userName]);
-      const [existingAdmin] = await database.execute('SELECT * FROM Admin WHERE userName = ?', [data.userName]);
-      const [existingIntroducerUser] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
-        data.userName,
-      ]);
-
-      if (
-        (existingAdmin && existingAdmin[0] && existingAdmin[0].length > 0) ||
-        (existingUsers && existingUsers[0] && existingUsers[0].length > 0) ||
-        (existingIntroducerUser && existingIntroducerUser[0] && existingIntroducerUser[0].length > 0)
-      ) {
-        throw { code: 409, message: `User already exists with user name: ${data.userName}` };
-      }
-
-      // Generate salt and hash the password
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
-      const user_id = uuidv4();
-      // Insert new admin into the Admin table
-      const [result] = await database.execute(
-        `INSERT INTO User (user_id, firstname, lastname, contactNumber, userName, password, introducersUserName, introducerPercentage,
-        introducersUserName1, introducerPercentage1, introducersUserName2, introducerPercentage2, wallet) VALUES (?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          user_id,
-          data.firstname,
-          data.lastname,
-          data.contactNumber,
-          data.userName,
-          encryptedPassword,
-          data.introducersUserName || null,
-          data.introducerPercentage || null,
-          data.introducersUserName1 || null,
-          data.introducerPercentage1 || null,
-          data.introducersUserName2 || null,
-          data.introducerPercentage2 || null,
-          0,
-        ],
-      );
-      if (result.affectedRows === 1) {
-        return { code: 201, message: 'User created successfully' };
-      } else {
-        throw { code: 500, message: 'Failed to create new admin' };
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  },
-
   generateAccessToken: async (userName, password, persist) => {
     try {
       if (!userName) {

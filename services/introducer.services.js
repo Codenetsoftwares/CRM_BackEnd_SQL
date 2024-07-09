@@ -2,91 +2,52 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
+import IntroducerUser from '../models/introducerUser.model.js';
+
+export const createIntroducerUser = async (req, res) => {
+  try {
+    const { firstname, lastname, userName, password } = req.body;
+    const user = req.user;
+
+    if (!firstname || !lastname || !userName || !password) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'All fields are required', res);
+    }
+
+    const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
+
+    if (existingIntroducerUser) {
+      return apiResponseErr(null, false, statusCode.conflict, `User already exists: ${userName}`, res);
+    }
+
+    const passwordSalt = await bcrypt.genSalt();
+    const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+    const intro_id = uuidv4();
+
+    const newIntroducerUser = await IntroducerUser.create({
+      intro_id,
+      firstname,
+      lastname,
+      userName,
+      password: encryptedPassword,
+      introducerId: user.userName,
+    });
+
+    if (newIntroducerUser) {
+      return apiResponseSuccess(newIntroducerUser, true, statusCode.create, 'Introducer User registered successfully!', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Failed to create new Introducer User', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
 
 export const introducerUser = {
-  generateIntroducerAccessToken: async (userName, password, persist) => {
-    try {
-      if (!userName || !password) {
-        throw { code: 400, message: 'User Name and Password are required' };
-      }
-      const [rows] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [userName]);
-      const existingUser = rows[0];
-
-      if (!existingUser) {
-        throw { code: 401, message: 'Invalid User Name or Password' };
-      }
-
-      const passwordValid = await bcrypt.compare(password, existingUser.password);
-
-      if (!passwordValid) {
-        throw { code: 401, message: 'Invalid User Name or Password' };
-      }
-
-      const accessTokenResponse = {
-        intro_id: existingUser.intro_id,
-        name: existingUser.firstname,
-        userName: existingUser.userName,
-        role: existingUser.role,
-        intro_id: existingUser.intro_id,
-      };
-
-      const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, {
-        expiresIn: persist ? '1y' : '8h',
-      });
-
-      return {
-        userName: existingUser.userName,
-        accessToken: accessToken,
-        role: existingUser.role,
-        intro_id: existingUser.intro_id,
-      };
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  },
-
-  createintroducerUser: async (data, user) => {
-    if (!data.firstname) {
-      throw { code: 400, message: 'Firstname is required' };
-    }
-    if (!data.lastname) {
-      throw { code: 400, message: 'Lastname is required' };
-    }
-    if (!data.userName) {
-      throw { code: 400, message: 'Username is required' };
-    }
-    if (!data.password) {
-      throw { code: 400, message: 'Password is required' };
-    }
-
-    try {
-      if (!data.firstname || !data.lastname || !data.userName || !data.password) {
-        throw { code: 400, message: 'Invalid data provided' };
-      }
-      const [existingUsers] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [data.userName]);
-
-      if (existingUsers.length > 0) {
-        throw { code: 409, message: `User already exists: ${data.userName}` };
-      }
-
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(data.password, passwordSalt);
-      const intro_id = uuidv4();
-      const [result] = await database.execute(
-        'INSERT INTO IntroducerUser (intro_id, firstname, lastname, password, introducerId, userName) VALUES (?, ?, ?, ?, ?, ?)',
-        [intro_id, data.firstname, data.lastname, encryptedPassword, user[0].userName, data.userName],
-      );
-      if (result.affectedRows === 1) {
-        return { code: 201, message: 'Introducer User created successfully' };
-      } else {
-        throw { code: 500, message: 'Failed to create new Introducer User' };
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  },
 
   // introducerLiveBalance: async (id) => {
   //   const pool = await connectToDB();

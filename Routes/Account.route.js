@@ -1,123 +1,46 @@
 import { database } from '../services/database.service.js';
 import bcrypt from 'bcrypt';
-import { createAdmin } from '../services/Account.Services.js';
-import { introducerUser } from '../services/introducer.services.js';
+import { createAdmin, getUserProfile, updateUserProfile } from '../services/Account.Services.js';
+import { createIntroducerUser, introducerUser } from '../services/introducer.services.js';
 import { Authorize } from '../middleware/Authorize.js';
-import UserServices from '../services/User.services.js';
+import UserServices, { createUser } from '../services/User.services.js';
 import TransactionServices from '../services/Transaction.services.js';
-import { validateAdminCreate } from '../utils/commonSchema.js';
+import { validateAdminCreate, validateCreateUser, validateIntroducerCreate } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
+import { string } from '../constructor/string.js';
 
 const AccountRoute = (app) => {
 
-  app.post('/api/create/user-admin', validateAdminCreate, customErrorHandler, Authorize(["superAdmin", "Create-SubAdmin"]), createAdmin);
+  app.post('/api/create/user-admin',
+    validateAdminCreate,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.createSubAdmin]),
+    createAdmin
+  );
 
   app.post(
     '/api/admin/accounts/introducer/register',
-    Authorize(['superAdmin', 'Create-Introducer', 'Create-Admin']),
-    async (req, res) => {
-      try {
-        const user = req.user;
-        console.log('user', user);
-        await introducerUser.createintroducerUser(req.body, user);
-        res.status(200).send({
-          code: 200,
-          message: 'Introducer User registered successfully!',
-        });
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
-
-  // API To View User Profile
-
-  app.get(
-    '/api/user-profile/:page',
-    Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
-    async (req, res) => {
-      const page = req.params.page;
-      const searchQuery = req.query.search;
-      try {
-        let allIntroDataLength;
-        if (searchQuery) {
-          console.log('first');
-          let SecondArray = [];
-          const [users] = await database.execute(`SELECT * FROM User WHERE userName LIKE ?`, [`%${searchQuery}%`]);
-
-          // Loop through users and fetch UserTransactionDetail for each user
-          for (const user of users) {
-            const [userTransactionDetail] = await database.execute(
-              `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
-              [user.userName],
-            );
-            user.UserTransactionDetail = userTransactionDetail;
-            SecondArray.push(user);
-          }
-
-          allIntroDataLength = SecondArray.length;
-          const pageNumber = Math.ceil(allIntroDataLength / 10);
-          res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
-        } else {
-          console.log('second');
-          let [introducerUser] = await database.execute(`SELECT * FROM User`);
-          let introData = JSON.parse(JSON.stringify(introducerUser));
-          console.log('introData', introData.length);
-
-          const SecondArray = [];
-          const Limit = page * 10;
-          console.log('Limit', Limit);
-
-          for (let j = Limit - 10; j < Limit && j < introData.length; j++) {
-            const user = introData[j];
-
-            // Fetch UserTransactionDetail for each user
-            const [userTransactionDetail] = await database.execute(
-              `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
-              [user.userName],
-            );
-            user.UserTransactionDetail = userTransactionDetail;
-
-            SecondArray.push(user);
-            console.log('length', SecondArray.length);
-          }
-          allIntroDataLength = introData.length;
-
-          if (SecondArray.length === 0) {
-            return res.status(404).json({ message: 'No data found for the selected criteria.' });
-          }
-
-          const pageNumber = Math.ceil(allIntroDataLength / 10);
-          res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
+    validateIntroducerCreate,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.createIntroducer, string.createAdmin]),
+    createIntroducerUser
   );
 
   // API To Edit User Profile
-
   app.put(
     '/api/admin/user-profile-edit/:user_id',
-    Authorize(['superAdmin', 'User-Profile-View', 'Profile-View']),
-    async (req, res) => {
-      try {
-        const [id] = await database.execute(`SELECT * FROM User WHERE user_id = (?)`, [req.params.user_id]);
-
-        const updateResult = await AccountServices.updateUserProfile(id, req.body);
-        console.log(updateResult);
-        if (updateResult) {
-          res.status(201).send('Profile updated');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
+    Authorize([string.superAdmin, string.userProfileView, string.profileView]),
+    updateUserProfile
   );
+
+  // API To View User Profile
+  app.get(
+    '/api/user-profile/:page',
+    Authorize([string.superAdmin, string.userProfileView, string.profileView]),
+    getUserProfile
+  );
+
+
 
   app.get(
     '/api/admin/sub-admin-name/bank-view',
@@ -423,15 +346,7 @@ const AccountRoute = (app) => {
     },
   );
 
-  app.post('/api/admin/user/register', Authorize(['superAdmin', 'Create-Admin', 'Create-User']), async (req, res) => {
-    try {
-      await UserServices.createUser(req.body);
-      res.status(200).send({ code: 200, message: 'User registered successfully!' });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
+  app.post('/api/admin/user/register', validateCreateUser, customErrorHandler, Authorize(['superAdmin', 'Create-Admin', 'Create-User']), createUser);
 
   app.get('/api/admin/view-sub-admins/:page', Authorize(['superAdmin']), async (req, res) => {
     const page = req.params.page;

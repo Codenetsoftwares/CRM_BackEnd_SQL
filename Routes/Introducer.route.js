@@ -2,39 +2,9 @@ import { introducerUser } from '../services/introducer.services.js';
 import AccountServices from '../services/Account.Services.js';
 import { AuthorizeRole } from '../middleware/auth.js';
 import { database } from '../services/database.service.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 export const IntroducerRoutes = (app) => {
-  app.post('/api/introducer/user/login', async (req, res) => {
-    try {
-      const { userName, password, persist } = req.body;
-      if (!userName) {
-        throw { code: 400, message: 'User Name is required' };
-      }
-
-      if (!password) {
-        throw { code: 400, message: 'Password is required' };
-      }
-      const accessToken = await introducerUser.generateIntroducerAccessToken(userName, password);
-
-      if (!accessToken) {
-        throw { code: 500, message: 'Failed to generate access token' };
-      }
-      const [user] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ? LIMIT 1', [userName]);
-      if (!user) {
-        throw { code: 404, message: 'User not found' };
-      }
-      if (user && accessToken) {
-        res.status(200).send({
-          token: accessToken,
-        });
-      } else {
-        res.status(404).json({ error: 'User not found or access token is invalid' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
 
   app.get('/api/intoducer/profile', AuthorizeRole(['introducer']), async (req, res) => {
     try {
