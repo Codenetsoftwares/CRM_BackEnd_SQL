@@ -1,8 +1,8 @@
 import { body } from 'express-validator';
 
 export const validateAdminCreate = [
-  body('firstname').notEmpty().withMessage('First Name is required'),
-  body('lastname').notEmpty().withMessage('Last Name is required'),
+  body('firstName').notEmpty().withMessage('First Name is required'),
+  body('lastName').notEmpty().withMessage('Last Name is required'),
   body('userName').notEmpty().withMessage('Username is required'),
   body('password')
     .notEmpty()
@@ -17,16 +17,26 @@ export const validateAdminCreate = [
 ];
 
 export const validateIntroducerCreate = [
-  body('firstname').notEmpty().withMessage('Firstname is required'),
-  body('lastname').notEmpty().withMessage('Lastname is required'),
+  body('firstName').notEmpty().withMessage('firstName is required'),
+  body('lastName').notEmpty().withMessage('lastName is required'),
   body('userName').notEmpty().withMessage('Username is required'),
   body('password').notEmpty().withMessage('Password is required')
 ];
 
 export const validateCreateUser = [
-  body('firstname').notEmpty().withMessage('First name is required'),
-  body('lastname').notEmpty().withMessage('Last name is required'),
+  body('firstName').notEmpty().withMessage('First name is required'),
+  body('lastName').notEmpty().withMessage('Last name is required'),
   body('userName').notEmpty().withMessage('Username is required'),
   body('password').notEmpty().withMessage('Password is required').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
   body('contactNumber').optional().isNumeric().withMessage('Contact number must be numeric'),
 ]
+
+export const validateResetPassword = [
+  body('userName').notEmpty().withMessage('Username is required'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long')
+
+];

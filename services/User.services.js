@@ -7,11 +7,13 @@ import Admin from '../models/admin.model.js';
 import IntroducerUser from '../models/introducerUser.model.js';
 import sequelize from '../db.js';
 import CustomError from '../utils/extendError.js';
+import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
 
 export const createUser = async (req, res) => {
   const {
-    firstname,
-    lastname,
+    firstName,
+    lastName,
     contactNumber,
     userName,
     password,
@@ -23,8 +25,9 @@ export const createUser = async (req, res) => {
     introducerPercentage2,
   } = req.body;
 
-  try {
+  let transaction;
 
+  try {
     const existingUser = await User.findOne({ where: { userName } });
     const existingAdmin = await Admin.findOne({ where: { userName } });
     const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
@@ -36,35 +39,73 @@ export const createUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const transaction = await sequelize.transaction();
+    transaction = await sequelize.transaction();
 
-    try {
-      const user_id = uuidv4();
-      await User.create({
-        user_id,
-        firstname,
-        lastname,
-        contactNumber,
-        userName,
-        password: hashedPassword,
-        introducersUserName,
-        introducerPercentage,
-        introducersUserName1,
-        introducerPercentage1,
-        introducersUserName2,
-        introducerPercentage2,
-      }, { transaction });
+    const user_id = uuidv4();
+    const newUser = await User.create({
+      user_id,
+      firstName,
+      lastName,
+      contactNumber,
+      userName,
+      password: hashedPassword,
+      introducersUserName,
+      introducerPercentage,
+      introducersUserName1,
+      introducerPercentage1,
+      introducersUserName2,
+      introducerPercentage2,
+    }, { transaction });
 
-      await transaction.commit();
-      return apiResponseSuccess(newAdmin, true, statusCode.create, 'User created successfully', res);
+    await transaction.commit();
+    return apiResponseSuccess(newUser, true, statusCode.create, 'User created successfully', res);
 
-    } catch (error) {
-      await transaction.rollback();
-      throw { code: 500, message: 'Failed to create user. Please try again later.' };
-    }
   } catch (error) {
+    if (transaction) await transaction.rollback();
     console.error(error);
-    res.status(error.code || 500).json({ message: error.message || 'Internal server error' });
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+
+export const userPasswordResetCode = async (req, res) => {
+  const { userName, password } = req.body;
+
+  try {
+    // Check if the user exists
+    const existingUser = await User.findOne({ where: { userName } });
+    if (!existingUser) {
+      throw new CustomError('User not found', 404);
+    }
+
+    // Compare new password with the existing password
+    const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
+    if (passwordIsDuplicate) {
+      throw new CustomError('New Password cannot be the same as existing password', 409);
+    }
+
+    // Hash the new password
+    const passwordSalt = await bcrypt.genSalt();
+    const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+
+    // Update the password in the database
+    const resetUser = await User.update({ password: encryptedPassword }, { where: { userName } });
+
+    return apiResponseSuccess(resetUser, true, statusCode.success, 'Password reset successful!', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
   }
 };
 
@@ -92,8 +133,8 @@ export const UserServices = {
 
       const accessTokenResponse = {
         user_id: existingUser.user_id,
-        firstname: existingUser.firstname,
-        lastname: existingUser.lastname,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
         userName: existingUser.userName,
         role: existingUser.role,
       };
@@ -130,12 +171,12 @@ export const UserServices = {
       }
       const user = existingUser[0];
       // Update fields if provided in data
-      user.firstname = data.firstname || user.firstname;
-      user.lastname = data.lastname || user.lastname;
+      user.firstName = data.firstName || user.firstName;
+      user.lastName = data.lastName || user.lastName;
       // Update user data in the database
-      await database.execute(`UPDATE User SET firstname = ?, lastname = ? WHERE user_id = ?`, [
-        user.firstname,
-        user.lastname,
+      await database.execute(`UPDATE User SET firstName = ?, lastName = ? WHERE user_id = ?`, [
+        user.firstName,
+        user.lastName,
         userId,
       ]);
 
@@ -149,37 +190,6 @@ export const UserServices = {
     }
   },
 
-  userPasswordResetCode: async (userName, password) => {
-    try {
-      // Check if the user exists
-      const [existingUser] = await database.execute(`SELECT * FROM User WHERE userName = '${userName}';`);
-      if (existingUser.length === 0) {
-        throw {
-          code: 404,
-          message: 'User not found',
-        };
-      }
-      // Compare new password with the existing password
-      const passwordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
-      if (passwordIsDuplicate) {
-        throw {
-          code: 409,
-          message: 'New Password cannot be the same as existing password',
-        };
-      }
-      // Hash the new password
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(password, passwordSalt);
-      // Update the password in the database
-      const updateQuery = await database.execute(
-        `UPDATE User SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
-      );
-      return true;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  },
 };
 
 export default UserServices;

@@ -3,7 +3,43 @@ import WebsiteServices from '../services/WebSite.Service.js';
 import BankServices from '../services/Bank.services.js';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
+import IntroducerUser from '../models/introducerUser.model.js';
+import CustomError from '../utils/extendError.js';
 
+export const createIntroducerDepositTransaction = async (req, res, subAdminDetail) => {
+  const { amount, transactionType, remarks, introducerUserName } = req.body;
+
+  try {
+    // Find introducer user by userName
+    const introducerUser = await IntroducerUser.findOne({ where: { userName: introducerUserName } });
+    if (!introducerUser) {
+    throw new CustomError('Introducer user not found', null, 400);
+    }
+
+    // Generate transaction ID
+    const introTransactionId = uuidv4();
+
+    // Create introducer transaction
+    if (transactionType === 'Deposit') {
+      await IntroducerTransaction.create({
+        introTransactionId,
+        introUserId: introducerUser.intro_id,
+        amount: parseFloat(amount),
+        transactionType,
+        remarks,
+        subAdminId: subAdminDetail.userName,
+        subAdminName: subAdminDetail.firstName,
+        introducerUserName,
+        createdAt: new Date(),
+      });
+    }
+
+    return res.status(200).json({ status: true, message: 'Transaction created successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(error.code || 500).send({ message: error.message || 'Internal server error' });
+  }
+};
 const TransactionServices = {
   createTransaction: async (req, res, subAdminName) => {
     try {
@@ -91,7 +127,7 @@ const TransactionServices = {
           amount: Math.round(parseFloat(amount)),
           paymentMethod: paymentMethod,
           subAdminId: subAdminName[0].userName,
-          subAdminName: subAdminName[0].firstname,
+          subAdminName: subAdminName[0].firstName,
           userName: userName,
           accountNumber: accountNumber,
           bankName: bankName,
@@ -169,7 +205,7 @@ const TransactionServices = {
           amount: Math.round(parseFloat(amount)),
           paymentMethod: paymentMethod,
           subAdminId: subAdminName[0].userName,
-          subAdminName: subAdminName[0].firstname,
+          subAdminName: subAdminName[0].firstName,
           userName: userName,
           accountNumber: accountNumber,
           bankName: bankName,
@@ -278,53 +314,11 @@ const TransactionServices = {
     }
   },
 
-  createIntroducerDepositTransaction: async (req, res, subAdminDetail) => {
-    try {
-      const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
-      const name = subAdminDetail[0].firstname;
-      const id = subAdminDetail[0].userName;
-      const [introId] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
-      if (introId.length === 0) {
-        throw new Error('Introducer user not found'); // or handle this case accordingly
-      }
-      const introTransactionId = uuidv4();
-      if (transactionType === 'Deposit') {
-        const NewIntroducerTransaction = {
-          introTransactionId,
-          introUserId: introId[0].intro_id,
-          amount: Math.round(parseFloat(amount)),
-          transactionType: transactionType,
-          remarks: remarks,
-          subAdminId: id,
-          subAdminName: name,
-          introducerUserName: introducerUserName,
-          createdAt: new Date().toISOString(),
-        };
-        const incertData = `INSERT INTO IntroducerTransaction (introTransactionId, introUserId, amount, transactionType, remarks, 
-        subAdminId, subAdminName, introducerUserName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        await database.execute(incertData, [
-          introTransactionId || null,
-          NewIntroducerTransaction.introUserId || null,
-          NewIntroducerTransaction.amount || null,
-          NewIntroducerTransaction.transactionType || null,
-          NewIntroducerTransaction.remarks || null,
-          NewIntroducerTransaction.subAdminId || null,
-          NewIntroducerTransaction.subAdminName || null,
-          NewIntroducerTransaction.introducerUserName || null,
-          NewIntroducerTransaction.createdAt || null,
-        ]);
-      }
-      return res.status(200).json({ status: true, message: 'Transaction created successfully' });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).send({ message: e.message || 'Internal server error' });
-    }
-  },
 
   createIntroducerWithdrawTransaction: async (req, res, subAdminDetail) => {
     try {
       const { amount, transactionType, remarks, subAdminId, subAdminName, introducerUserName } = req.body;
-      const name = subAdminDetail[0].firstname;
+      const name = subAdminDetail[0].firstName;
       const id = subAdminDetail[0].userName;
       const [introId] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [introducerUserName]);
       const introTransactionId = uuidv4();

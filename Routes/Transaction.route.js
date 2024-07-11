@@ -46,7 +46,7 @@ const TransactionRoutes = (app) => {
   });
 
   app.get(
-    '/api/superadmin/view-edit-introducer-transaction-requests',
+    '/api/superAdmin/view-edit-introducer-transaction-requests',
     Authorize(['superAdmin', 'RequestAdmin']),
     async (req, res) => {
       try {

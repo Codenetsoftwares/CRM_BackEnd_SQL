@@ -3,20 +3,23 @@ import jwt from 'jsonwebtoken';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 import IntroducerUser from '../models/introducerUser.model.js';
+import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
+import CustomError from '../utils/extendError.js';
 
 export const createIntroducerUser = async (req, res) => {
   try {
-    const { firstname, lastname, userName, password } = req.body;
+    const { firstName, lastName, userName, password } = req.body;
     const user = req.user;
 
-    if (!firstname || !lastname || !userName || !password) {
+    if (!firstName || !lastName || !userName || !password) {
       return apiResponseErr(null, false, statusCode.badRequest, 'All fields are required', res);
     }
 
     const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
 
     if (existingIntroducerUser) {
-      return apiResponseErr(null, false, statusCode.conflict, `User already exists: ${userName}`, res);
+      throw new CustomError(`User already exists: ${userName}`, null, 409);
     }
 
     const passwordSalt = await bcrypt.genSalt();
@@ -25,8 +28,8 @@ export const createIntroducerUser = async (req, res) => {
 
     const newIntroducerUser = await IntroducerUser.create({
       intro_id,
-      firstname,
-      lastname,
+      firstName,
+      lastName,
       userName,
       password: encryptedPassword,
       introducerId: user.userName,
@@ -37,6 +40,67 @@ export const createIntroducerUser = async (req, res) => {
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to create new Introducer User', res);
     }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const updateIntroducerProfile = async (req, res) => {
+  try {
+    const { intro_id } = req.params;
+    const { firstName, lastName } = req.body;
+
+    const existingUser = await IntroducerUser.findOne({ where: { intro_id } });
+
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${intro_id}`, res);
+    }
+
+    existingUser.firstName = firstName || existingUser.firstName;
+    existingUser.lastName = lastName || existingUser.lastName;
+
+    await existingUser.save();
+
+    return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const introducerPasswordResetCode = async (req, res) => {
+  try {
+    const { userName, password } = req.body
+    // Fetch user from the database
+    const existingUser = await IntroducerUser.findOne({ where: { userName } });
+    if (!existingUser) {
+      throw new CustomError('User not found', 404);
+    }
+
+    // Compare new password with old password
+    const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser.password);
+    if (newPasswordIsDuplicate) {
+      throw new CustomError('New Password cannot be the same as existing password', 409);
+    }
+
+    // Hash the new password
+    const passwordSalt = await bcrypt.genSalt();
+    const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+
+    // Update user's password in the database
+    const resetIntroducer = await IntroducerUser.update({ password: encryptedPassword }, { where: { userName } });
+
+    return apiResponseSuccess(resetIntroducer, true, statusCode.success, 'Password reset successfully', res);
+
   } catch (error) {
     return apiResponseErr(
       null,
@@ -99,71 +163,8 @@ export const introducerUser = {
   //   }
   // },
 
-  updateIntroducerProfile: async (introUserId, data) => {
-    try {
-      const userId = introUserId[0].intro_id;
-      const [existingUser] = await database.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [userId]);
-      if (!existingUser || existingUser.length === 0) {
-        throw {
-          code: 404,
-          message: `Existing Introducer User not found with id: ${userId}`,
-        };
-      }
-      const user = existingUser[0];
-      user.firstname = data.firstname || user.firstname;
-      user.lastname = data.lastname || user.lastname;
-      await database.execute(`UPDATE IntroducerUser SET firstname = ?, lastname = ? WHERE intro_id = ?`, [
-        user.firstname,
-        user.lastname,
-        userId,
-      ]);
-      return true;
-    } catch (err) {
-      console.error(err);
-      throw {
-        code: err.code || 500,
-        message: err.message || `Failed to update Introducer User Profile with id: ${introUserId}`,
-      };
-    }
-  },
 
-  introducerPasswordResetCode: async (userName, password) => {
-    try {
-      // Fetch user from the database
-      const [existingUser] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [userName]);
-      if (!existingUser || existingUser.length === 0) {
-        throw {
-          code: 404,
-          message: 'User not found',
-        };
-      }
 
-      // Compare new password with old password
-      const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
-
-      if (newPasswordIsDuplicate) {
-        throw {
-          code: 409,
-          message: 'New Password cannot be the same as existing password',
-        };
-      }
-
-      // Hash the new password
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(password, passwordSalt);
-
-      // Update user's password in the database
-      await database.execute('UPDATE IntroducerUser SET password = ? WHERE userName = ?', [encryptedPassword, userName]);
-
-      return true;
-    } catch (error) {
-      console.error(error);
-      throw {
-        code: error.code || 500,
-        message: error.message || 'Failed to reset password',
-      };
-    }
-  },
 
   // introducerPercentageCut: async (id, startDate, endDate) => {
   //   const pool = await connectToDB();

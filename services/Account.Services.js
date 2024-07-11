@@ -9,15 +9,16 @@ import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
+import { Op, where } from 'sequelize';
 
 export const createAdmin = async (req, res) => {
   try {
-    const { firstname, lastname, userName, password, roles } = req.body;
+    const { firstName, lastName, userName, password, roles } = req.body;
 
     const existingAdmin = await Admin.findOne({ where: { userName } });
 
     if (existingAdmin) {
-      throw new CustomError(`Admin already exists with user name: ${userName}`,null, 409);
+      throw new CustomError(`Admin already exists with user name: ${userName}`, null, 409);
     }
 
     const passwordSalt = await bcrypt.genSalt();
@@ -28,8 +29,8 @@ export const createAdmin = async (req, res) => {
 
     const newAdmin = await Admin.create({
       admin_id,
-      firstname,
-      lastname,
+      firstName,
+      lastName,
       userName,
       password: encryptedPassword,
       roles: JSON.stringify(rolesArray),
@@ -52,23 +53,23 @@ export const createAdmin = async (req, res) => {
 
 export const generateAdminAccessToken = async (userName, password, persist) => {
   if (!userName) {
-    throw new Error('Invalid value for: User Name');
+    throw new CustomError('Invalid value for: User Name', null, 400);
   }
   if (!password) {
-    throw new Error('Invalid value for: Password');
+    throw new CustomError('Invalid value for: Password', null, 400);
   }
 
   try {
     const admin = await Admin.findOne({ where: { userName } });
 
     if (!admin) {
-      throw new Error('Invalid User Name or password');
+      throw new CustomError('Invalid User Name or Password', null, 400);
     }
 
     const passwordValid = await bcrypt.compare(password, admin.password);
 
     if (!passwordValid) {
-      throw new Error('Invalid User Name or password');
+      throw new CustomError('Invalid Password', null, 400);
     }
 
     const accessTokenPayload = {
@@ -95,8 +96,8 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
 export const updateUserProfile = async (req, res) => {
   const { user_id } = req.params;
   const {
-    firstname,
-    lastname,
+    firstName,
+    lastName,
     introducersUserName,
     introducerPercentage,
     introducersUserName1,
@@ -106,7 +107,7 @@ export const updateUserProfile = async (req, res) => {
   } = req.body;
 
   try {
-    const existingUser = await User.findByPk(user_id);
+    const existingUser = await User.findOne({ where: { user_id } });
 
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${user_id}`, res);
@@ -120,8 +121,8 @@ export const updateUserProfile = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Introducer percentages must be valid numbers between 0 and 100.', res);
     }
 
-    existingUser.firstname = firstname || existingUser.firstname;
-    existingUser.lastname = lastname || existingUser.lastname;
+    existingUser.firstName = firstName || existingUser.firstName;
+    existingUser.lastName = lastName || existingUser.lastName;
     existingUser.introducersUserName = introducersUserName || existingUser.introducersUserName;
     existingUser.introducerPercentage = introducerPercentage || existingUser.introducerPercentage;
     existingUser.introducersUserName1 = introducersUserName1 || existingUser.introducersUserName1;
@@ -130,7 +131,7 @@ export const updateUserProfile = async (req, res) => {
     existingUser.introducerPercentage2 = introducerPercentage2 || existingUser.introducerPercentage2;
 
     await existingUser.save();
-    return apiResponseSuccess({user: existingUser } , true, statusCode.success, 'Profile updated successfully', res);
+    return apiResponseSuccess({ user: existingUser }, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
@@ -144,7 +145,7 @@ export const updateUserProfile = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   const page = parseInt(req.params.page);
   const searchQuery = req.query.search;
-  
+
   try {
     let users;
     let allIntroDataLength;
@@ -169,7 +170,7 @@ export const getUserProfile = async (req, res) => {
     for (const user of paginatedUsers) {
       const userWithTransaction = await User.findOne({
         where: { userName: user.userName },
-        include: { model: UserTransactionDetail, as: 'transactionDetails' }, 
+        include: { model: UserTransactionDetail, as: 'transactionDetails' },
       });
       SecondArray.push(userWithTransaction);
     }
@@ -193,6 +194,323 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
+export const getSubAdminsWithBankView = async (req, res) => {
+  try {
+    const subAdmins = await Admin.findAll({
+      where: {
+        roles: {
+          [Op.like]: '%Bank-View%',
+        },
+      },
+      attributes: ['userName'],
+    });
+    return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getAllSubAdmins = async (req, res) => {
+  try {
+    const subAdmins = await Admin.findAll({
+      attributes: ['userName'],
+    });
+    return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getSubAdminsWithWebsiteView = async (req, res) => {
+  try {
+    const subAdmins = await Admin.findAll({
+      where: {
+        roles: {
+          [Op.like]: '%Website-View%',
+        },
+      },
+      attributes: ['userName'],
+    });
+    return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getClientData = async (req, res) => {
+  const { intro_id } = req.params;
+
+  try {
+    const introducer = await IntroducerUser.findOne({ where: { intro_id } });
+
+    if (!introducer) {
+      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${intro_id}`, res);
+    }
+
+    const introducerId = introducer.userName;
+    const introducerUsers = await User.findAll({ where: { introducersUserName: introducerId } });
+
+    return apiResponseSuccess(introducerUsers, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getSingleIntroducer = async (req, res) => {
+  const { intro_id } = req.params;
+
+  try {
+    const introducer = await IntroducerUser.findOne({ where: { intro_id } });
+
+    if (!introducer) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer not found', res);
+    }
+
+    return apiResponseSuccess(introducer, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getUserById = async (req, res) => {
+  try {
+    const users = await User.findAll({ attributes: ['userName'] });
+
+    if (!users || users.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No users found', res);
+    }
+
+    const userNames = users.map(user => user.userName);
+    return apiResponseSuccess(userNames, true, statusCode.success, 'success', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getIntroducerById = async (req, res) => {
+  try {
+    const introducers = await IntroducerUser.findAll({ attributes: ['userName', 'intro_id'] });
+
+    if (!introducers || introducers.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No introducers found', res);
+    }
+    return apiResponseSuccess(introducers, true, statusCode.success, 'success', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getSingleSubAdmin = async (req, res) => {
+  try {
+    const id = req.params.admin_id;
+    console.log('iddd', id);
+
+    if (!id) {
+      return apiResponseErr(null, false, statusCode.badRequest, "Sub Admin's Id not present", res);
+    }
+
+    const subAdmin = await Admin.findOne({ where: { admin_id: id } });
+
+    if (!subAdmin) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Sub Admin not found with the given Id', res);
+    }
+    return apiResponseSuccess(subAdmin, true, statusCode.success, 'success', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const editSubAdminRoles = async (req, res) => {
+  try {
+    const subAdminId = req.params.admin_id;
+    const { roles } = req.body;
+
+    if (!subAdminId) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Id not found', res);
+    }
+
+    const [updatedRows] = await Admin.update(
+      { roles: JSON.stringify(roles) },
+      { where: { admin_id: subAdminId } }
+    );
+
+    if (updatedRows === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found with the given Id', res);
+
+    }
+    return apiResponseSuccess(updatedRows, true, statusCode.success, `SubAdmin roles updated with ${JSON.stringify(roles)}`, res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getIntroducerUserSingleData = async (req, res) => {
+  try {
+    const id = req.params.intro_id;
+
+    // Find the introducer user by intro_id
+    const introducerUserResult = await IntroducerUser.findOne({
+      where: { intro_id: id },
+      attributes: ['userName'],
+    });
+
+    if (!introducerUserResult) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
+    }
+
+    const introducerUserName = introducerUserResult.userName;
+
+    // Find users with introducersUserName matching introducerUser.userName
+    const usersResult = await User.findAll({
+      where: {
+        [Op.or]: [
+          { introducersUserName: introducerUserName },
+          { introducersUserName1: introducerUserName },
+          { introducersUserName2: introducerUserName },
+        ],
+      },
+    });
+
+    if (usersResult.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No matching users found', res);
+    }
+
+    let filteredIntroducerUsers = [];
+
+    for (const matchedUser of usersResult) {
+      let filteredIntroducerUser = {
+        user_id: matchedUser.user_id,
+        firstName: matchedUser.firstName,
+        lastName: matchedUser.lastName,
+        userName: matchedUser.userName,
+        wallet: matchedUser.wallet,
+        role: matchedUser.role,
+        webSiteDetail: matchedUser.webSiteDetail,
+        transactionDetail: [], // Initialize as an empty array
+      };
+
+      let matchedIntroducersUserName = null;
+      let matchedIntroducerPercentage = null;
+
+      if (matchedUser.introducersUserName === introducerUserName) {
+        matchedIntroducersUserName = matchedUser.introducersUserName;
+        matchedIntroducerPercentage = matchedUser.introducerPercentage;
+      } else if (matchedUser.introducersUserName1 === introducerUserName) {
+        matchedIntroducersUserName = matchedUser.introducersUserName1;
+        matchedIntroducerPercentage = matchedUser.introducerPercentage1;
+      } else if (matchedUser.introducersUserName2 === introducerUserName) {
+        matchedIntroducersUserName = matchedUser.introducersUserName2;
+        matchedIntroducerPercentage = matchedUser.introducerPercentage2;
+      }
+
+      if (matchedIntroducersUserName) {
+        filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
+        filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
+
+        // Fetch transaction details for the current user
+        const userTransactionDetails = await UserTransactionDetail.findAll({
+          where: { userName: matchedUser.userName },
+        });
+
+        // Attach transaction details to the current user
+        filteredIntroducerUser.transactionDetail = userTransactionDetails;
+        filteredIntroducerUsers.push(filteredIntroducerUser);
+      }
+    }
+    return apiResponseSuccess(filteredIntroducerUsers, true, statusCode.success, `success`, res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const subAdminPasswordResetCode = async (req, res) => {
+  try {
+    const { userName, password } = req.body;
+
+    // Check if the user exists
+    const existingUser = await Admin.findOne({ where: { userName } });
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    // Compare new password with the existing password
+    const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
+    if (passwordIsDuplicate) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'New Password cannot be the same as existing password', res);
+    }
+
+    // Hash the new password
+    const passwordSalt = await bcrypt.genSalt();
+    const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+
+    // Update the password in the database
+    const resetData = await Admin.update(
+      { password: encryptedPassword },
+      { where: { userName } }
+    );
+    return apiResponseSuccess(resetData, true, statusCode.success, 'Password reset successful!', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
 const AccountServices = {
 
   IntroducerBalance: async (introUserId) => {
@@ -217,38 +535,6 @@ const AccountServices = {
     }
   },
 
-
-  SubAdminPasswordResetCode: async (userName, password) => {
-    try {
-      // Check if the user exists
-      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE userName = ?`, [userName]);
-      if (existingUser.length === 0) {
-        throw {
-          code: 404,
-          message: 'User not found',
-        };
-      }
-      // Compare new password with the existing password
-      const passwordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
-      if (passwordIsDuplicate) {
-        throw {
-          code: 409,
-          message: 'New Password cannot be the same as existing password',
-        };
-      }
-      // Hash the new password
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(password, passwordSalt);
-      // Update the password in the database
-      const updateQuery = await database.execute(
-        `UPDATE Admin SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
-      );
-      return true;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  },
 
   SuperAdminPasswordResetCode: async (userName, oldPassword, password) => {
     try {
@@ -295,12 +581,12 @@ const AccountServices = {
       }
       const user = existingUser[0];
       // Update fields if provided in data
-      user.firstname = data.firstname || user.firstname;
-      user.lastname = data.lastname || user.lastname;
+      user.firstName = data.firstName || user.firstName;
+      user.lastName = data.lastName || user.lastName;
       // Update user data in the database
-      await database.execute(`UPDATE Admin SET firstname = ?, lastname = ? WHERE admin_id = ?`, [
-        user.firstname,
-        user.lastname,
+      await database.execute(`UPDATE Admin SET firstName = ?, lastName = ? WHERE admin_id = ?`, [
+        user.firstName,
+        user.lastName,
         userId,
       ]);
 
@@ -317,11 +603,11 @@ const AccountServices = {
   getIntroBalance: async (introUserId) => {
     console.log('introUserId', introUserId);
     try {
-      const [intorTranasction] = await database.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
+      const [introTransaction] = await database.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
         introUserId,
       ]);
       let balance = 0;
-      intorTranasction.forEach((transaction) => {
+      introTransaction.forEach((transaction) => {
         if (transaction.transactionType === 'Deposit') {
           balance += transaction.amount;
         } else {

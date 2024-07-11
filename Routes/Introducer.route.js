@@ -14,8 +14,8 @@ export const IntroducerRoutes = (app) => {
       const TPDLT = await AccountServices.IntroducerBalance(introUserId);
       const response = {
         intro_id: IntroUser[0].intro_id,
-        firstname: IntroUser[0].firstname,
-        lastname: IntroUser[0].lastname,
+        firstName: IntroUser[0].firstName,
+        lastName: IntroUser[0].lastName,
         role: IntroUser[0].role,
         userName: IntroUser[0].userName,
         balance: Number(TPDLT),
@@ -127,8 +127,8 @@ export const IntroducerRoutes = (app) => {
 
       let filteredIntroducerUser = {
         user_id: userRecord.user_id,
-        firstname: userRecord.firstname,
-        lastname: userRecord.lastname,
+        firstName: userRecord.firstName,
+        lastName: userRecord.lastName,
         userName: userRecord.userName,
         wallet: userRecord.wallet,
         role: userRecord.role,

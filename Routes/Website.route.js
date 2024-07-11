@@ -32,7 +32,7 @@ const WebisteRoutes = (app) => {
       const [result] = await database.execute(insertWebsiteQuery, [
         website_id,
         websiteName,
-        userData && userData[0].firstname ? userData[0].firstname : null,
+        userData && userData[0].firstName ? userData[0].firstName : null,
         userData && userData[0].userName ? userData[0].userName : null,
       ]);
       res.status(200).send({ message: 'Website name sent for approval!' });
@@ -162,6 +162,7 @@ const WebisteRoutes = (app) => {
     },
   );
 
+// no need to refactor this
   app.get(
     '/api/get-website-name',
     Authorize([
@@ -315,7 +316,7 @@ const WebisteRoutes = (app) => {
           transactionType: transactionType,
           depositAmount: Math.round(parseFloat(amount)),
           subAdminId: userName[0].userName,
-          subAdminName: userName[0].firstname,
+          subAdminName: userName[0].firstName,
           createdAt: new Date().toISOString(),
         };
         const WebsiteTransaction_Id = uuidv4();
@@ -374,7 +375,7 @@ const WebisteRoutes = (app) => {
           transactionType: transactionType,
           withdrawAmount: Math.round(parseFloat(amount)),
           subAdminId: userName[0].userName,
-          subAdminName: userName[0].firstname,
+          subAdminName: userName[0].firstName,
           remarks: remarks,
           createdAt: new Date().toISOString(),
         };
@@ -422,6 +423,7 @@ const WebisteRoutes = (app) => {
     },
   );
 
+// no need to refactor this
   app.post(
     '/api/admin/manual-user-website-account-summary/:websiteId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View', 'Website-View']),

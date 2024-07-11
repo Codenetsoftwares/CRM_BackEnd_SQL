@@ -1,7 +1,10 @@
 import Admin from "../models/admin.model.js";
+import IntroducerUser from "../models/introducerUser.model.js";
+import { apiResponseErr, apiResponseSuccess } from "../utils/response.js";
 import { statusCode } from "../utils/statusCodes.js";
 import { generateAdminAccessToken } from "./Account.Services.js";
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 export const loginAdmin = async (req, res) => {
     try {
@@ -63,7 +66,7 @@ export const generateIntroducerAccessToken = async (req, res) => {
 
         const accessTokenResponse = {
             intro_id: existingUser.intro_id,
-            name: existingUser.firstname,
+            name: existingUser.firstName,
             userName: existingUser.userName,
             role: existingUser.role,
         };

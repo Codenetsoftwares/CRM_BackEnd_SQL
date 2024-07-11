@@ -49,7 +49,7 @@ const BankRoutes = (app) => {
         upiId || null,
         upiAppName || null,
         upiNumber || null,
-        userName && userName[0].firstname ? userName[0].firstname : null,
+        userName && userName[0].firstName ? userName[0].firstName : null,
         userName && userName[0].userName ? userName[0].userName : null,
       ]);
       res.status(200).send({ message: 'Bank name sent for approval!' });
@@ -114,7 +114,7 @@ const BankRoutes = (app) => {
   });
 
   // API To View Bank Name
-
+//  no need to refactor this
   app.get(
     '/api/get-bank-name',
     Authorize([
@@ -266,7 +266,7 @@ const BankRoutes = (app) => {
           upiNumber: bank[0].upiNumber,
           depositAmount: Math.round(parseFloat(amount)),
           subAdminId: userName[0].userName,
-          subAdminName: userName[0].firstname,
+          subAdminName: userName[0].firstName,
           remarks: remarks,
           createdAt: new Date().toISOString(),
         };
@@ -342,7 +342,7 @@ const BankRoutes = (app) => {
           upiNumber: bank[0].upiNumber,
           withdrawAmount: Math.round(parseFloat(amount)),
           subAdminId: userName[0].userName,
-          subAdminName: userName[0].firstname,
+          subAdminName: userName[0].firstName,
           remarks: remarks,
           createdAt: new Date().toISOString(),
         };
@@ -400,7 +400,7 @@ const BankRoutes = (app) => {
       }
     },
   );
-
+// no need to refactor this
   app.get(
     '/api/admin/manual-user-bank-account-summary/:bankId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),

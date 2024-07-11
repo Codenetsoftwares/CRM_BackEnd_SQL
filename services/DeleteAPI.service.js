@@ -48,7 +48,7 @@ const DeleteApiService = {
       }
     });
 
-    const name = user[0].firstname;
+    const name = user[0].firstName;
     const Edit_ID = uuidv4();
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (bankId, transactionType, requesteduserName, subAdminId, subAdminName, 
@@ -118,7 +118,7 @@ const DeleteApiService = {
       }
     });
 
-    const name = user[0].firstname;
+    const name = user[0].firstName;
     const Edit_ID = uuidv4();
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
@@ -191,7 +191,7 @@ const DeleteApiService = {
       }
     });
 
-    const name = user[0].firstname;
+    const name = user[0].firstName;
     const Edit_ID = uuidv4();
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO EditRequest (bankId, websiteId, Transaction_Id, transactionID, transactionType, amount, 
@@ -258,7 +258,7 @@ const DeleteApiService = {
       createdAt: transaction.createdAt,
     };
     console.log('updatedTransactionData', updatedTransactionData);
-    const name = user[0].firstname;
+    const name = user[0].firstName;
     const editMessage = `${existingTransaction[0].transactionType} is sent to Super Admin for moving to trash approval`;
     const createEditRequestQuery = `INSERT INTO IntroducerEditRequest (introTransactionId, amount, requesteduserName, transactionType, remarks, subAdminId, subAdminName, 
         introducerUserName, message, type, Nametype, IntroEditID, introUserId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;

@@ -19,7 +19,7 @@ class stringConst {
     this.createUser = 'Create-User';
     this.transactionEditRequest = 'Transaction-Edit-Request';
     this.transactionDeleteRequest = 'Transaction-Delete-Request';
-    this.reportMyTxn = 'report-my-txn';
+    this.reportMyTxn = 'Report-My-Txn';
   }
 }
 
