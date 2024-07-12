@@ -26,11 +26,11 @@ const WebisteRoutes = (app) => {
         throw { code: 400, message: 'Website name already exists' };
       }
 
-      const website_id = uuidv4();
-      const insertWebsiteQuery = `INSERT INTO WebsiteRequest (website_id, websiteName, subAdminId, subAdminName) 
+      const websiteId = uuidv4();
+      const insertWebsiteQuery = `INSERT INTO WebsiteRequest (websiteId, websiteName, subAdminId, subAdminName) 
         VALUES (?, ?, ?, ?)`;
       const [result] = await database.execute(insertWebsiteQuery, [
-        website_id,
+        websiteId,
         websiteName,
         userData && userData[0].firstName ? userData[0].firstName : null,
         userData && userData[0].userName ? userData[0].userName : null,
@@ -42,14 +42,14 @@ const WebisteRoutes = (app) => {
     }
   });
 
-  app.post('/api/approve-website/:website_id', Authorize(['superAdmin']), async (req, res) => {
+  app.post('/api/approve-website/:websiteId', Authorize(['superAdmin']), async (req, res) => {
     try {
       const { isApproved, subAdmins } = req.body;
 
-      const websiteId = req.params.website_id;
+      const websiteId = req.params.websiteId;
 
       const approvedWebsiteRequest = (
-        await database.execute(`SELECT * FROM WebsiteRequest WHERE (website_id) = (?)`, [websiteId])
+        await database.execute(`SELECT * FROM WebsiteRequest WHERE (websiteId) = (?)`, [websiteId])
       )[0];
 
       if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
@@ -73,7 +73,7 @@ const WebisteRoutes = (app) => {
   });
 
   // API To View Website-Requests
-  app.get('/api/superadmin/view-website-requests', Authorize(['superAdmin']), async (req, res) => {
+  app.get('/api/superAdmin/view-website-requests', Authorize(['superAdmin']), async (req, res) => {
     try {
       const [resultArray] = await database.execute('SELECT * FROM WebsiteRequest');
       res.status(200).send(resultArray);
@@ -83,11 +83,11 @@ const WebisteRoutes = (app) => {
     }
   });
 
-  app.delete('/api/reject/:website_id', Authorize(['superAdmin']), async (req, res) => {
+  app.delete('/api/reject/:websiteId', Authorize(['superAdmin']), async (req, res) => {
     try {
-      const id = req.params.website_id;
+      const id = req.params.websiteId;
       // Construct SQL DELETE query
-      const deleteQuery = 'DELETE FROM WebsiteRequest WHERE website_id = ?';
+      const deleteQuery = 'DELETE FROM WebsiteRequest WHERE websiteId = ?';
       // Execute the query
       const [result] = await database.execute(deleteQuery, [id]);
       // Check if any rows were affected
@@ -102,11 +102,11 @@ const WebisteRoutes = (app) => {
     }
   });
 
-  app.delete('/api/website/reject/:website_id', Authorize(['superAdmin']), async (req, res) => {
+  app.delete('/api/website/reject/:websiteId', Authorize(['superAdmin']), async (req, res) => {
     try {
-      const id = req.params.website_id;
+      const id = req.params.websiteId;
       // Construct SQL DELETE query
-      const deleteQuery = 'DELETE FROM WebsiteRequest WHERE website_id = ?';
+      const deleteQuery = 'DELETE FROM WebsiteRequest WHERE websiteId = ?';
       // Execute the query
       const [result] = await database.execute(deleteQuery, [id]);
       // Check if any rows were affected
@@ -121,11 +121,11 @@ const WebisteRoutes = (app) => {
     }
   });
 
-  app.delete('/api/reject-website-edit/:website_id', Authorize(['superAdmin']), async (req, res) => {
+  app.delete('/api/reject-website-edit/:websiteId', Authorize(['superAdmin']), async (req, res) => {
     try {
-      const id = req.params.website_id;
+      const id = req.params.websiteId;
       // Construct SQL DELETE query
-      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE website_id = ?';
+      const deleteQuery = 'DELETE FROM EditWebsiteRequest WHERE websiteId = ?';
       // Execute the query
       const [result] = await database.execute(deleteQuery, [id]);
       // Check if any rows were affected
@@ -181,9 +181,9 @@ const WebisteRoutes = (app) => {
         const userRole = req.user[0]?.roles;
         if (userRole.includes('superAdmin')) {
           const balancePromises = websiteData.map(async (website) => {
-            website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
+            website.balance = await WebsiteServices.getWebsiteBalance(website.websiteId);
             const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
-              website.website_id,
+              website.websiteId,
             ]);
             if (subAdmins && subAdmins.length > 0) {
               website.subAdmins = subAdmins;
@@ -200,13 +200,13 @@ const WebisteRoutes = (app) => {
           if (userSubAdminId) {
             const filteredBanksPromises = websiteData.map(async (website) => {
               const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
-                website.website_id,
+                website.websiteId,
               ]);
               if (subAdmins && subAdmins.length > 0) {
                 website.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
-                  website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
+                  website.balance = await WebsiteServices.getWebsiteBalance(website.websiteId);
                   website.isDeposit = userSubAdmin.isDeposit;
                   website.isWithdraw = userSubAdmin.isWithdraw;
                   website.isRenew = userSubAdmin.isRenew;
@@ -262,19 +262,19 @@ const WebisteRoutes = (app) => {
   );
 
   app.get(
-    '/api/get-single-webiste-name/:website_id',
+    '/api/get-single-webiste-name/:websiteId',
     Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
     async (req, res) => {
       try {
-        const id = req.params.website_id;
-        const [dbWebsiteData] = await database.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
+        const id = req.params.websiteId;
+        const [dbWebsiteData] = await database.execute(`SELECT * FROM Website WHERE websiteId = (?)`, [id]);
         if (!dbWebsiteData) {
           return res.status(404).send({ message: 'Website not found' });
         }
-        const websiteId = dbWebsiteData[0].website_id;
+        const websiteId = dbWebsiteData[0].websiteId;
         const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
         const response = {
-          website_id: dbWebsiteData[0].website_id,
+          websiteId: dbWebsiteData[0].websiteId,
           websiteName: dbWebsiteData[0].websiteName,
           subAdminId: dbWebsiteData[0].subAdminId,
           subAdminName: dbWebsiteData[0].subAdminName,
@@ -289,11 +289,11 @@ const WebisteRoutes = (app) => {
   );
 
   app.post(
-    '/api/admin/add-website-balance/:website_id',
+    '/api/admin/add-website-balance/:websiteId',
     Authorize(['superAdmin', 'Website-View', 'Transaction-View']),
     async (req, res) => {
       try {
-        const id = req.params.website_id;
+        const id = req.params.websiteId;
         const userName = req.user;
         const { amount, transactionType, remarks } = req.body;
         if (transactionType !== 'Manual-Website-Deposit') {
@@ -305,12 +305,12 @@ const WebisteRoutes = (app) => {
         if (!remarks) {
           throw { code: 400, message: 'Remark is required' };
         }
-        const [website] = await database.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
+        const [website] = await database.execute(`SELECT * FROM Website WHERE websiteId = (?)`, [id]);
         if (!website) {
           return res.status(404).send({ message: 'Website  not found' });
         }
         const websiteTransaction = {
-          websiteId: website[0].website_id,
+          websiteId: website[0].websiteId,
           websiteName: website[0].websiteName,
           remarks: remarks,
           transactionType: transactionType,
@@ -319,14 +319,14 @@ const WebisteRoutes = (app) => {
           subAdminName: userName[0].firstName,
           createdAt: new Date().toISOString(),
         };
-        const WebsiteTransaction_Id = uuidv4();
+        const websiteTransactionId = uuidv4();
         const insertWebsiteRequestQuery = `
       INSERT INTO WebsiteTransaction 
-      (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, depositAmount, subAdminId, subAdminName, createdAt) 
+      (websiteId, websiteTransactionId, websiteName, remarks, transactionType, depositAmount, subAdminId, subAdminName, createdAt) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await database.execute(insertWebsiteRequestQuery, [
           websiteTransaction.websiteId,
-          WebsiteTransaction_Id,
+          websiteTransactionId,
           websiteTransaction.websiteName,
           websiteTransaction.remarks,
           websiteTransaction.transactionType,
@@ -344,11 +344,11 @@ const WebisteRoutes = (app) => {
   );
 
   app.post(
-    '/api/admin/withdraw-website-balance/:website_id',
+    '/api/admin/withdraw-website-balance/:websiteId',
     Authorize(['superAdmin', 'Website-View', 'Transaction-View']),
     async (req, res) => {
       try {
-        const id = req.params.website_id;
+        const id = req.params.websiteId;
         console.log('id', id);
         const userName = req.user;
         const { amount, transactionType, remarks } = req.body;
@@ -361,7 +361,7 @@ const WebisteRoutes = (app) => {
         if (!remarks) {
           throw { code: 400, message: 'Remark is required' };
         }
-        const [website] = await database.execute(`SELECT * FROM Website WHERE website_id = (?)`, [id]);
+        const [website] = await database.execute(`SELECT * FROM Website WHERE websiteId = (?)`, [id]);
         console.log('website........', website);
         if (!website) {
           return res.status(404).send({ message: 'Websitet not found' });
@@ -370,7 +370,7 @@ const WebisteRoutes = (app) => {
           return res.status(400).send({ message: 'Insufficient Website Balance' });
         }
         const websiteTransaction = {
-          websiteId: website[0].website_id,
+          websiteId: website[0].websiteId,
           websiteName: website[0].websiteName,
           transactionType: transactionType,
           withdrawAmount: Math.round(parseFloat(amount)),
@@ -379,14 +379,14 @@ const WebisteRoutes = (app) => {
           remarks: remarks,
           createdAt: new Date().toISOString(),
         };
-        const WebsiteTransaction_Id = uuidv4();
+        const websiteTransactionId = uuidv4();
         const insertWebsiteRequestQuery = `
       INSERT INTO WebsiteTransaction 
-      (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, withdrawAmount, subAdminId, subAdminName, createdAt) 
+      (websiteId, websiteTransactionId, websiteName, remarks, transactionType, withdrawAmount, subAdminId, subAdminName, createdAt) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await database.execute(insertWebsiteRequestQuery, [
           websiteTransaction.websiteId,
-          WebsiteTransaction_Id,
+          websiteTransactionId,
           websiteTransaction.websiteName,
           websiteTransaction.remarks,
           websiteTransaction.transactionType,
@@ -493,14 +493,14 @@ const WebisteRoutes = (app) => {
     }
   });
 
-  app.post('/api/admin/website/isactive/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.post('/api/admin/website/isactive/:websiteId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
-      const websiteId = req.params.website_id;
+      const websiteId = req.params.websiteId;
       const { isActive } = req.body;
       if (typeof isActive !== 'boolean') {
         return res.status(400).send({ message: 'isApproved field must be a boolean value' });
       }
-      const updateWebsiteQuery = `UPDATE Website SET isActive = ? WHERE website_id = ?`;
+      const updateWebsiteQuery = `UPDATE Website SET isActive = ? WHERE websiteId = ?`;
       await database.execute(updateWebsiteQuery, [isActive, websiteId]);
       res.status(200).send({ message: 'Website status updated successfully' });
     } catch (e) {
@@ -515,7 +515,7 @@ const WebisteRoutes = (app) => {
     async (req, res) => {
       try {
         const subadminId = req.params.subadminId;
-        const dbWebsiteData = `SELECT Website.websiteName FROM Website INNER JOIN WebsiteSubAdmins ON Website.website_id = 
+        const dbWebsiteData = `SELECT Website.websiteName FROM Website INNER JOIN WebsiteSubAdmins ON Website.websiteId = 
         WebsiteSubAdmins.websiteId WHERE WebsiteSubAdmins.subAdminId = ?`;
         const [websiteData] = await database.execute(dbWebsiteData, [subadminId]);
         res.status(200).send(websiteData);

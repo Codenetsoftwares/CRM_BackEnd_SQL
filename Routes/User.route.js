@@ -43,7 +43,7 @@ export const UserRoutes = (app) => {
     try {
       const bankDetailsArray = req.body.bank_details;
       const user = req.user;
-      const [existingUserData] = await database.execute('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await database.execute('SELECT * FROM User WHERE userId = ?', [user[0].userId]);
 
       let bankDetails = existingUserData[0].Bank_Details || [];
 
@@ -61,9 +61,9 @@ export const UserRoutes = (app) => {
         });
       }
 
-      const [updateResult] = await database.execute('UPDATE User SET Bank_Details = ? WHERE user_id = ?', [
+      const [updateResult] = await database.execute('UPDATE User SET Bank_Details = ? WHERE userId = ?', [
         JSON.stringify(bankDetails),
-        user[0].user_id,
+        user[0].userId,
       ]);
 
       if (updateResult.affectedRows === 1) {
@@ -84,7 +84,7 @@ export const UserRoutes = (app) => {
       const websites = req.body.website_name;
       const user = req.user;
 
-      const [existingUserData] = await database.execute('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await database.execute('SELECT * FROM User WHERE userId = ?', [user[0].userId]);
 
       if (existingUserData.length === 0) {
         return res.status(404).send({ message: 'User not found' });
@@ -99,9 +99,9 @@ export const UserRoutes = (app) => {
         websitesArray.push(website);
       }
 
-      const [updateResult] = await database.execute('UPDATE User SET Websites_Details = ? WHERE user_id = ?', [
+      const [updateResult] = await database.execute('UPDATE User SET Websites_Details = ? WHERE userId = ?', [
         JSON.stringify(websitesArray),
-        user[0].user_id,
+        user[0].userId,
       ]);
 
       if (updateResult.affectedRows === 1) {
@@ -122,7 +122,7 @@ export const UserRoutes = (app) => {
       const upiDetailsArray = req.body.upi_details;
       const user = req.user;
 
-      const [existingUserData] = await database.execute('SELECT * FROM User WHERE user_id = ?', [user[0].user_id]);
+      const [existingUserData] = await database.execute('SELECT * FROM User WHERE userId = ?', [user[0].userId]);
 
       let upiDetails = existingUserData[0].Upi_Details || [];
 
@@ -137,9 +137,9 @@ export const UserRoutes = (app) => {
         });
       }
 
-      const [updateResult] = await database.execute('UPDATE User SET Upi_Details = ? WHERE user_id = ?', [
+      const [updateResult] = await database.execute('UPDATE User SET Upi_Details = ? WHERE userId = ?', [
         JSON.stringify(upiDetails),
-        user[0].user_id,
+        user[0].userId,
       ]);
 
       if (updateResult.affectedRows === 1) {
@@ -155,10 +155,10 @@ export const UserRoutes = (app) => {
 
   // API To Edit User Profiles
 
-  app.put('/api/user-profile-edit/:user_id', AuthorizeRole(['user']), async (req, res) => {
+  app.put('/api/user-profile-edit/:userId', AuthorizeRole(['user']), async (req, res) => {
     try {
-      const userId = req.params.user_id;
-      const [userDetails] = await database.execute(`SELECT * FROM User WHERE user_id = (?)`, [userId]);
+      const userId = req.params.userId;
+      const [userDetails] = await database.execute(`SELECT * FROM User WHERE userId = (?)`, [userId]);
       const updateResult = await UserServices.updateUserProfile(userDetails, req.body);
       console.log(updateResult);
       if (updateResult) {
@@ -172,10 +172,10 @@ export const UserRoutes = (app) => {
 
   // API To View User Profiles
 
-  app.get('/api/user-profile-data/:user_id', AuthorizeRole(['user']), async (req, res) => {
+  app.get('/api/user-profile-data/:userId', AuthorizeRole(['user']), async (req, res) => {
     try {
-      const userId = req.params.user_id;
-      const [userDetails] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
+      const userId = req.params.userId;
+      const [userDetails] = await database.execute(`SELECT * FROM User WHERE userId = ?`, [userId]);
 
       if (!userDetails || userDetails.length === 0) {
         return res.status(404).send({ message: 'User not found' });

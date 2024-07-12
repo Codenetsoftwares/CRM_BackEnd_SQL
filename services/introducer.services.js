@@ -24,10 +24,10 @@ export const createIntroducerUser = async (req, res) => {
 
     const passwordSalt = await bcrypt.genSalt();
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
-    const intro_id = uuidv4();
+    const introId = uuidv4();
 
     const newIntroducerUser = await IntroducerUser.create({
-      intro_id,
+      introId,
       firstName,
       lastName,
       userName,
@@ -52,13 +52,13 @@ export const createIntroducerUser = async (req, res) => {
 
 export const updateIntroducerProfile = async (req, res) => {
   try {
-    const { intro_id } = req.params;
+    const { introId } = req.params;
     const { firstName, lastName } = req.body;
 
-    const existingUser = await IntroducerUser.findOne({ where: { intro_id } });
+    const existingUser = await IntroducerUser.findOne({ where: { introId } });
 
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${intro_id}`, res);
+      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${introId}`, res);
     }
 
     existingUser.firstName = firstName || existingUser.firstName;
@@ -169,7 +169,7 @@ export const introducerUser = {
   // introducerPercentageCut: async (id, startDate, endDate) => {
   //   const pool = await connectToDB();
   //   try {
-  //     const [user] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [id])
+  //     const [user] = await database.execute(`SELECT * FROM User WHERE userId = ?`, [id])
   //     const userName = user[0].userName;
   //     const userId = user.userId;
   //     const introducerUserId = user.introducersUserId;

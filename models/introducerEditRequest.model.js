@@ -6,7 +6,7 @@ const IntroducerEditRequest = sequelize.define('IntroducerEditRequest', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   introTransactionId: { type: DataTypes.STRING },
   amount: { type: DataTypes.INTEGER },
-  requesteduserName: { type: DataTypes.STRING },
+  requestedUserName: { type: DataTypes.STRING },
   transactionType: { type: DataTypes.STRING },
   remarks: { type: DataTypes.STRING },
   subAdminId: { type: DataTypes.STRING },
@@ -15,7 +15,7 @@ const IntroducerEditRequest = sequelize.define('IntroducerEditRequest', {
   createdAt: { type: DataTypes.DATE },
   message: { type: DataTypes.STRING },
   type: { type: DataTypes.STRING },
-  Nametype: { type: DataTypes.STRING },
+  nameType: { type: DataTypes.STRING },
   changedFields: { type: DataTypes.JSON },
   isApproved: { type: DataTypes.BOOLEAN },
 });

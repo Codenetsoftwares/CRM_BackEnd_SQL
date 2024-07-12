@@ -23,12 +23,12 @@ export const createAdmin = async (req, res) => {
 
     const passwordSalt = await bcrypt.genSalt();
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
-    const admin_id = uuidv4();
+    const adminId = uuidv4();
 
     const rolesArray = Array.isArray(roles) ? roles : [roles];
 
     const newAdmin = await Admin.create({
-      admin_id,
+      adminId,
       firstName,
       lastName,
       userName,
@@ -73,7 +73,7 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
     }
 
     const accessTokenPayload = {
-      admin_id: admin.admin_id,
+      adminId: admin.adminId,
       userName: admin.userName,
       roles: admin.roles,
     };
@@ -84,7 +84,7 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
 
     return {
       accessToken,
-      admin_id: admin.admin_id,
+      adminId: admin.adminId,
       userName: admin.userName,
       roles: admin.roles,
     };
@@ -94,7 +94,7 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-  const { user_id } = req.params;
+  const { userId } = req.params;
   const {
     firstName,
     lastName,
@@ -107,10 +107,10 @@ export const updateUserProfile = async (req, res) => {
   } = req.body;
 
   try {
-    const existingUser = await User.findOne({ where: { user_id } });
+    const existingUser = await User.findOne({ where: { userId } });
 
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${user_id}`, res);
+      return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${userId}`, res);
     }
 
     const validatePercentage = (percentage) => {
@@ -253,13 +253,13 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
 };
 
 export const getClientData = async (req, res) => {
-  const { intro_id } = req.params;
+  const { introId } = req.params;
 
   try {
-    const introducer = await IntroducerUser.findOne({ where: { intro_id } });
+    const introducer = await IntroducerUser.findOne({ where: { introId } });
 
     if (!introducer) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${intro_id}`, res);
+      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${introId}`, res);
     }
 
     const introducerId = introducer.userName;
@@ -277,10 +277,10 @@ export const getClientData = async (req, res) => {
 };
 
 export const getSingleIntroducer = async (req, res) => {
-  const { intro_id } = req.params;
+  const { introId } = req.params;
 
   try {
-    const introducer = await IntroducerUser.findOne({ where: { intro_id } });
+    const introducer = await IntroducerUser.findOne({ where: { introId } });
 
     if (!introducer) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Introducer not found', res);
@@ -320,7 +320,7 @@ export const getUserById = async (req, res) => {
 
 export const getIntroducerById = async (req, res) => {
   try {
-    const introducers = await IntroducerUser.findAll({ attributes: ['userName', 'intro_id'] });
+    const introducers = await IntroducerUser.findAll({ attributes: ['userName', 'introId'] });
 
     if (!introducers || introducers.length === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'No introducers found', res);
@@ -339,14 +339,14 @@ export const getIntroducerById = async (req, res) => {
 
 export const getSingleSubAdmin = async (req, res) => {
   try {
-    const id = req.params.admin_id;
+    const id = req.params.adminId;
     console.log('iddd', id);
 
     if (!id) {
       return apiResponseErr(null, false, statusCode.badRequest, "Sub Admin's Id not present", res);
     }
 
-    const subAdmin = await Admin.findOne({ where: { admin_id: id } });
+    const subAdmin = await Admin.findOne({ where: { adminId: id } });
 
     if (!subAdmin) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Sub Admin not found with the given Id', res);
@@ -365,7 +365,7 @@ export const getSingleSubAdmin = async (req, res) => {
 
 export const editSubAdminRoles = async (req, res) => {
   try {
-    const subAdminId = req.params.admin_id;
+    const subAdminId = req.params.adminId;
     const { roles } = req.body;
 
     if (!subAdminId) {
@@ -374,7 +374,7 @@ export const editSubAdminRoles = async (req, res) => {
 
     const [updatedRows] = await Admin.update(
       { roles: JSON.stringify(roles) },
-      { where: { admin_id: subAdminId } }
+      { where: { adminId: subAdminId } }
     );
 
     if (updatedRows === 0) {
@@ -394,11 +394,11 @@ export const editSubAdminRoles = async (req, res) => {
 
 export const getIntroducerUserSingleData = async (req, res) => {
   try {
-    const id = req.params.intro_id;
+    const id = req.params.introId;
 
-    // Find the introducer user by intro_id
+    // Find the introducer user by introId
     const introducerUserResult = await IntroducerUser.findOne({
-      where: { intro_id: id },
+      where: { introId: id },
       attributes: ['userName'],
     });
 
@@ -427,7 +427,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
 
     for (const matchedUser of usersResult) {
       let filteredIntroducerUser = {
-        user_id: matchedUser.user_id,
+        userId: matchedUser.userId,
         firstName: matchedUser.firstName,
         lastName: matchedUser.lastName,
         userName: matchedUser.userName,
@@ -570,8 +570,8 @@ const AccountServices = {
 
   updateSubAdminProfile: async (id, data) => {
     try {
-      const userId = id[0].admin_id;
-      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE admin_id = ?`, [userId]);
+      const userId = id[0].adminId;
+      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE adminId = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -584,7 +584,7 @@ const AccountServices = {
       user.firstName = data.firstName || user.firstName;
       user.lastName = data.lastName || user.lastName;
       // Update user data in the database
-      await database.execute(`UPDATE Admin SET firstName = ?, lastName = ? WHERE admin_id = ?`, [
+      await database.execute(`UPDATE Admin SET firstName = ?, lastName = ? WHERE adminId = ?`, [
         user.firstName,
         user.lastName,
         userId,
@@ -632,7 +632,7 @@ const AccountServices = {
 
   introducerLiveBalance: async (id) => {
     try {
-      const [introId] = await database.execute('SELECT * FROM IntroducerUser WHERE intro_id = ?', [id]);
+      const [introId] = await database.execute('SELECT * FROM IntroducerUser WHERE introId = ?', [id]);
 
       if (!introId.length) {
         throw {

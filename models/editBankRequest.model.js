@@ -4,7 +4,7 @@ import sequelize from '../db.js';
 
 const EditBankRequest = sequelize.define('EditBankRequest', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  bank_id: { type: DataTypes.STRING },
+  bankId: { type: DataTypes.STRING },
   accountHolderName: { type: DataTypes.STRING },
   bankName: { type: DataTypes.STRING },
   accountNumber: { type: DataTypes.BIGINT },

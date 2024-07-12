@@ -1,10 +1,18 @@
 import { Authorize } from '../middleware/Authorize.js';
-import BankServices from '../services/Bank.services.js';
+import BankServices, { deleteSubAdmin } from '../services/Bank.services.js';
+import {deleteBankRequest} from '../services/Bank.services.js'
 import AccountServices from '../services/Account.Services.js';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
+import { string } from '../constructor/string.js';
+import { validateDeleteBankRequest, validateDeleteSubAdmin } from '../utils/commonSchema.js';
+import customErrorHandler from '../utils/customErrorHandler.js';;
 
 const BankRoutes = (app) => {
+  app.delete('/api/bank/reject/:bankId',validateDeleteBankRequest,customErrorHandler, Authorize([string.superAdmin]),deleteBankRequest);
+
+  app.delete('/api/bank/delete-subAdmin/:bankId/:subAdminId',validateDeleteSubAdmin,customErrorHandler,Authorize([string.superAdmin, string.requestAdmin, string.bankView]),deleteSubAdmin);
+
   app.post('/api/add-bank-name', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
     try {
       const userName = req.user;
@@ -98,20 +106,6 @@ const BankRoutes = (app) => {
     }
   });
 
-  app.delete('/api/bank/reject/:bank_id', Authorize(['superAdmin']), async (req, res) => {
-    try {
-      const id = req.params.bank_id;
-      const result = await BankServices.deleteBankRequest(id);
-      if (result === 1) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      } else {
-        res.status(404).send({ message: 'Data not found' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
-    }
-  });
 
   // API To View Bank Name
 //  no need to refactor this
@@ -271,16 +265,16 @@ const BankRoutes = (app) => {
           createdAt: new Date().toISOString(),
         };
         console.log('bankTransaction', bankTransaction);
-        const BankTransaction_Id = uuidv4();
+        const bankTransactionId = uuidv4();
         const insertBankRequestQuery = `
           INSERT INTO BankTransaction 
-          (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, upiAppName, upiNumber, 
+          (bankId, bankTransactionId, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, upiAppName, upiNumber, 
           depositAmount, subAdminId, subAdminName, createdAt) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         await database.execute(insertBankRequestQuery, [
           bankTransaction.bankId,
-          BankTransaction_Id,
+          bankTransactionId,
           bankTransaction.accountHolderName,
           bankTransaction.bankName,
           bankTransaction.accountNumber,
@@ -346,16 +340,16 @@ const BankRoutes = (app) => {
           remarks: remarks,
           createdAt: new Date().toISOString(),
         };
-        const BankTransaction_Id = uuidv4();
+        const bankTransactionId = uuidv4();
         const insertBankRequestQuery = `
           INSERT INTO BankTransaction 
-          (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, 
+          (bankId, bankTransactionId, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId, 
           upiAppName, upiNumber, withdrawAmount, subAdminId, subAdminName, createdAt) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         await database.execute(insertBankRequestQuery, [
           bankTransaction.bankId,
-          BankTransaction_Id,
+          bankTransactionId,
           bankTransaction.accountHolderName,
           bankTransaction.bankName,
           bankTransaction.accountNumber,
@@ -558,29 +552,6 @@ const BankRoutes = (app) => {
       res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
     }
   });
-
-  app.delete(
-    '/api/bank/delete-subadmin/:bankId/:subAdminId',
-    Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
-    async (req, res) => {
-      try {
-        const { bankId, subAdminId } = req.params;
-        // Check if the bank exists
-        const bankExistQuery = `SELECT * FROM BankSubAdmins WHERE bankid = ?`;
-        const [bank] = await database.execute(bankExistQuery, [bankId]);
-        if (!bank) {
-          throw { code: 404, message: 'Bank not found!' };
-        }
-        // Remove the subAdmin with the specified subAdminId
-        const deleteSubAdminQuery = `DELETE FROM BankSubAdmins WHERE bankid = ? AND subadminid = ?`;
-        await database.execute(deleteSubAdminQuery, [bankId, subAdminId]);
-        res.status(200).send({ message: 'SubAdmin Permission removed successfully' });
-      } catch (error) {
-        console.error(error);
-        res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
-      }
-    },
-  );
 
   app.get('/api/active-visible-bank', Authorize(['superAdmin', 'RequstAdmin']), async (req, res) => {
     try {

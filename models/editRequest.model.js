@@ -13,7 +13,7 @@ const EditRequest = sequelize.define('EditRequest', {
   paymentMethod: { type: DataTypes.STRING },
   introducerUserName: { type: DataTypes.STRING },
   userName: { type: DataTypes.STRING },
-  requesteduserName: { type: DataTypes.STRING },
+  requestedUserName: { type: DataTypes.STRING },
   subAdminId: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
   depositAmount: { type: DataTypes.INTEGER },
@@ -32,14 +32,14 @@ const EditRequest = sequelize.define('EditRequest', {
   createdAt: { type: DataTypes.DATE },
   message: { type: DataTypes.STRING },
   type: { type: DataTypes.STRING },
-  Nametype: { type: DataTypes.STRING },
+  nameType: { type: DataTypes.STRING },
   changedFields: { type: DataTypes.JSON },
   originalData: { type: DataTypes.JSON },
   isSubmit: { type: DataTypes.BOOLEAN },
   isApproved: { type: DataTypes.BOOLEAN },
-  WebsiteTransaction_Id: { type: DataTypes.STRING },
-  Edit_ID: { type: DataTypes.STRING },
-  BankTransaction_Id: { type: DataTypes.STRING },
+  websiteTransactionId: { type: DataTypes.STRING },
+  editId: { type: DataTypes.STRING },
+  bankTransactionId: { type: DataTypes.STRING },
 });
 
 export default EditRequest;

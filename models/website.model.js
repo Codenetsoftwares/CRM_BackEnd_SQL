@@ -4,7 +4,7 @@ import sequelize from '../db.js';
 
 const Website = sequelize.define('Website', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  website_id: { type: DataTypes.STRING },
+  websiteId: { type: DataTypes.STRING },
   websiteName: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
   createdAt: { type: DataTypes.DATE },

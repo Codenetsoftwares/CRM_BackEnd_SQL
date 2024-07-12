@@ -15,7 +15,7 @@ const Trash = sequelize.define('Trash', {
   paymentMethod: { type: DataTypes.STRING },
   userId: { type: DataTypes.STRING },
   userName: { type: DataTypes.STRING },
-  requesteduserName: { type: DataTypes.STRING },
+  requestedUserName: { type: DataTypes.STRING },
   subAdminId: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
   depositAmount: { type: DataTypes.INTEGER },
@@ -34,14 +34,14 @@ const Trash = sequelize.define('Trash', {
   createdAt: { type: DataTypes.DATE },
   message: { type: DataTypes.STRING },
   type: { type: DataTypes.STRING },
-  Nametype: { type: DataTypes.STRING },
+  nameType: { type: DataTypes.STRING },
   changedFields: { type: DataTypes.JSON },
   originalData: { type: DataTypes.JSON },
   isSubmit: { type: DataTypes.BOOLEAN },
   isApproved: { type: DataTypes.BOOLEAN },
   introducerUserName: { type: DataTypes.STRING },
-  WebsiteTransaction_Id: { type: DataTypes.STRING },
-  BankTransaction_Id: { type: DataTypes.STRING },
+  websiteTransactionId: { type: DataTypes.STRING },
+  bankTransactionId: { type: DataTypes.STRING },
 });
 
 export default Trash;

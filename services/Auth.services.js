@@ -65,7 +65,7 @@ export const generateIntroducerAccessToken = async (req, res) => {
         }
 
         const accessTokenResponse = {
-            intro_id: existingUser.intro_id,
+            introId: existingUser.introId,
             name: existingUser.firstName,
             userName: existingUser.userName,
             role: existingUser.role,
@@ -79,7 +79,7 @@ export const generateIntroducerAccessToken = async (req, res) => {
             userName: existingUser.userName,
             accessToken: accessToken,
             role: existingUser.role,
-            intro_id: existingUser.intro_id,
+            introId: existingUser.introId,
         }, true, statusCode.success, 'Access token generated successfully', res);
     } catch (error) {
         console.error(error);

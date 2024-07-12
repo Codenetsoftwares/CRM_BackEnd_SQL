@@ -1,531 +1,83 @@
+import { validate } from 'uuid';
+import { string } from '../constructor/string.js';
 import { Authorize } from '../middleware/Authorize.js';
-import DeleteApiService from '../services/DeleteAPI.service.js';
+import DeleteApiService, { approveBankTransactionRequest, deleteBank, deleteBankRequest, deleteIntroducerTransaction, deleteIntroducerTransactionWithId, deleteTransaction, deleteTransactionWithId, deleteWebsite, deleteWebsiteTransaction, moveWebsiteTransactionToTrash, rejectBankDetail, rejectWebsiteDetail, saveWebsiteRequest } from '../services/DeleteAPI.service.js';
+import { deleteBankTransaction } from '../services/DeleteAPI.service.js'
 import { database } from '../services/database.service.js';
+import { deleteWebsiteTransactionValidate, validateDeleteBank, validateDeleteBankTransaction, validateDeleteIntroducerTransaction, validateDeleteIntroducerTransactionWithId, validateDeleteTransaction, validateDeleteTransactionWithId, validateDeleteWebsite, validateMoveToTrash, validateRejectBankDetail, validateRejectWebsiteDetail, validates, validateSaveWebsiteRequest, validationDeleteBankRequest } from '../utils/commonSchema.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 const DeleteAPIRoute = (app) => {
   // API To Move The Bank Transaction Into Trash
   app.post(
-    '/api/admin/save-bank-transaction-request',
-    Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
-    async (req, res) => {
-      try {
-        const user = req.user;
-        const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM BankTransaction WHERE BankTransaction_Id = ?`;
-        const [transaction] = await database.execute(transactionQuery, [requestId]);
-        if (!transaction.length) {
-          return res.status(404).send('Bank Transaction not found');
-        }
-        const updateResult = await DeleteApiService.deleteBankTransaction(transaction[0], user);
-        if (updateResult) {
-          res.status(201).send('Bank Transaction Move to trash request sent to Super Admin');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
+    '/api/admin/save-bank-transaction-request',validateDeleteBankTransaction,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteBankTransaction);
 
   // API To Approve Bank Transaction To Move Into Trash Request
 
-  app.post('/api/delete-bank-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    try {
-      const id = req.params.Edit_ID;
-      const [editRequest] = await database.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
-
-      if (!editRequest || editRequest.length === 0) {
-        return res.status(404).send({ message: 'Bank Request not found' });
-      }
-
-      const isApproved = true;
-
-      if (isApproved) {
-        const dataToRestore = {
-          bankId: editRequest[0].bankId,
-          transactionType: editRequest[0].transactionType,
-          remarks: editRequest[0].remarks,
-          withdrawAmount: editRequest[0].withdrawAmount,
-          depositAmount: editRequest[0].depositAmount,
-          subAdminId: editRequest[0].subAdminId,
-          subAdminName: editRequest[0].subAdminName,
-          accountHolderName: editRequest[0].accountHolderName,
-          bankName: editRequest[0].bankName,
-          accountNumber: editRequest[0].accountNumber,
-          ifscCode: editRequest[0].ifscCode,
-          createdAt: editRequest[0].createdAt,
-          upiId: editRequest[0].upiId,
-          upiAppName: editRequest[0].upiAppName,
-          upiNumber: editRequest[0].upiNumber,
-          isSubmit: editRequest[0].isSubmit,
-          BankTransaction_Id: editRequest[0].BankTransaction_Id,
-          requesteduserName: editRequest[0].requesteduserName,
-          message: editRequest[0].message,
-          type: editRequest[0].type,
-          Nametype: editRequest[0].Nametype,
-        };
-
-        const restoreQuery = `INSERT INTO Trash (bankId, transactionType, requesteduserName, subAdminId, subAdminName, depositAmount, 
-        withdrawAmount, remarks, bankName, accountHolderName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, createdAt, message,
-        type, Nametype, isSubmit, BankTransaction_Id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await database.execute(restoreQuery, [
-          dataToRestore.bankId,
-          dataToRestore.transactionType,
-          dataToRestore.requesteduserName,
-          dataToRestore.subAdminId,
-          dataToRestore.subAdminName,
-          dataToRestore.depositAmount,
-          dataToRestore.withdrawAmount,
-          dataToRestore.remarks,
-          dataToRestore.bankName,
-          dataToRestore.accountHolderName,
-          dataToRestore.accountNumber,
-          dataToRestore.ifscCode,
-          dataToRestore.upiId,
-          dataToRestore.upiAppName,
-          dataToRestore.upiNumber,
-          dataToRestore.createdAt,
-          dataToRestore.message,
-          dataToRestore.type,
-          dataToRestore.Nametype,
-          dataToRestore.isSubmit,
-          dataToRestore.BankTransaction_Id,
-        ]);
-
-        // Delete the bank transaction from the original table
-        await database.execute(`DELETE FROM BankTransaction WHERE BankTransaction_Id = ?`, [
-          editRequest[0].BankTransaction_Id,
-        ]);
-
-        // Delete the edit request from the original table
-        await database.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
-
-        res.status(200).send({ message: 'Bank Transaction Moved To Trash', data: restoreResult });
-      } else {
-        res.status(400).send({ message: 'Approval request rejected by super admin' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal server error' });
-    }
-  });
+  app.post('/api/delete-bank-transaction/:editId',validates,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin ]), approveBankTransactionRequest);
 
   // API To Move The Website Transaction Into Trash
-  app.post(
-    '/api/admin/save-website-transaction-request',
-    Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
-    async (req, res) => {
-      try {
-        const user = req.user;
-        const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`;
-        const [transaction] = await database.execute(transactionQuery, [requestId]);
-        // console.log("transactionPOST", transaction[0]);
-        if (!transaction) {
-          return res.status(404).send('Website Transaction not found');
-        }
-        const updateResult = await DeleteApiService.deleteWebsiteTransaction(transaction[0], user);
-        console.log(updateResult);
-        if (updateResult) {
-          res.status(201).send('Website Transaction Move to trash request sent to Super Admin');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
+  app.post('/api/admin/save-website-transaction-request',deleteWebsiteTransactionValidate,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteWebsiteTransaction);
 
   // API To Approve Website Transaction To Move Into Trash Request
 
-  app.post('/api/delete-website-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    try {
-      const id = req.params.Edit_ID;
-      const [editRequest] = await database.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
-      console.log('editRequest', editRequest);
-      if (!editRequest || editRequest.length === 0) {
-        return res.status(404).send({ message: 'Edit Website Request not found' });
-      }
-
-      const isApproved = true;
-
-      if (isApproved) {
-        const dataToRestore = {
-          websiteId: editRequest[0].websiteId,
-          transactionType: editRequest[0].transactionType,
-          remarks: editRequest[0].remarks,
-          withdrawAmount: editRequest[0].withdrawAmount,
-          depositAmount: editRequest[0].depositAmount,
-          subAdminId: editRequest[0].subAdminId,
-          subAdminName: editRequest[0].subAdminName,
-          websiteName: editRequest[0].websiteName,
-          createdAt: editRequest[0].createdAt,
-          WebsiteTransaction_Id: editRequest[0].WebsiteTransaction_Id,
-          requesteduserName: editRequest[0].requesteduserName,
-          message: editRequest[0].message,
-          type: editRequest[0].type,
-          Nametype: editRequest[0].Nametype,
-        };
-
-        // Assuming 'Trash' is the table where you store deleted website transactions
-        const restoreQuery = `INSERT INTO Trash (websiteId, transactionType, requesteduserName, subAdminId, subAdminName, 
-        depositAmount, withdrawAmount, remarks, websiteName, createdAt, message, type, Nametype, WebsiteTransaction_Id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await database.execute(restoreQuery, [
-          dataToRestore.websiteId,
-          dataToRestore.transactionType,
-          dataToRestore.requesteduserName,
-          dataToRestore.subAdminId,
-          dataToRestore.subAdminName,
-          dataToRestore.depositAmount,
-          dataToRestore.withdrawAmount,
-          dataToRestore.remarks,
-          dataToRestore.websiteName,
-          dataToRestore.createdAt,
-          dataToRestore.message,
-          dataToRestore.type,
-          dataToRestore.Nametype,
-          dataToRestore.WebsiteTransaction_Id,
-        ]);
-
-        // Delete the website transaction from the original table
-        await database.execute(`DELETE FROM WebsiteTransaction WHERE WebsiteTransaction_Id = ?`, [
-          editRequest[0].WebsiteTransaction_Id,
-        ]);
-
-        // Delete the edit request from the original table
-        await database.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
-
-        res.status(200).send({ message: 'Website Transaction Moved To Trash', data: restoreResult });
-      } else {
-        res.status(400).send({ message: 'Approval request rejected by super admin' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal server error' });
-    }
-  });
+  app.post('/api/delete-website-transaction/:editId',validateMoveToTrash,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), moveWebsiteTransactionToTrash);
+  
 
   // API To Move The Transaction Into Trash
 
-  app.post(
-    '/api/admin/save-transaction-request',
-    Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
-    async (req, res) => {
-      try {
-        const user = req.user;
-        const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM Transaction WHERE Transaction_Id = ?`;
-        const [transaction] = await database.execute(transactionQuery, [requestId]);
-        if (!transaction) {
-          return res.status(404).send('Transaction not found');
-        }
-        const updateResult = await DeleteApiService.deleteTransaction(transaction[0], user);
-        console.log(updateResult);
-        if (updateResult) {
-          res.status(201).send('Transaction Move to trash request sent to Super Admin');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
+  app.post('/api/admin/save-transaction-request',validateDeleteTransaction,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteTransaction);
 
-  // API To Approve Transaction To Move Into Trash Request
+   // API To Move The Introducer Transaction Into Trash
+   app.post('/api/admin/save-introducer-transaction-request',validateDeleteIntroducerTransaction,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteIntroducerTransaction);
 
-  app.post('/api/delete-transaction/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    try {
-      const id = req.params.Edit_ID;
-      const [editRequest] = await database.execute(`SELECT * FROM EditRequest WHERE Edit_ID = ?`, [id]);
-      console.log('editRequest', editRequest[0].transId);
-      if (!editRequest || editRequest.length === 0) {
-        return res.status(404).send({ message: 'Edit Website Request not found' });
-      }
+   app.post('/api/delete-transaction/:editId',validateDeleteTransactionWithId,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]),deleteTransactionWithId );
 
-      const isApproved = true;
+   app.post('/api/delete-introducer-transaction/:IntroEditId',validateDeleteIntroducerTransactionWithId,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), deleteIntroducerTransactionWithId);
 
-      if (isApproved) {
-        const dataToRestore = {
-          bankId: editRequest[0].bankId,
-          websiteId: editRequest[0].websiteId,
-          transactionID: editRequest[0].transactionID,
-          transactionType: editRequest[0].transactionType,
-          remarks: editRequest[0].remarks,
-          amount: editRequest[0].amount,
-          subAdminId: editRequest[0].subAdminId,
-          subAdminName: editRequest[0].subAdminName,
-          introducerUserName: editRequest[0].introducerUserName,
-          userId: editRequest[0].userId,
-          userName: editRequest[0].userName,
-          paymentMethod: editRequest[0].paymentMethod,
-          websiteName: editRequest[0].websiteName,
-          bankName: editRequest[0].bankName,
-          bonus: editRequest[0].bonus,
-          bankCharges: editRequest[0].bankCharges,
-          createdAt: editRequest[0].createdAt,
-          Transaction_Id: editRequest[0].Transaction_Id,
-          message: editRequest[0].message,
-          type: editRequest[0].type,
-          Nametype: editRequest[0].Nametype,
-        };
+   app.post('/api/admin/save-bank-request',validationDeleteBankRequest,customErrorHandler,Authorize([string.superAdmin, string.transactionView, string.bankView]), deleteBankRequest);
 
-        // Assuming 'Trash' is the table where you store deleted transactions
-        const restoreQuery = `INSERT INTO Trash (Transaction_Id, bankId, websiteId, transactionID, transactionType, amount, paymentMethod,
-            userName, subAdminId, subAdminName, bonus, bankCharges, remarks, bankName, websiteName, createdAt, message, 
-            type, Nametype, introducerUserName) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [restoreResult] = await database.execute(restoreQuery, [
-          dataToRestore.Transaction_Id,
-          dataToRestore.bankId,
-          dataToRestore.websiteId,
-          dataToRestore.transactionID,
-          dataToRestore.transactionType,
-          dataToRestore.amount,
-          dataToRestore.paymentMethod,
-          dataToRestore.userName,
-          dataToRestore.subAdminId,
-          dataToRestore.subAdminName,
-          dataToRestore.bonus,
-          dataToRestore.bankCharges,
-          dataToRestore.remarks,
-          dataToRestore.bankName,
-          dataToRestore.websiteName,
-          dataToRestore.createdAt,
-          dataToRestore.message,
-          dataToRestore.type,
-          dataToRestore.Nametype,
-          dataToRestore.introducerUserName,
-        ]);
+   // API For Bank Delete Request
 
-        // Delete the transaction from the original table
-        await database.execute(`DELETE FROM Transaction WHERE Transaction_Id = ?`, [editRequest[0].Transaction_Id]);
+   app.post('/api/delete-bank/:bankId',validateDeleteBank,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]),deleteBank );
 
-        // Delete the edit request from the original table
-        await database.execute(`DELETE FROM EditRequest WHERE Edit_ID = ?`, [id]);
+   // API TO Sent deleting Website Detail's approval
+   app.post('/api/admin/save-website-request',validateSaveWebsiteRequest,customErrorHandler, Authorize([string.superAdmin, string.transactionView, string.websiteView]),saveWebsiteRequest );
 
-        // Remove the transaction detail from the user
-        await database.execute(`DELETE FROM UserTransactionDetail WHERE Transaction_id = ?`, [
-          editRequest[0].Transaction_Id,
-        ]);
-
-        res.status(200).send({ message: 'Transaction moved to Trash', data: restoreResult });
-      } else {
-        res.status(400).send({ message: 'Approval request rejected by super admin' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal server error' });
-    }
-  });
-
-  // API To Move The Introducer Transaction Into Trash
-  app.post(
-    '/api/admin/save-introducer-transaction-request',
-    Authorize(['superAdmin', 'Transaction-Delete-Request', 'Dashboard-View']),
-    async (req, res) => {
-      try {
-        const user = req.user;
-        const { requestId } = req.body;
-        const transactionQuery = `SELECT * FROM IntroducerTransaction WHERE introTransactionId = ?`;
-        const [transaction] = await database.execute(transactionQuery, [requestId]);
-        if (!transaction) {
-          return res.status(404).send('Transaction not found');
-        }
-        const updateResult = await DeleteApiService.deleteIntroducerTransaction(transaction[0], user);
-        console.log(updateResult);
-        if (updateResult) {
-          res.status(201).send('Introducer Transaction Move to trash request sent to Super Admin');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
-
-  // API To Approve Introducer Transaction To Move Into Trash Request
-  app.post(
-    '/api/delete-introducer-transaction/:IntroEditID',
-    Authorize(['superAdmin', 'RequestAdmin']),
-    async (req, res) => {
-      try {
-        const id = req.params.IntroEditID;
-        const [editRequest] = await database.execute(`SELECT * FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
-        console.log('editRequest', editRequest);
-        if (!editRequest || editRequest.length === 0) {
-          return res.status(404).send({ message: 'Edit Request not found' });
-        }
-
-        const isApproved = true;
-
-        if (isApproved) {
-          const dataToRestore = {
-            introTransactionId: editRequest[0].introTransactionId,
-            amount: editRequest[0].amount,
-            transactionType: editRequest[0].transactionType,
-            remarks: editRequest[0].remarks,
-            subAdminId: editRequest[0].subAdminId,
-            subAdminName: editRequest[0].subAdminName,
-            introducerUserName: editRequest[0].introducerUserName,
-            createdAt: editRequest[0].createdAt,
-            introUserId: editRequest[0].introUserId,
-          };
-
-          const restoreQuery = `INSERT INTO Trash (introTransactionId, introUserId, transactionType, amount, subAdminId, subAdminName, 
-          remarks, createdAt, Nametype, introducerUserName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-          const [restoreResult] = await database.execute(restoreQuery, [
-            dataToRestore.introTransactionId,
-            dataToRestore.introUserId,
-            dataToRestore.transactionType,
-            dataToRestore.amount,
-            dataToRestore.subAdminId,
-            dataToRestore.subAdminName,
-            dataToRestore.remarks,
-            dataToRestore.createdAt,
-            'Introducer',
-            dataToRestore.introducerUserName,
-          ]);
-
-          await database.execute(`DELETE FROM IntroducerTransaction WHERE introTransactionId = ?`, [
-            editRequest[0].introTransactionId,
-          ]);
-          await database.execute(`DELETE FROM IntroducerEditRequest WHERE IntroEditID = ?`, [id]);
-
-          res.status(200).send({ message: 'Transaction moved to Trash', data: restoreResult });
-        } else {
-          res.status(400).send({ message: 'Approval request rejected by super admin' });
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal server error' });
-      }
-    },
-  );
-
-  // API TO Sent deleting Bank Detail's approval
-
-  app.post(
-    '/api/admin/save-bank-request',
-    Authorize(['superAdmin', 'Transaction-View', 'Bank-View']),
-    async (req, res) => {
-      try {
-        const { requestId } = req.body;
-        console.log(requestId);
-        const transactionQuery = `SELECT * FROM Bank WHERE bank_id = ?`;
-        const [transaction] = await database.execute(transactionQuery, [requestId]);
-        if (!transaction) {
-          return res.status(404).send('Bank not found');
-        }
-        console.log('Transaction found', transaction);
-        const updateResult = await DeleteApiService.deleteBank(transaction[0], req.body);
-        console.log(updateResult);
-        if (updateResult) {
-          res.status(201).send('Bank delete request sent to Super Admin');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
-
-  // API For Bank Delete Request
-
-  app.post('/api/delete-bank/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    try {
-      const id = req.params.bank_id;
-      const [editRequest] = await database.execute(`SELECT * FROM EditBankRequest WHERE bank_id = ?`, [id]);
-
-      if (!editRequest || editRequest.length === 0) {
-        return res.status(404).send({ message: 'Bank Request not found' });
-      }
-
-      const isApproved = true;
-
-      if (isApproved) {
-        await database.execute(`DELETE FROM Bank WHERE bank_id = ?`, [editRequest[0].bank_id]);
-        await database.execute(`DELETE FROM EditBankRequest WHERE bank_id = ?`, [id]);
-        res.status(200).send({ message: 'Bank deleted' });
-      } else {
-        res.status(400).send({ message: 'Approval request rejected by super admin' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).send({ message: e.message || 'Internal server error' });
-    }
-  });
-
-  // API TO Sent deleting Website Detail's approval
-
-  app.post(
-    '/api/admin/save-website-request',
-    Authorize(['superAdmin', 'Transaction-View', 'Website-View']),
-    async (req, res) => {
-      try {
-        const { requestId } = req.body;
-        console.log(requestId);
-        const transactionQuery = `SELECT * FROM Website WHERE website_id = ?`;
-        const [transaction] = await database.execute(transactionQuery, [requestId]);
-        if (!transaction) {
-          return res.status(404).send('Website not found');
-        }
-        // console.log('Transaction found', transaction);
-        const updateResult = await DeleteApiService.deleteWebsite(transaction[0], req.body);
-        console.log(updateResult);
-        if (updateResult) {
-          res.status(201).send('Website Delete request sent to Super Admin');
-        }
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
-  );
-
-  // API For Website Delet Request
-
-  app.post('/api/delete-website/:website_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    try {
-      const id = req.params.website_id;
-      const [editRequest] = await database.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
-
-      if (!editRequest || editRequest.length === 0) {
-        return res.status(404).send({ message: 'Website Request not found' });
-      }
-
-      const isApproved = true;
-
-      if (isApproved) {
-        await database.execute(`DELETE FROM Website WHERE website_id = ?`, [editRequest[0].website_id]);
-        await database.execute(`DELETE FROM EditWebsiteRequest WHERE website_id = ?`, [id]);
-        res.status(200).send({ message: 'Website deleted' });
-      } else {
-        res.status(400).send({ message: 'Approval request rejected by super admin' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(e.code || 500).send({ message: e.message || 'Internal server error' });
-    }
-  });
+    // API For Website Delete Request
+  app.post('/api/delete-website/:websiteId',validateDeleteWebsite,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), deleteWebsite);
 
   // API For Rejecting Bank Detail
 
-  app.delete('/api/reject/bank-detail/:bank_id', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
-    try {
-      const id = req.params.bank_id;
-      const deleteQuery = 'DELETE FROM EditBankRequest WHERE bank_id = ?';
-      const [result] = await database.execute(deleteQuery, [id]);
-      if (result.affectedRows === 1) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      } else {
-        res.status(404).send({ message: 'Data not found' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
-    }
-  });
+  app.delete('/api/reject/bank-detail/:bankId',validateRejectBankDetail,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), rejectBankDetail);
+
+  // API For Rejecting Website Detail
+
+  app.delete('/api/reject/website-detail/:websiteId',validateRejectWebsiteDetail,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), rejectWebsiteDetail);
+
+
+
+
+
+
+
+
+
+  // API To Approve Transaction To Move Into Trash Request
+
+ 
+
+  // API To Approve Introducer Transaction To Move Into Trash Request
+
+  // API TO Sent deleting Bank Detail's approval
+
+  // API For Bank Delete Request
+
+  
+
+  
+
+  
 
   // API For Rejecting Website Detail
 
@@ -586,18 +138,18 @@ const DeleteAPIRoute = (app) => {
         upiAppName: deletedData[0].upiAppName,
         upiNumber: deletedData[0].upiNumber,
         isSubmit: deletedData[0].isSubmit,
-        BankTransaction_Id: deletedData[0].BankTransaction_Id,
+        bankTransactionId: deletedData[0].bankTransactionId,
       };
 
       // Insert restored data into the BankTransaction table
       const [restoredData] = await database.execute(
         `INSERT INTO BankTransaction 
-            (bankId, BankTransaction_Id, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId,
+            (bankId, bankTransactionId, accountHolderName, bankName, accountNumber, ifscCode, transactionType, remarks, upiId,
             upiAppName, upiNumber, withdrawAmount, depositAmount, subAdminId, subAdminName, createdAt, isSubmit) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           dataToRestore.bankId,
-          dataToRestore.BankTransaction_Id,
+          dataToRestore.bankTransactionId,
           dataToRestore.accountHolderName,
           dataToRestore.bankName,
           dataToRestore.accountNumber,
@@ -649,18 +201,18 @@ const DeleteAPIRoute = (app) => {
         subAdminName: deletedData[0].subAdminName,
         websiteName: deletedData[0].websiteName,
         createdAt: deletedData[0].createdAt,
-        WebsiteTransaction_Id: deletedData[0].WebsiteTransaction_Id,
+        websiteTransactionId: deletedData[0].websiteTransactionId,
       };
 
       // Insert restored data into the WebsiteTransaction table
       const [restoredData] = await database.execute(
         `INSERT INTO WebsiteTransaction
-          (websiteId, WebsiteTransaction_Id, websiteName, remarks, transactionType, withdrawAmount, depositAmount, subAdminId, 
+          (websiteId, websiteTransactionId, websiteName, remarks, transactionType, withdrawAmount, depositAmount, subAdminId, 
           subAdminName, createdAt) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           dataToRestore.websiteId,
-          dataToRestore.WebsiteTransaction_Id,
+          dataToRestore.websiteTransactionId,
           dataToRestore.websiteName,
           dataToRestore.remarks,
           dataToRestore.transactionType,
@@ -876,10 +428,10 @@ const DeleteAPIRoute = (app) => {
   });
 
   // API To Reject EditRequest Data
-  app.delete('/api/reject/DeleteRequest/:Edit_ID', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
+  app.delete('/api/reject/DeleteRequest/:editId', Authorize(['superAdmin', 'RequestAdmin']), async (req, res) => {
     try {
-      const id = req.params.Edit_ID;
-      const deleteQuery = 'DELETE FROM EditRequest WHERE Edit_ID = ?';
+      const id = req.params.editId;
+      const deleteQuery = 'DELETE FROM EditRequest WHERE editId = ?';
       const [result] = await database.execute(deleteQuery, [id]);
       if (result.affectedRows === 1) {
         res.status(200).send({ message: 'Data deleted successfully' });

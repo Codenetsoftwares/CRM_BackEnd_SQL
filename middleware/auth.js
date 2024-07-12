@@ -25,7 +25,7 @@ export const AuthorizeRole = (roles) => {
 
       // If no introducer user found, fetch user with other roles
       if (!introducerUser || introducerUser.length === 0) {
-        const [otherUser] = await database.execute('SELECT * FROM User WHERE user_id = ?', [decodedToken.user_id]);
+        const [otherUser] = await database.execute('SELECT * FROM User WHERE userId = ?', [decodedToken.userId]);
         if (!otherUser || otherUser.length === 0) {
           return res.status(401).send({ code: 401, message: 'Invalid login attempt (4)' });
         }

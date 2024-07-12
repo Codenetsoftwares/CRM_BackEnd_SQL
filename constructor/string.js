@@ -20,6 +20,7 @@ class stringConst {
     this.transactionEditRequest = 'Transaction-Edit-Request';
     this.transactionDeleteRequest = 'Transaction-Delete-Request';
     this.reportMyTxn = 'Report-My-Txn';
+    this.requestAdmin = 'Request-Admin'
   }
 }
 

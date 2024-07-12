@@ -1,15 +1,87 @@
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
+import { v4 as uuidv4 } from 'uuid';
+import Bank from '../models/bank.model.js';
+import BankSubAdmin from '../models/bankSubAdmins.model.js'
+import { Op } from 'sequelize';
 import { database } from '../services/database.service.js';
+
+export const deleteBankRequest = async (req, res) => {
+  try {
+    const id = req.params.bankId;
+
+    // Use Sequelize to delete the record
+    const result = await Bank.destroy({
+      where: {
+        bankId: id
+      }
+    });
+
+    if (result === 1) {
+      return apiResponseSuccess(newAdmin, true, statusCode.success, 'Data deleted successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+
+    }
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage,
+      res,
+    );
+  }
+}
+
+export const deleteSubAdmin =async (req, res) => {
+  try {
+    const { bankId, subAdminId } = req.params;
+
+    // Check if the bank exists
+    const bank = await BankSubAdmin.findOne({
+      where: {
+        bankId: bankId
+      }
+    });
+
+    if (!bank) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Bank not found!', res);
+    }
+
+    // Remove the subAdmin with the specified subAdminId
+    const result = await BankSubAdmin.destroy({
+      where: {
+        bankId: bankId,
+        subAdminId: subAdminId
+      }
+    });
+
+    if (result === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
+    }
+    return apiResponseSuccess(newAdmin, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+}
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
     try {
       console.log('approvedBankRequests', approvedBankRequests);
-      const insertBankDetails = `INSERT INTO Bank (bank_id, bankName, accountHolderName, accountNumber, ifscCode, upiId, 
+      const insertBankDetails = `INSERT INTO Bank (bankId, bankName, accountHolderName, accountNumber, ifscCode, upiId, 
         upiAppName, upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, 
         isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       await database.execute(insertBankDetails, [
-        approvedBankRequests[0].bank_id,
+        approvedBankRequests[0].bankId,
         approvedBankRequests[0].bankName,
         approvedBankRequests[0].accountHolderName,
         approvedBankRequests[0].accountNumber,
@@ -26,7 +98,7 @@ const BankServices = {
           const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
           // Insert subadmin details
           await database.execute(insertSubadmin, [
-            approvedBankRequests[0].bank_id,
+            approvedBankRequests[0].bankId,
             subAdminId,
             isDeposit,
             isWithdraw,
@@ -41,12 +113,6 @@ const BankServices = {
     } catch (error) {
       throw error; // Propagate error to the caller
     }
-  },
-
-  deleteBankRequest: async (bankId) => {
-    const deleteBankRequestQuery = `DELETE FROM BankRequest WHERE bank_id = ?`;
-    const [result] = await database.execute(deleteBankRequestQuery, [bankId]);
-    return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {
@@ -94,7 +160,7 @@ const BankServices = {
     }
     // Create updatedTransactionData using a ternary operator
     const updatedTransactionData = {
-      id: existingTransaction.bank_id,
+      id: existingTransaction.bankId,
       accountHolderName:
         data.accountHolderName !== undefined ? data.accountHolderName : existingTransaction.accountHolderName,
       bankName:
@@ -109,7 +175,7 @@ const BankServices = {
     };
     console.log('update', updatedTransactionData);
     const editRequestQuery = `INSERT INTO EditBankRequest 
-        (bank_id, accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, changedFields, isApproved, type, message) 
+        (bankId, accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, changedFields, isApproved, type, message) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, false, 'Edit', "Bank Detail's has been edited")`;
     await database.execute(editRequestQuery, [
       updatedTransactionData.id,

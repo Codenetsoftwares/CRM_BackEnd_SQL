@@ -3,12 +3,12 @@ import { database } from '../services/database.service.js';
 const WebsiteServices = {
   approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdmins) => {
     try {
-      const insertWebsiteDetails = `INSERT INTO Website (website_id, websiteName, subAdminName, isActive) 
+      const insertWebsiteDetails = `INSERT INTO Website (websiteId, websiteName, subAdminName, isActive) 
       VALUES (?, ?, ?, ?)`;
       const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
       isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       await database.execute(insertWebsiteDetails, [
-        approvedWebsiteRequest[0].website_id,
+        approvedWebsiteRequest[0].websiteId,
         approvedWebsiteRequest[0].websiteName,
         approvedWebsiteRequest[0].subAdminName,
         true,
@@ -18,7 +18,7 @@ const WebsiteServices = {
           const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
           // Insert subadmin details
           await database.execute(insertSubadmin, [
-            approvedWebsiteRequest[0].website_id,
+            approvedWebsiteRequest[0].websiteId,
             subAdminId,
             isDeposit,
             isWithdraw,
@@ -35,7 +35,7 @@ const WebsiteServices = {
   },
 
   deleteWebsiteRequest: async (websiteId) => {
-    const deleteWebsiteRequestQuery = `DELETE FROM WebsiteRequest WHERE website_id = ?`;
+    const deleteWebsiteRequestQuery = `DELETE FROM WebsiteRequest WHERE websiteId = ?`;
     const result = await database.execute(deleteWebsiteRequestQuery, [websiteId]);
     return result.affectedRows; // Return the number of rows deleted for further verification
   },
@@ -93,7 +93,7 @@ const WebsiteServices = {
     }
 
     // Check if the website has already been edited
-    const [editHistory] = await database.execute(`SELECT * FROM EditWebsiteRequest WHERE website_id = ?`, [
+    const [editHistory] = await database.execute(`SELECT * FROM EditWebsiteRequest WHERE websiteId = ?`, [
       existingRequest,
     ]);
     if (editHistory.length > 0) {
@@ -125,7 +125,7 @@ const WebsiteServices = {
 
     // Create updatedTransactionData using a ternary operator
     const updatedTransactionData = {
-      id: existingRequest.website_id,
+      id: existingRequest.websiteId,
       websiteName:
         data.websiteName.replace(/\s+/g, '') !== undefined
           ? data.websiteName
@@ -142,7 +142,7 @@ const WebsiteServices = {
     });
 
     const editRequestQuery = `
-    INSERT INTO EditWebsiteRequest (website_id, websiteName, message, type, changedFields, isApproved) 
+    INSERT INTO EditWebsiteRequest (websiteId, websiteName, message, type, changedFields, isApproved) 
     VALUES (?, ?, ?, ?, ?, ?)`;
 
     await database.execute(editRequestQuery, [

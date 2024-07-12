@@ -41,9 +41,9 @@ export const createUser = async (req, res) => {
 
     transaction = await sequelize.transaction();
 
-    const user_id = uuidv4();
+    const userId = uuidv4();
     const newUser = await User.create({
-      user_id,
+      userId,
       firstName,
       lastName,
       contactNumber,
@@ -132,7 +132,7 @@ export const UserServices = {
       }
 
       const accessTokenResponse = {
-        user_id: existingUser.user_id,
+        userId: existingUser.userId,
         firstName: existingUser.firstName,
         lastName: existingUser.lastName,
         userName: existingUser.userName,
@@ -146,7 +146,7 @@ export const UserServices = {
         userName: existingUser.userName,
         accessToken: accessToken,
         role: existingUser.role,
-        user_id: existingUser.user_id,
+        userId: existingUser.userId,
       };
     } catch (err) {
       console.error(err);
@@ -160,8 +160,8 @@ export const UserServices = {
 
   updateUserProfile: async (userDetails, data) => {
     try {
-      const userId = userDetails[0].user_id;
-      const [existingUser] = await database.execute(`SELECT * FROM User WHERE user_id = ?`, [userId]);
+      const userId = userDetails[0].userId;
+      const [existingUser] = await database.execute(`SELECT * FROM User WHERE userId = ?`, [userId]);
       // Check if the user exists
       if (!existingUser || existingUser.length === 0) {
         throw {
@@ -174,7 +174,7 @@ export const UserServices = {
       user.firstName = data.firstName || user.firstName;
       user.lastName = data.lastName || user.lastName;
       // Update user data in the database
-      await database.execute(`UPDATE User SET firstName = ?, lastName = ? WHERE user_id = ?`, [
+      await database.execute(`UPDATE User SET firstName = ?, lastName = ? WHERE userId = ?`, [
         user.firstName,
         user.lastName,
         userId,

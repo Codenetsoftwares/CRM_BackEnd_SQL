@@ -5,7 +5,7 @@ import sequelize from '../db.js';
 const BankTransaction = sequelize.define('BankTransaction', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   bankId: { type: DataTypes.STRING },
-  BankTransaction_Id: { type: DataTypes.STRING },
+  bankTransactionId: { type: DataTypes.STRING },
   accountHolderName: { type: DataTypes.STRING },
   bankName: { type: DataTypes.STRING },
   accountNumber: { type: DataTypes.BIGINT },
