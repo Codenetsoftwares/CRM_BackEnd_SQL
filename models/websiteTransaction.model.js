@@ -5,7 +5,7 @@ import sequelize from '../db.js';
 const WebsiteTransaction = sequelize.define('WebsiteTransaction', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   websiteId: { type: DataTypes.STRING },
-  WebsiteTransaction_Id: { type: DataTypes.STRING },
+  WebsiteTransactionId: { type: DataTypes.STRING },
   websiteName: { type: DataTypes.STRING },
   remarks: { type: DataTypes.TEXT },
   transactionType: { type: DataTypes.STRING },

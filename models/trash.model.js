@@ -4,12 +4,12 @@ import sequelize from '../db.js';
 
 const Trash = sequelize.define('Trash', {
   _id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  Transaction_Id: { type: DataTypes.STRING },
+  transactionId: { type: DataTypes.STRING },
   introTransactionId: { type: DataTypes.STRING },
   bankId: { type: DataTypes.STRING },
   websiteId: { type: DataTypes.STRING },
   introUserId: { type: DataTypes.STRING },
-  transactionID: { type: DataTypes.STRING },
+  transactionId: { type: DataTypes.STRING },
   transactionType: { type: DataTypes.STRING },
   amount: { type: DataTypes.INTEGER },
   paymentMethod: { type: DataTypes.STRING },
@@ -40,8 +40,8 @@ const Trash = sequelize.define('Trash', {
   isSubmit: { type: DataTypes.BOOLEAN },
   isApproved: { type: DataTypes.BOOLEAN },
   introducerUserName: { type: DataTypes.STRING },
-  WebsiteTransaction_Id: { type: DataTypes.STRING },
-  BankTransaction_Id: { type: DataTypes.STRING },
+  websiteTransactionId: { type: DataTypes.STRING },
+  bankTransactionId: { type: DataTypes.STRING },
 });
 
 export default Trash;

@@ -6,8 +6,8 @@ const EditRequest = sequelize.define('EditRequest', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   bankId: { type: DataTypes.STRING },
   websiteId: { type: DataTypes.STRING },
-  transaction_Id: { type: DataTypes.STRING },
-  transactionID: { type: DataTypes.STRING },
+  transactionId: { type: DataTypes.STRING },
+  transactionId: { type: DataTypes.STRING },
   transactionType: { type: DataTypes.STRING },
   amount: { type: DataTypes.INTEGER },
   paymentMethod: { type: DataTypes.STRING },
@@ -38,8 +38,8 @@ const EditRequest = sequelize.define('EditRequest', {
   isSubmit: { type: DataTypes.BOOLEAN },
   isApproved: { type: DataTypes.BOOLEAN },
   websiteTransaction_Id: { type: DataTypes.STRING },
-  edit_Id: { type: DataTypes.STRING },
-  bankTransaction_Id: { type: DataTypes.STRING },
+  editId: { type: DataTypes.STRING },
+  bankTransactionId: { type: DataTypes.STRING },
 });
 
 export default EditRequest;

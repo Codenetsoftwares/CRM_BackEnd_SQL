@@ -1,8 +1,8 @@
 import { body, param, query, checkSchema } from 'express-validator';
 
 export const validateAdminCreate = [
-  body('firstname').notEmpty().withMessage('First Name is required'),
-  body('lastname').notEmpty().withMessage('Last Name is required'),
+  body('firstName').notEmpty().withMessage('First Name is required'),
+  body('lastName').notEmpty().withMessage('Last Name is required'),
   body('userName').notEmpty().withMessage('Username is required'),
   body('password')
     .notEmpty()
@@ -17,7 +17,7 @@ export const validateAdminCreate = [
 ];
 
 export const validateDeleteBankRequest = [
-  param('bank_id').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
+  param('bankId').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
 ];
 
 export const validateDeleteSubAdmin = [
@@ -29,8 +29,8 @@ export const validateDeleteBankTransaction = [
   body('requestId').isString().notEmpty().withMessage('Request ID is required and should be a string'),
 ];
 
-export const validate = [
-  param('edit_Id').notEmpty().withMessage('Edit_ID is required').isInt().withMessage('Edit_ID must be an integer'),
+export const validates = [
+  param('editId').notEmpty().withMessage('Edit_ID is required').isInt().withMessage('Edit_ID must be an integer'),
 ];
 
 export const deleteWebsiteTransactionValidate = [
@@ -38,7 +38,7 @@ export const deleteWebsiteTransactionValidate = [
 ];
 
 export const validateMoveToTrash = [
-    param('edit_Id').notEmpty().withMessage('edit_Id is required').isUUID(4).withMessage('edit_Id must be a valid UUID v4'),
+    param('editId').notEmpty().withMessage('edit_Id is required').isUUID(4).withMessage('edit_Id must be a valid UUID v4'),
 ];
 
 export const validateDeleteTransaction = [
@@ -50,7 +50,7 @@ export const validateDeleteIntroducerTransaction = [
 ];
 
 export const validateDeleteTransactionWithId = [
-  param('edit_Id').notEmpty().withMessage('Edit_ID is required').isUUID(4).withMessage('Edit_ID must be a valid UUID v4'),
+  param('editId').notEmpty().withMessage('Edit_ID is required').isUUID(4).withMessage('Edit_ID must be a valid UUID v4'),
 ];
 
 export const validateDeleteIntroducerTransactionWithId = [
@@ -62,7 +62,7 @@ export const validationDeleteBankRequest = [
 ];
 
 export const validateDeleteBank = [
-  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid UUID v4'),
+  param('bankId').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid UUID v4'),
 ];
 
 export const validateSaveWebsiteRequest = [
@@ -70,13 +70,13 @@ export const validateSaveWebsiteRequest = [
 ];
 
 export const validateDeleteWebsite = [
-  param('website_id').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
+  param('websiteId').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
 ];
 
 export const validateRejectBankDetail = [
-  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid UUID v4'),
+  param('bankId').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid UUID v4'),
 ];
 
 export const validateRejectWebsiteDetail = [
-  param('website_id').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
+  param('websiteId').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
 ];

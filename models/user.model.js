@@ -4,7 +4,7 @@ import sequelize from '../db.js';
 
 const User = sequelize.define('User', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  user_id: { type: DataTypes.STRING },
+  userId: { type: DataTypes.STRING },
   firstName: { type: DataTypes.STRING },
   lastName: { type: DataTypes.STRING },
   contactNumber: { type: DataTypes.BIGINT },
@@ -19,9 +19,9 @@ const User = sequelize.define('User', {
   wallet: { type: DataTypes.INTEGER },
   profilePicture: { type: DataTypes.STRING },
   role: { type: DataTypes.STRING },
-  Websites_Details: { type: DataTypes.JSON },
-  Bank_Details: { type: DataTypes.JSON },
-  Upi_Details: { type: DataTypes.JSON },
+  websitesDetails: { type: DataTypes.JSON },
+  bankDetails: { type: DataTypes.JSON },
+  upiDetails: { type: DataTypes.JSON },
 });
 
 export default User;

@@ -10,9 +10,9 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 
 const BankRoutes = (app) => {
 
-  app.delete('/api/bank/reject/:bank_id', Authorize([string.superAdmin]),validateDeleteBankRequest,customErrorHandler,deleteBankRequest );
+  app.delete('/api/bank/reject/:bankId',validateDeleteBankRequest,customErrorHandler, Authorize([string.superAdmin]),deleteBankRequest );
 
-  app.delete('/api/bank/delete-subAdmin/:bankId/:subAdminId',Authorize([string.superAdmin, string.requestAdmin, string.bankView]),validateDeleteSubAdmin,customErrorHandler,deleteSubAdmin);
+  app.delete('/api/bank/delete-subAdmin/:bankId/:subAdminId',validateDeleteSubAdmin,customErrorHandler,Authorize([string.superAdmin, string.requestAdmin, string.bankView]),deleteSubAdmin);
 
   app.post('/api/add-bank-name', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
     try {

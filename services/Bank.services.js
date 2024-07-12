@@ -2,24 +2,25 @@ import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../ut
 import { statusCode } from '../utils/statusCodes.js';
 import { v4 as uuidv4 } from 'uuid';
 import Bank from '../models/bank.model.js';
+import BankSubAdmin from '../models/bankSubAdmins.model.js'
 import { Op } from 'sequelize';
 import { database } from '../services/database.service.js';
 
 export const deleteBankRequest=async (req, res) => {
   try {
-    const id = req.params.bank_id;
+    const id = req.params.bankId;
     
     // Use Sequelize to delete the record
     const result = await Bank.destroy({
       where: {
-        bank_id: id
+        bankId: id
       }
     });
 
     if (result === 1) {
       return apiResponseSuccess(newAdmin, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
      
     }
   } catch (error) {
@@ -27,7 +28,7 @@ export const deleteBankRequest=async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.errMessage ,
       res,
     );
   }
@@ -57,7 +58,7 @@ export const deleteSubAdmin =async (req, res) => {
     });
 
     if (result === 0) {
-      return apiResponseErr(null, false, statusCode.notFound, 'SubAdmin not found!', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
     }
     return apiResponseSuccess(newAdmin, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
@@ -65,7 +66,7 @@ export const deleteSubAdmin =async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.errMessage ,
       res,
     );
   }

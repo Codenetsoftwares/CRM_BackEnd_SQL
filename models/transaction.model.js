@@ -8,7 +8,7 @@ const Transaction = sequelize.define('Transaction', {
   websiteId: { type: DataTypes.STRING },
   subAdminId: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
-  transactionID: { type: DataTypes.STRING },
+  transactionId: { type: DataTypes.STRING },
   transactionType: { type: DataTypes.STRING },
   amount: { type: DataTypes.INTEGER },
   paymentMethod: { type: DataTypes.STRING },
@@ -21,7 +21,7 @@ const Transaction = sequelize.define('Transaction', {
   bankName: { type: DataTypes.STRING },
   websiteName: { type: DataTypes.STRING },
   createdAt: { type: DataTypes.DATE },
-  Transaction_Id: { type: DataTypes.STRING },
+  transactionId: { type: DataTypes.STRING },
 });
 
 export default Transaction;
