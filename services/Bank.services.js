@@ -5,6 +5,164 @@ import Bank from '../models/bank.model.js';
 import BankSubAdmin from '../models/bankSubAdmins.model.js'
 import { Op } from 'sequelize';
 import { database } from '../services/database.service.js';
+import EditBankRequest from '../models/editBankRequest.model.js';
+
+
+
+export const updateBank = async (req, res) => {
+  try {
+    const bankId = req.params.bank_id;
+    // Retrieve existing bank details from the database
+    const existingBank = await Bank.findByPk(bankId);
+
+    // Check if bank details exist
+    if (!existingBank) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+    }
+
+    // Update logic
+    let changedFields = {};
+    // Compare each field in the data object with the existingBank
+    if (req.body.accountHolderName !== existingBank.accountHolderName) {
+      changedFields.accountHolderName = req.body.accountHolderName;
+    }
+    if (req.body.bankName !== existingBank.bankName) {
+      changedFields.bankName = req.body.bankName;
+    }
+    if (req.body.accountNumber !== existingBank.accountNumber) {
+      changedFields.accountNumber = req.body.accountNumber;
+    }
+    if (req.body.ifscCode !== existingBank.ifscCode) {
+      changedFields.ifscCode = req.body.ifscCode;
+    }
+    if (req.body.upiId !== existingBank.upiId) {
+      changedFields.upiId = req.body.upiId;
+    }
+    if (req.body.upiAppName !== existingBank.upiAppName) {
+      changedFields.upiAppName = req.body.upiAppName;
+    }
+    if (req.body.upiNumber !== existingBank.upiNumber) {
+      changedFields.upiNumber = req.body.upiNumber;
+    }
+
+    // Check for duplicate bank name
+    const duplicateBank = await Bank.findOne({
+      where: { bankName: req.body.bankName },
+    });
+
+    if (duplicateBank) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank name already exists!', res);
+    }
+
+    // Update existingBank attributes
+    existingBank.accountHolderName = req.body.accountHolderName !== undefined ? req.body.accountHolderName : existingBank.accountHolderName;
+    existingBank.bankName = req.body.bankName !== undefined ? req.body.bankName.replace(/\s+/g, '') : existingBank.bankName.replace(/\s+/g, '');
+    existingBank.accountNumber = req.body.accountNumber !== undefined ? req.body.accountNumber : existingBank.accountNumber;
+    existingBank.ifscCode = req.body.ifscCode !== undefined ? req.body.ifscCode : existingBank.ifscCode;
+    existingBank.upiId = req.body.upiId !== undefined ? req.body.upiId : existingBank.upiId;
+    existingBank.upiAppName = req.body.upiAppName !== undefined ? req.body.upiAppName : existingBank.upiAppName;
+    existingBank.upiNumber = req.body.upiNumber !== undefined ? req.body.upiNumber : existingBank.upiNumber;
+
+    // Save updated bank details
+    await existingBank.save();
+
+    // Create edit request record
+    const editRequest = await EditBankRequest.create({
+      bankId: existingBank.bankId,
+      accountHolderName: existingBank.accountHolderName,
+      bankName: existingBank.bankName,
+      accountNumber: existingBank.accountNumber,
+      ifscCode: existingBank.ifscCode,
+      upiId: existingBank.upiId,
+      upiAppName: existingBank.upiAppName,
+      upiNumber: existingBank.upiNumber,
+      changedFields: JSON.stringify(changedFields),
+      isApproved: false,
+      type: 'Edit',
+      message: "Bank Detail's has been edited",
+    });
+
+    // Send success response
+    return apiResponseSuccess(
+      editRequest,
+      true,
+      statusCode.success,
+      "Bank detail's edit request sent to Super Admin for Approval",
+      res
+    );
+
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage,
+      res,
+    );
+  }
+};
+
+export const approveBankDetailEditRequest = async (req, res) => {
+  try {
+    const requestId = req.params.requestId;
+
+    const editRequest = await EditBankRequest.findByPk(requestId);
+
+    if (!editRequest) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Edit request not found', res);
+    }
+
+    const { isApproved } = req.body;
+    if (typeof isApproved !== 'boolean') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'isApproved field must be a boolean value', res);
+    }
+
+    if (!editRequest.isApproved) {
+      if (isApproved) {
+        const bankExists = await Bank.findOne({
+          where: { bankName: editRequest.bankName, id: { [Op.ne]: editRequest.bankId } },
+        });
+
+        if (bankExists) {
+          return apiResponseErr(null, false, statusCode.badRequest, 'Bank with the same name already exists', res);
+        }
+
+        await Bank.update(
+          {
+            accountHolderName: editRequest.accountHolderName,
+            bankName: editRequest.bankName.replace(/\s+/g, ''),
+            accountNumber: editRequest.accountNumber,
+            ifscCode: editRequest.ifscCode,
+            upiId: editRequest.upiId,
+            upiAppName: editRequest.upiAppName,
+            upiNumber: editRequest.upiNumber,
+          },
+          { where: { id: editRequest.bankId } }
+        );
+
+        editRequest.isApproved = true;
+        await editRequest.save();
+        await EditBankRequest.destroy({ where: { id: requestId } });
+
+        return apiResponseSuccess(null, true, statusCode.success, 'Edit request approved and data updated', res);
+      } else {
+        return apiResponseSuccess(null, true, statusCode.success, 'Edit request rejected', res);
+      }
+    } else {
+      return apiResponseSuccess(null, true, statusCode.success, 'Edit request is already approved', res);
+    }
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage,
+      res,
+    );
+  }
+};
+
+
 
 export const deleteBankRequest = async (req, res) => {
   try {
@@ -126,70 +284,7 @@ const BankServices = {
     }
   },
 
-  updateBank: async (responese, data) => {
-    const existingTransaction = responese;
-
-    let changedFields = {};
-    // Compare each field in the data object with the existingTransaction
-    if (data.accountHolderName !== existingTransaction.accountHolderName) {
-      changedFields.accountHolderName = data.accountHolderName;
-    }
-    if (data.bankName !== existingTransaction.bankName) {
-      changedFields.bankName = data.bankName;
-    }
-    if (data.accountNumber !== existingTransaction.accountNumber) {
-      changedFields.accountNumber = data.accountNumber;
-    }
-    if (data.ifscCode !== existingTransaction.ifscCode) {
-      changedFields.ifscCode = data.ifscCode;
-    }
-    if (data.upiId !== existingTransaction.upiId) {
-      changedFields.upiId = data.upiId;
-    }
-    if (data.upiAppName !== existingTransaction.upiAppName) {
-      changedFields.upiAppName = data.upiAppName;
-    }
-    if (data.upiNumber !== existingTransaction.upiNumber) {
-      changedFields.upiNumber = data.upiNumber;
-    }
-
-    const [duplicateBank] = await database.execute(`SELECT * FROM Bank WHERE (bankName) = (?)`, [data.bankName]);
-
-    if (duplicateBank.length > 0) {
-      throw { code: 400, message: 'Bank name already exists!' };
-    }
-    // Create updatedTransactionData using a ternary operator
-    const updatedTransactionData = {
-      id: existingTransaction.bankId,
-      accountHolderName:
-        data.accountHolderName !== undefined ? data.accountHolderName : existingTransaction.accountHolderName,
-      bankName:
-        data.bankName !== undefined
-          ? data.bankName.replace(/\s+/g, '')
-          : existingTransaction.bankName.replace(/\s+/g, ''),
-      accountNumber: data.accountNumber !== undefined ? data.accountNumber : existingTransaction.accountNumber,
-      ifscCode: data.ifscCode !== undefined ? data.ifscCode : existingTransaction.ifscCode,
-      upiId: data.upiId !== undefined ? data.upiId : existingTransaction.upiId,
-      upiAppName: data.upiAppName !== undefined ? data.upiAppName : existingTransaction.upiAppName,
-      upiNumber: data.upiNumber !== undefined ? data.upiNumber : existingTransaction.upiNumber,
-    };
-    console.log('update', updatedTransactionData);
-    const editRequestQuery = `INSERT INTO EditBankRequest 
-        (bankId, accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber, changedFields, isApproved, type, message) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, false, 'Edit', "Bank Detail's has been edited")`;
-    await database.execute(editRequestQuery, [
-      updatedTransactionData.id,
-      updatedTransactionData.accountHolderName,
-      updatedTransactionData.bankName,
-      updatedTransactionData.accountNumber,
-      updatedTransactionData.ifscCode,
-      updatedTransactionData.upiId,
-      updatedTransactionData.upiAppName,
-      updatedTransactionData.upiNumber,
-      JSON.stringify(changedFields),
-    ]);
-    return true;
-  },
+ 
 
   getBankBalance: async (bankId) => {
     // const pool = await connectToDB();

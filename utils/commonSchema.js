@@ -138,7 +138,7 @@ export const validateDeleteBankTransaction = [
 ];
 
 export const validates = [
-  param('editId').notEmpty().withMessage('editId is required').isInt().withMessage('editId must be an integer'),
+  param('editId').notEmpty().withMessage('editId is required').isString().withMessage('editId must be a string'),
 ];
 
 export const deleteWebsiteTransactionValidate = [
@@ -188,3 +188,74 @@ export const validateRejectBankDetail = [
 export const validateRejectWebsiteDetail = [
   param('websiteId').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
 ];
+
+export const validateBankId = [
+  param('bankId').notEmpty().withMessage('Bank Id is required').isString().withMessage('Bank Id must be a string')
+]
+
+export const validateWebsiteId = [
+  param('websiteId').notEmpty().withMessage('Website Id is required').isString().withMessage('Website Id must be a string'),]
+
+export const validateTransactionId = [
+    param('Transaction_Id').exists().withMessage('Transaction ID is required').isString().withMessage('Website Id must be a string'),
+];
+
+export const validateIntroTransactionId = [
+  param('introTransactionId')
+    .exists().withMessage('Introducer Transaction ID is required')
+    .isString().withMessage('Introducer Transaction ID must be a string'),
+];
+
+export const validateIntroEditID = [
+  param('IntroEditID')
+    .exists().withMessage('Intro Edit ID is required')
+    .isString().withMessage('Intro Edit ID must be a string'),
+];
+
+export const validateDeleteRequest = [
+  param('editId')
+    .notEmpty()
+    .withMessage('editId parameter cannot be empty')
+    .isString().withMessage('Edit ID must be a string'),
+];
+
+export const validateIdParam = [
+  param('_id') .notEmpty()
+  .withMessage('_id parameter cannot be empty')
+  .isString().withMessage('_id must be a string'),
+];
+
+export const validateBankUpdate = [
+  body('accountHolderName').notEmpty().withMessage('Account Holder Name is required'),
+  body('bankName').notEmpty().withMessage('Bank Name is required'),
+  body('accountNumber').isNumeric().withMessage('Account Number must be a number'),
+  body('ifscCode').notEmpty().withMessage('IFSC Code is required'),
+  body('upiId').optional().isString().withMessage('UPI ID must be a string'),
+  body('upiAppName').optional().isString().withMessage('UPI App Name must be a string'),
+  body('upiNumber').optional().isString().withMessage('UPI Number must be a string'),
+];
+
+export const approveBankDetailEditRequestValidator = [
+  body('isApproved')
+    .isBoolean()
+    .withMessage('isApproved field must be a boolean value'),
+];
+
+export const validateUpdateWebsite = [
+  param('website_id')
+    .isInt().withMessage('Website ID must be an integer')
+    .notEmpty().withMessage('Website ID is required'),
+  body('websiteName')
+    .optional()
+    .isString().withMessage('Website Name must be a string')
+    .notEmpty().withMessage('Website Name cannot be empty'),
+];
+
+export const approveWebValidate=[
+  param('requestId')
+  .isInt().withMessage('requestId  must be an integer')
+  .notEmpty().withMessage('requestId is required'),
+  body('isApproved')
+      .isBoolean()
+      .withMessage('isApproved field must be a boolean value')
+]
