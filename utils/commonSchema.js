@@ -16,3 +16,67 @@ export const validateAdminCreate = [
     .withMessage('Roles must be provided as an array and must contain at least one role'),
 ];
 
+export const validateDeleteBankRequest = [
+  param('bank_id').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
+];
+
+export const validateDeleteSubAdmin = [
+  param('bankId').notEmpty().withMessage('bankId is required').isString().withMessage('bankId must be a string'),
+  param('subAdminId').notEmpty().withMessage('subAdminId is required').isString().withMessage('subAdminId must be a string'),
+];
+
+export const validateDeleteBankTransaction = [
+  body('requestId').isString().notEmpty().withMessage('Request ID is required and should be a string'),
+];
+
+export const validate = [
+  param('edit_Id').notEmpty().withMessage('Edit_ID is required').isInt().withMessage('Edit_ID must be an integer'),
+];
+
+export const deleteWebsiteTransactionValidate = [
+    body('requestId').trim().notEmpty().withMessage('Request ID is required').isUUID().withMessage('Invalid Request ID format'),
+];
+
+export const validateMoveToTrash = [
+    param('edit_Id').notEmpty().withMessage('edit_Id is required').isUUID(4).withMessage('edit_Id must be a valid UUID v4'),
+];
+
+export const validateDeleteTransaction = [
+  body('requestId').notEmpty().withMessage('requestId is required').isUUID(4).withMessage('requestId must be a valid UUID v4'),
+];
+
+export const validateDeleteIntroducerTransaction = [
+  body('requestId').notEmpty().withMessage('requestId is required').isUUID(4).withMessage('requestId must be a valid UUID v4'),
+];
+
+export const validateDeleteTransactionWithId = [
+  param('edit_Id').notEmpty().withMessage('Edit_ID is required').isUUID(4).withMessage('Edit_ID must be a valid UUID v4'),
+];
+
+export const validateDeleteIntroducerTransactionWithId = [
+  param('IntroEditId').notEmpty().withMessage('IntroEditId is required').isUUID(4).withMessage('IntroEditID must be a valid UUID v4'),
+];
+
+export const validationDeleteBankRequest = [
+  body('requestId').notEmpty().withMessage('Request ID is required').isUUID(4).withMessage('Request ID must be a valid UUID v4'),
+];
+
+export const validateDeleteBank = [
+  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid UUID v4'),
+];
+
+export const validateSaveWebsiteRequest = [
+  body('requestId').notEmpty().withMessage('Request ID is required').isUUID(4).withMessage('Request ID must be a valid UUID v4'),
+];
+
+export const validateDeleteWebsite = [
+  param('website_id').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
+];
+
+export const validateRejectBankDetail = [
+  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid UUID v4'),
+];
+
+export const validateRejectWebsiteDetail = [
+  param('website_id').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
+];

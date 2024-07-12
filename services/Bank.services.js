@@ -1,4 +1,75 @@
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
+import { v4 as uuidv4 } from 'uuid';
+import Bank from '../models/bank.model.js';
+import { Op } from 'sequelize';
 import { database } from '../services/database.service.js';
+
+export const deleteBankRequest=async (req, res) => {
+  try {
+    const id = req.params.bank_id;
+    
+    // Use Sequelize to delete the record
+    const result = await Bank.destroy({
+      where: {
+        bank_id: id
+      }
+    });
+
+    if (result === 1) {
+      return apiResponseSuccess(newAdmin, true, statusCode.success, 'Data deleted successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+     
+    }
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+}
+
+export const deleteSubAdmin =async (req, res) => {
+  try {
+    const { bankId, subAdminId } = req.params;
+
+    // Check if the bank exists
+    const bank = await BankSubAdmin.findOne({
+      where: {
+        bankId: bankId
+      }
+    });
+
+    if (!bank) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Bank not found!', res);
+    }
+
+    // Remove the subAdmin with the specified subAdminId
+    const result = await BankSubAdmin.destroy({
+      where: {
+        bankId: bankId,
+        subAdminId: subAdminId
+      }
+    });
+
+    if (result === 0) {
+      return apiResponseErr(null, false, statusCode.notFound, 'SubAdmin not found!', res);
+    }
+    return apiResponseSuccess(newAdmin, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+}
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
@@ -41,12 +112,6 @@ const BankServices = {
     } catch (error) {
       throw error; // Propagate error to the caller
     }
-  },
-
-  deleteBankRequest: async (bankId) => {
-    const deleteBankRequestQuery = `DELETE FROM BankRequest WHERE bank_id = ?`;
-    const [result] = await database.execute(deleteBankRequestQuery, [bankId]);
-    return result.affectedRows; // Return the number of rows deleted for further verification
   },
 
   getBankRequests: async () => {

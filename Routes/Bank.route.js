@@ -1,10 +1,19 @@
 import { Authorize } from '../middleware/Authorize.js';
-import BankServices from '../services/Bank.services.js';
+import BankServices, { deleteSubAdmin } from '../services/Bank.services.js';
+import {deleteBankRequest} from '../services/Bank.services.js'
 import AccountServices from '../services/Account.Services.js';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
+import { string } from '../constructor/string.js';
+import { validateDeleteBankRequest, validateDeleteSubAdmin } from '../utils/commonSchema.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 const BankRoutes = (app) => {
+
+  app.delete('/api/bank/reject/:bank_id', Authorize([string.superAdmin]),validateDeleteBankRequest,customErrorHandler,deleteBankRequest );
+
+  app.delete('/api/bank/delete-subAdmin/:bankId/:subAdminId',Authorize([string.superAdmin, string.requestAdmin, string.bankView]),validateDeleteSubAdmin,customErrorHandler,deleteSubAdmin);
+
   app.post('/api/add-bank-name', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
     try {
       const userName = req.user;
@@ -95,21 +104,6 @@ const BankRoutes = (app) => {
     } catch (error) {
       console.log(error);
       res.status(500).send('Internal Server error');
-    }
-  });
-
-  app.delete('/api/bank/reject/:bank_id', Authorize(['superAdmin']), async (req, res) => {
-    try {
-      const id = req.params.bank_id;
-      const result = await BankServices.deleteBankRequest(id);
-      if (result === 1) {
-        res.status(200).send({ message: 'Data deleted successfully' });
-      } else {
-        res.status(404).send({ message: 'Data not found' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: e.message });
     }
   });
 
@@ -559,28 +553,7 @@ const BankRoutes = (app) => {
     }
   });
 
-  app.delete(
-    '/api/bank/delete-subadmin/:bankId/:subAdminId',
-    Authorize(['superAdmin', 'RequstAdmin', 'Bank-View']),
-    async (req, res) => {
-      try {
-        const { bankId, subAdminId } = req.params;
-        // Check if the bank exists
-        const bankExistQuery = `SELECT * FROM BankSubAdmins WHERE bankid = ?`;
-        const [bank] = await database.execute(bankExistQuery, [bankId]);
-        if (!bank) {
-          throw { code: 404, message: 'Bank not found!' };
-        }
-        // Remove the subAdmin with the specified subAdminId
-        const deleteSubAdminQuery = `DELETE FROM BankSubAdmins WHERE bankid = ? AND subadminid = ?`;
-        await database.execute(deleteSubAdminQuery, [bankId, subAdminId]);
-        res.status(200).send({ message: 'SubAdmin Permission removed successfully' });
-      } catch (error) {
-        console.error(error);
-        res.status(error.code || 500).send({ message: error.message || 'An error occurred' });
-      }
-    },
-  );
+  
 
   app.get('/api/active-visible-bank', Authorize(['superAdmin', 'RequstAdmin']), async (req, res) => {
     try {
