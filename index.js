@@ -8,7 +8,7 @@ import sequelize from './db.js';
 // Route Imports
 import AccountRoute from './Routes/Account.route.js';
 import UserRoutes from './Routes/User.route.js';
-import WebisteRoutes from './Routes/Website.route.js';
+import WebsiteRoutes from './Routes/Website.route.js';
 import IntroducerRoutes from './Routes/Introducer.route.js';
 import BankRoutes from './Routes/Bank.route.js';
 import TransactionRoutes from './Routes/Transaction.route.js';
@@ -36,7 +36,7 @@ UserTransactionDetail.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 AccountRoute(app);
 BankRoutes(app);
-WebisteRoutes(app);
+WebsiteRoutes(app);
 IntroducerRoutes(app);
 UserRoutes(app);
 TransactionRoutes(app);

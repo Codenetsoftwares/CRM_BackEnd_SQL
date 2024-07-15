@@ -6,14 +6,14 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 
 export const IntroducerRoutes = (app) => {
 
-  app.get('/api/intoducer/profile', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/introducer/profile', AuthorizeRole(['introducer']), async (req, res) => {
     try {
-      const id = req.user[0].intro_id;
-      const [IntroUser] = await database.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [id]);
+      const id = req.user[0].introId;
+      const [IntroUser] = await database.execute(`SELECT * FROM IntroducerUser WHERE introId = (?)`, [id]);
       const introUserId = id;
       const TPDLT = await AccountServices.IntroducerBalance(introUserId);
       const response = {
-        intro_id: IntroUser[0].intro_id,
+        introId: IntroUser[0].introId,
         firstName: IntroUser[0].firstName,
         lastName: IntroUser[0].lastName,
         role: IntroUser[0].role,
@@ -30,10 +30,10 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.put('/api/intoducer-profile-edit/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.put('/api/introducer-profile-edit/:introId', AuthorizeRole(['introducer']), async (req, res) => {
     try {
-      const userId = req.params.intro_id;
-      const [introUser] = await database.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [userId]);
+      const userId = req.params.introId;
+      const [introUser] = await database.execute(`SELECT * FROM IntroducerUser WHERE introId = (?)`, [userId]);
       const updateResult = await introducerUser.updateIntroducerProfile(introUser, req.body);
       console.log(updateResult);
       if (updateResult) {
@@ -46,11 +46,11 @@ export const IntroducerRoutes = (app) => {
   });
 
   // // Not in user
-  // app.get('/api/introducer/user-data/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
+  // app.get('/api/introducer/user-data/:introId', AuthorizeRole(['introducer']), async (req, res) => {
   //   const pool = await connectToDB();
   //   try {
-  //     const id = req.params.intro_id;
-  //     const [introducerResult] = await database.execute(`SELECT * FROM IntroducerUser WHERE intro_id = ?`, [id]);
+  //     const id = req.params.introId;
+  //     const [introducerResult] = await database.execute(`SELECT * FROM IntroducerUser WHERE introId = ?`, [id]);
   //     if (introducerResult.length === 0) {
   //       throw {
   //         code: 404,
@@ -67,10 +67,10 @@ export const IntroducerRoutes = (app) => {
   //   }
   // });
 
-  app.get('/api/list-introducer-user/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/list-introducer-user/:introId', AuthorizeRole(['introducer']), async (req, res) => {
     try {
-      const id = req.params.intro_id;
-      const [introducerUser] = await database.execute(`SELECT userName FROM IntroducerUser WHERE intro_id = ?`, [id]);
+      const id = req.params.introId;
+      const [introducerUser] = await database.execute(`SELECT userName FROM IntroducerUser WHERE introId = ?`, [id]);
       if (introducerUser.length === 0) {
         return res.status(404).send({ message: 'IntroducerUser not found' });
       }
@@ -172,11 +172,11 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/introducer/introducer-live-balance/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/introducer/introducer-live-balance/:introId', AuthorizeRole(['introducer']), async (req, res) => {
     try {
-      const introId = req.params.intro_id;
-      const [introData] = await database.execute(`SELECT * FROM IntroducerUser WHERE intro_id = (?)`, [introId]);
-      const id = introData[0].intro_id;
+      const introId = req.params.introId;
+      const [introData] = await database.execute(`SELECT * FROM IntroducerUser WHERE introId = (?)`, [introId]);
+      const id = introData[0].introId;
       const data = await AccountServices.introducerLiveBalance(id);
       console.log('data', data);
       res.send({ LiveBalance: data });
@@ -186,9 +186,9 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get('/api/introducer-account-summary/:intro_id', AuthorizeRole(['introducer']), async (req, res) => {
+  app.get('/api/introducer-account-summary/:introId', AuthorizeRole(['introducer']), async (req, res) => {
     try {
-      const introUserId = req.params.intro_id;
+      const introUserId = req.params.introId;
       const query = `
             SELECT *
             FROM IntroducerTransaction
@@ -214,8 +214,7 @@ export const IntroducerRoutes = (app) => {
     }
   });
 
-  app.get(
-    '/api/introducer-user/accountsummary/:introducerUsername',
+  app.get('/api/introducer-user/accountSummary/:introducerUsername',
     AuthorizeRole(['introducer']),
     async (req, res) => {
       try {

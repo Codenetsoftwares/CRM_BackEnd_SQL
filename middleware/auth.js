@@ -1,7 +1,8 @@
+// middleware/authorizeRole.js (example)
 import jwt from 'jsonwebtoken';
-import { database } from '../services/database.service.js';
+import User from '../models/User';
+import IntroducerUser from '../models/introducerUser.model';
 
-// Export the middleware function
 export const AuthorizeRole = (roles) => {
   return async (req, res, next) => {
     try {
@@ -19,14 +20,16 @@ export const AuthorizeRole = (roles) => {
       }
 
       // Fetch introducer user from database using username
-      const [introducerUser] = await database.execute('SELECT * FROM IntroducerUser WHERE userName = ?', [
-        decodedToken.userName,
-      ]);
+      const introducerUser = await IntroducerUser.findOne({
+        where: { userName: decodedToken.userName },
+      });
 
       // If no introducer user found, fetch user with other roles
-      if (!introducerUser || introducerUser.length === 0) {
-        const [otherUser] = await database.execute('SELECT * FROM User WHERE userId = ?', [decodedToken.userId]);
-        if (!otherUser || otherUser.length === 0) {
+      if (!introducerUser) {
+        const otherUser = await User.findOne({
+          where: { userId: decodedToken.userId },
+        });
+        if (!otherUser) {
           return res.status(401).send({ code: 401, message: 'Invalid login attempt (4)' });
         }
         req.user = otherUser;
@@ -36,7 +39,7 @@ export const AuthorizeRole = (roles) => {
 
       // Check if user's role is authorized
       if (roles && roles.length > 0) {
-        if (!req.user[0].role || !roles.includes(req.user[0].role)) {
+        if (!req.user.role || !roles.includes(req.user.role)) {
           return res.status(401).send({ code: 401, message: 'Unauthorized access' });
         }
       }

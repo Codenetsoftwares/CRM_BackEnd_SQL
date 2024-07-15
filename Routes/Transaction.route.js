@@ -1,63 +1,44 @@
-import TransactionServices from '../services/Transaction.services.js';
+import { createTransaction, depositView, viewEditIntroducerTransactionRequests, withdrawView } from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
-import { database } from '../services/database.service.js';
+import { string } from '../constructor/string.js';
 
 const TransactionRoutes = (app) => {
-  app.post(
-    '/api/admin/create/transaction',
+  app.post('/api/admin/create/transaction',
     Authorize([
-      'superAdmin',
-      'Dashboard-View',
-      'Create-Deposit-Transaction',
-      'Create-Withdraw-Transaction',
-      'Create-Transaction',
+      string.superAdmin,
+      string.dashboardView,
+      string.createDepositTransaction,
+      string.createWithdrawTransaction,
+      string.createTransaction,
     ]),
-    async (req, res) => {
-      try {
-        const subAdminName = req.user;
-        await TransactionServices.createTransaction(req, res, subAdminName);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
+    createTransaction
   );
 
   // API To View Deposit Transaction Details
 
-  app.get('/api/deposit/view', Authorize(['superAdmin']), async (req, res) => {
-    try {
-      await TransactionServices.depositView(req, res);
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
+  app.get('/api/deposit/view',
+    Authorize([
+      string.superAdmin
+    ]),
+    depositView
+  );
 
   // API To View Withdraw Transaction Details
 
-  app.get('/api/withdraw/view', Authorize(['superAdmin']), async (req, res) => {
-    try {
-      await TransactionServices.withdrawView(req, res);
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
+  app.get('/api/withdraw/view',
+    Authorize([
+      string.superAdmin
+    ]),
+    withdrawView);
 
-  app.get(
-    '/api/superAdmin/view-edit-introducer-transaction-requests',
-    Authorize(['superAdmin', 'RequestAdmin']),
-    async (req, res) => {
-      try {
-        const [introEdit] = await database.execute(`SELECT * FROM IntroducerEditRequest`);
-        res.status(200).send(introEdit);
-      } catch (error) {
-        console.log(error);
-        res.status(500).send('Internal Server error');
-      }
-    },
+  app.get('/api/superAdmin/view-edit-introducer-transaction-requests',
+    Authorize([
+      string.superAdmin,
+      string.requestAdmin
+    ]),
+    viewEditIntroducerTransactionRequests
   );
+
 };
 
 export default TransactionRoutes;

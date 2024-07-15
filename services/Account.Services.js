@@ -9,7 +9,10 @@ import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
-import { Op, where } from 'sequelize';
+import { Op, Transaction, where } from 'sequelize';
+import IntroducerTransaction from '../models/introducerTransaction.model.js';
+import BankTransaction from '../models/bankTransaction.model.js';
+import WebsiteTransaction from '../models/websiteTransaction.model.js';
 
 export const createAdmin = async (req, res) => {
   try {
@@ -511,6 +514,165 @@ export const subAdminPasswordResetCode = async (req, res) => {
     )
   }
 };
+
+export const getIntroducerAccountSummary = async (req, res) => {
+  try {
+    const id = req.params.id;
+    // Query to retrieve introducer transactions for the specified user ID
+    const introSummary = await IntroducerTransaction.findAll({
+      where: { introUserId: id },
+      order: [['createdAt', 'DESC']],
+    });
+
+    let balances = 0;
+    // Calculate balances based on transaction type
+    let accountData = introSummary.map((data) => data.toJSON());
+    accountData.reverse().forEach((data) => {
+      if (data.transactionType === 'Deposit') {
+        balances += parseFloat(data.amount);
+        data.balance = balances;
+      } else {
+        balances -= parseFloat(data.amount);
+        data.balance = balances;
+      }
+    });
+    return apiResponseSuccess(accountData, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const SuperAdminPasswordResetCode = async (req, res) => {
+  try {
+    const { userName, oldPassword, password } = req.body;
+    // Check if the user exists
+    const existingUser = await Admin.findOne({ where: { userName } });
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    // Compare new password with the existing password
+    const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
+    if (passwordIsDuplicate) {
+      throw new CustomError('New Password cannot be the same as existing password', null, 400);
+    }
+
+    // Hash the new password
+    const passwordSalt = await bcrypt.genSalt();
+    const encryptedPassword = await bcrypt.hash(password, passwordSalt);
+
+    // Update the password in the database
+    await Admin.update({ password: encryptedPassword }, { where: { userName } });
+
+    return apiResponseSuccess(accountData, true, statusCode.success, 'Password reset successful!', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const getSingleUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user profile by userId
+    const userProfile = await User.findOne({ where: { userId } });
+    if (!userProfile) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    const userName = userProfile.userName;
+
+    // Fetch UserTransactionDetail for the user
+    const userTransactionDetail = await UserTransactionDetail.findAll({ where: { userName } });
+    userProfile.dataValues.UserTransactionDetail = userTransactionDetail;
+
+    return apiResponseSuccess(userProfile, true, statusCode.success, 'User profile fetched successfully', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const updateSubAdminProfile = async (req, res, data) => {
+  try {
+    // Check if the user exists
+    const adminId = req.params.adminId;
+
+    const existingUser = await Admin.findOne({ where: { adminId } });
+    if (!existingUser) {
+      throw new CustomError(`Existing User not found with id: ${adminId}`, null, statusCode.badRequest);
+    }
+
+    // Update fields if provided in data
+    existingUser.firstName = data.firstName || existingUser.firstName;
+    existingUser.lastName = data.lastName || existingUser.lastName;
+
+    // Save the updated user
+    const updateAdmin = await existingUser.save();
+    return apiResponseSuccess(updateAdmin, true, statusCode.success, 'Updated successfully', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const viewSubAdminTransactions = async (req, res) => {
+  try {
+    const userId = req.params.subAdminId;
+
+    const transactions = await Transaction.findAll({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const bankTransactions = await BankTransaction.findAll({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const websiteTransactions = await WebsiteTransaction.findAll({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (transactions.length === 0 && bankTransactions.length === 0 && websiteTransactions.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No transactions found', res);
+    }
+
+    const allTransactions = [...transactions, ...bankTransactions, ...websiteTransactions];
+    allTransactions.sort((a, b) => b.createdAt - a.createdAt);
+
+    return apiResponseSuccess(allTransactions, true, statusCode.success, 'Updated successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
 const AccountServices = {
 
   IntroducerBalance: async (introUserId) => {
@@ -532,71 +694,6 @@ const AccountServices = {
     } catch (e) {
       console.error(e);
       throw { code: 500, message: 'Internal Server Error' };
-    }
-  },
-
-
-  SuperAdminPasswordResetCode: async (userName, oldPassword, password) => {
-    try {
-      // Check if the user exists
-      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE userName = '${userName}';`);
-      if (existingUser.length === 0) {
-        throw {
-          code: 404,
-          message: 'User not found',
-        };
-      }
-      // Compare new password with the existing password
-      const passwordIsDuplicate = await bcrypt.compare(password, existingUser[0].password);
-      if (passwordIsDuplicate) {
-        throw {
-          code: 409,
-          message: 'New Password cannot be the same as existing password',
-        };
-      }
-      // Hash the new password
-      const passwordSalt = await bcrypt.genSalt();
-      const encryptedPassword = await bcrypt.hash(password, passwordSalt);
-      // Update the password in the database
-      const updateQuery = await database.execute(
-        `UPDATE Admin SET password = '${encryptedPassword}' WHERE userName = '${userName}';`,
-      );
-      return true;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  },
-
-  updateSubAdminProfile: async (id, data) => {
-    try {
-      const userId = id[0].adminId;
-      const [existingUser] = await database.execute(`SELECT * FROM Admin WHERE adminId = ?`, [userId]);
-      // Check if the user exists
-      if (!existingUser || existingUser.length === 0) {
-        throw {
-          code: 404,
-          message: `Existing User not found with id: ${userId}`,
-        };
-      }
-      const user = existingUser[0];
-      // Update fields if provided in data
-      user.firstName = data.firstName || user.firstName;
-      user.lastName = data.lastName || user.lastName;
-      // Update user data in the database
-      await database.execute(`UPDATE Admin SET firstName = ?, lastName = ? WHERE adminId = ?`, [
-        user.firstName,
-        user.lastName,
-        userId,
-      ]);
-
-      return true; // Return true on successful update
-    } catch (err) {
-      console.error(err);
-      throw {
-        code: err.code || 500,
-        message: err.message || `Failed to update User Profile with id: ${userDetails}`,
-      };
     }
   },
 

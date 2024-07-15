@@ -1,44 +1,578 @@
+import EditWebsiteRequest from '../models/editWebsiteRequest.model.js';
+import Website from '../models/website.model.js';
+import WebsiteRequest from '../models/websiteRequest.model.js';
+import WebsiteSubAdmins from '../models/websiteSubAdmins.model.js';
 import { database } from '../services/database.service.js';
+import CustomError from '../utils/extendError.js';
+import { statusCode } from '../utils/statusCodes.js';
+
+export const addWebsiteName = async (req, res) => {
+  try {
+    const userData = req.user;
+    let websiteName = req.body.websiteName;
+
+    // Remove spaces from the websiteName
+    websiteName = websiteName.replace(/\s+/g, '');
+
+    if (!websiteName) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Please provide a website name to add', res);
+    }
+
+    // Check if the website name already exists in WebsiteRequest or Website table (ignoring case)
+    const [existingWebsiteRequests, existingWebsites] = await Promise.all([
+      WebsiteRequest.findAll({
+        where: sequelize.where(sequelize.fn('LOWER', sequelize.col('websiteName')), websiteName.toLowerCase())
+      }),
+      Website.findAll({
+        where: sequelize.where(sequelize.fn('LOWER', sequelize.col('websiteName')), websiteName.toLowerCase())
+      }),
+    ]);
+
+    if (existingWebsiteRequests.length > 0 || existingWebsites.length > 0) {
+      throw new CustomError('Website name already exists', null, 409);
+    }
+
+    const websiteId = uuidv4();
+    const newWebsiteRequest = await WebsiteRequest.create({
+      websiteId,
+      websiteName,
+      subAdminId: userData && userData[0].userName ? userData[0].userName : null,
+      subAdminName: userData && userData[0].firstName ? userData[0].firstName : null,
+    });
+    return apiResponseSuccess(newWebsiteRequest, true, statusCode.create, 'Website name sent for approval!', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, subAdmins) => {
+  try {
+    const insertedWebsite = await Website.create({
+      websiteId: approvedWebsiteRequest[0].websiteId,
+      websiteName: approvedWebsiteRequest[0].websiteName,
+      subAdminName: approvedWebsiteRequest[0].subAdminName,
+      isActive: true,
+    });
+
+    const subAdminPromises = subAdmins.map(async (subAdmin) => {
+      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+      await WebsiteSubAdmins.create({
+        websiteId: approvedWebsiteRequest[0].websiteId,
+        subAdminId,
+        isDeposit,
+        isWithdraw,
+        isEdit,
+        isRenew,
+        isDelete,
+      });
+    });
+
+    await Promise.all(subAdminPromises);
+
+    return subAdmins.length;
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+// Separate controller function
+export const handleApproveWebsite = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return apiResponseErr(null, false, statusCode.badRequest, errors.array(), res);
+  }
+
+  try {
+    const { isApproved, subAdmins } = req.body;
+    const { websiteId } = req.params;
+
+    const approvedWebsiteRequest = await WebsiteRequest.findAll({
+      where: { websiteId },
+    });
+
+    if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
+      throw new CustomError('Website not found in the approval requests!', null, 409);
+    }
+
+    if (isApproved) {
+      const rowsInserted = await approveWebsiteAndAssignSubAdmin(approvedWebsiteRequest, subAdmins);
+
+      if (rowsInserted > 0) {
+        await WebsiteRequest.destroy({
+          where: { websiteId },
+        });
+      } else {
+        throw new CustomError('Failed to insert rows into Website table.', null, statusCode.badRequest);
+      }
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website approval was not granted.', res);
+    }
+
+    return apiResponseSuccess(null, true, statusCode.success, 'Website approved successfully & SubAdmin Assigned', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const viewWebsiteRequests = async (req, res) => {
+  try {
+    const websiteRequests = await WebsiteRequest.findAll();
+    return apiResponseSuccess(websiteRequests, true, statusCode.ok, 'Website requests fetched successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+}
+
+export const deleteWebsiteRequest = async (req, res) => {
+  try {
+    const id = req.params.websiteId;
+    // Delete the website request
+    const result = await WebsiteRequest.destroy({
+      where: {
+        websiteId: id,
+      },
+    });
+
+    // Check if any rows were affected
+    if (result === 1) {
+      return apiResponseSuccess(null, true, statusCode.ok, 'Data deleted successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const rejectWebsiteRequest = async (req, res) => {
+  try {
+    const id = req.params.websiteId;
+
+    // Delete the website request
+    const result = await WebsiteRequest.destroy({
+      where: {
+        websiteId: id,
+      },
+    });
+
+    // Check if any rows were affected
+    if (result === 1) {
+      return apiResponseSuccess(null, true, statusCode.ok, 'Data deleted successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const deleteEditWebsiteRequest = async (req, res) => {
+  try {
+    const id = req.params.websiteId;
+
+    // Delete the edit website request
+    const result = await EditWebsiteRequest.destroy({
+      where: {
+        websiteId: id,
+      },
+    });
+
+    // Check if any rows were affected
+    if (result === 1) {
+      return apiResponseSuccess(null, true, statusCode.ok, 'Data deleted successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const getActiveWebsiteNames = async (req, res) => {
+  try {
+    const activeWebsites = await Website.findAll({
+      attributes: ['websiteName', 'isActive'],
+      where: {
+        isActive: true,
+      },
+    });
+
+    return apiResponseSuccess(activeWebsites, true, statusCode.ok, 'Active websites fetched successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const deleteSubAdminFromWebsite = async (req, res) => {
+  try {
+    const { websiteId, subAdminId } = req.params;
+
+    // Check if the website exists
+    const website = await WebsiteSubAdmins.findOne({ where: { websiteId } });
+    if (!website) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Website not found!', res);
+    }
+
+    // Delete the sub-admin with the specified subAdminId
+    const result = await WebsiteSubAdmins.destroy({
+      where: {
+        websiteId,
+        subAdminId,
+      },
+    });
+
+    if (result) {
+      return apiResponseSuccess(null, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.notFound, 'SubAdmin not found!', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const getSingleWebsiteDetails = async (req, res) => {
+  try {
+    const id = req.params.websiteId;
+
+    // Fetch website data
+    const dbWebsiteData = await Website.findOne({ where: { websiteId: id } });
+    if (!dbWebsiteData) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Website not found', res);
+    }
+
+    // Fetch website balance
+    const websiteBalance = await WebsiteServices.getWebsiteBalance(dbWebsiteData.websiteId);
+
+    // Prepare response
+    const response = {
+      websiteId: dbWebsiteData.websiteId,
+      websiteName: dbWebsiteData.websiteName,
+      subAdminId: dbWebsiteData.subAdminId,
+      subAdminName: dbWebsiteData.subAdminName,
+      balance: websiteBalance,
+    };
+
+    return apiResponseSuccess([response], true, statusCode.ok, 'Website data retrieved successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const addWebsiteBalance = async (req, res) => {
+  try {
+    const id = req.params.websiteId;
+    const userName = req.user;
+    const { amount, transactionType, remarks } = req.body;
+
+    if (transactionType !== 'Manual-Website-Deposit') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid transaction type', res);
+    }
+
+    if (!amount || typeof amount !== 'number') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid amount', res);
+    }
+
+    if (!remarks) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Remark is required', res);
+    }
+
+    // Fetch website data
+    const website = await Website.findOne({ where: { websiteId: id } });
+    if (!website) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Website not found', res);
+    }
+
+    // Prepare the transaction data
+    const websiteTransaction = {
+      websiteId: website.websiteId,
+      websiteTransactionId: uuidv4(),
+      websiteName: website.websiteName,
+      remarks: remarks,
+      transactionType: transactionType,
+      depositAmount: Math.round(parseFloat(amount)),
+      subAdminId: userName.userName,
+      subAdminName: userName.firstName,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Insert the transaction data into WebsiteTransaction table
+    await WebsiteTransaction.create(websiteTransaction);
+
+    return apiResponseSuccess(null, true, statusCode.ok, 'Wallet Balance Added to Your Website', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const withdrawWebsiteBalance = async (req, res) => {
+  try {
+    const id = req.params.websiteId;
+    const userName = req.user;
+    const { amount, transactionType, remarks } = req.body;
+
+    if (!amount || typeof amount !== 'number') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid amount', res);
+    }
+
+    if (transactionType !== 'Manual-Website-Withdraw') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid transaction type', res);
+    }
+
+    if (!remarks) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Remark is required', res);
+    }
+
+    // Fetch website data
+    const website = await Website.findOne({ where: { websiteId: id } });
+    if (!website) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Website not found', res);
+    }
+
+    // Fetch website balance
+    const websiteBalance = await WebsiteServices.getWebsiteBalance(id);
+    if (websiteBalance < Number(amount)) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Insufficient Website Balance', res);
+    }
+
+    // Prepare the transaction data
+    const websiteTransaction = {
+      websiteId: website.websiteId,
+      websiteTransactionId: uuidv4(),
+      websiteName: website.websiteName,
+      remarks: remarks,
+      transactionType: transactionType,
+      withdrawAmount: Math.round(parseFloat(amount)),
+      subAdminId: userName.userName,
+      subAdminName: userName.firstName,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Insert the transaction data into WebsiteTransaction table
+    await WebsiteTransaction.create(websiteTransaction);
+
+    return apiResponseSuccess(null, true, statusCode.ok, 'Wallet Balance Deducted from your Website', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const getWebsiteNames = async (req, res) => {
+  try {
+    const websites = await Website.findAll({
+      attributes: ['websiteName'],
+    });
+
+    if (!websites) {
+      return apiResponseErr(null, false, statusCode.notFound, 'No websites found', res);
+    }
+
+    return apiResponseSuccess(websites, true, statusCode.ok, 'Websites retrieved successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const getEditWebsiteRequests = async (req, res) => {
+  try {
+    const editRequests = await EditWebsiteRequest.findAll();
+    return editRequests;
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const websiteActive = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const { isActive } = req.body;
+
+    // Validate input
+    if (typeof isActive !== 'boolean') {
+      throw new CustomError('isActive field must be a boolean value', null, statusCode.badRequest);
+    }
+
+    // Update isActive field in the database
+    const [updatedRowsCount] = await Website.update(
+      { isActive },
+      { where: { websiteId } }
+    );
+
+    // Check if any rows were updated
+    if (updatedRowsCount === 0) {
+      return apiResponseErr(null, false, statusCode.notFound, 'No websites found', res);
+    }
+    // Send success response
+    return apiResponseSuccess(updatedRowsCount, true, statusCode.ok, 'Website status updated successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const websiteSubAdminView = async (req, res) => {
+  try {
+    const subAdminId = req.params.subAdminId;
+
+    // Use Sequelize to fetch website names associated with the sub-admin
+    const websiteData = await Website.findAll({
+      include: [{
+        model: WebsiteSubAdmins,
+        where: { subAdminId },
+        attributes: ['websiteName'],
+      }],
+    });
+
+    if (!websiteData) {
+      return res.status(404).send({ message: 'Website not found for this sub-admin' });
+    }
+
+    res.status(200).send(websiteData);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
+
+export const updateWebsitePermissions = async (req, res) => {
+  try {
+    const { subAdmins } = req.body;
+    const websiteId = req.params.websiteId;
+
+    const promises = subAdmins.map(async (subAdminData) => {
+      const [existingSubAdmin] = await WebsiteSubAdmins.findOne({
+        where: {
+          websiteId: websiteId,
+          subAdminId: subAdminData.subAdminId,
+        },
+      });
+
+      if (!existingSubAdmin) {
+        await WebsiteSubAdmins.create({
+          websiteId: websiteId,
+          subAdminId: subAdminData.subAdminId,
+          isDeposit: subAdminData.isDeposit || false,
+          isWithdraw: subAdminData.isWithdraw || false,
+          isEdit: subAdminData.isEdit || false,
+          isRenew: subAdminData.isRenew || false,
+          isDelete: subAdminData.isDelete || false,
+        });
+      } else {
+        await existingSubAdmin.update({
+          isDeposit: subAdminData.isDeposit || false,
+          isWithdraw: subAdminData.isWithdraw || false,
+          isEdit: subAdminData.isEdit || false,
+          isRenew: subAdminData.isRenew || false,
+          isDelete: subAdminData.isDelete || false,
+        });
+      }
+    });
+
+    await Promise.all(promises);
+
+    res.status(200).send({ message: 'Website Permission Updated successfully' });
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res
+    );
+  }
+};
 
 const WebsiteServices = {
-  approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdmins) => {
-    try {
-      const insertWebsiteDetails = `INSERT INTO Website (websiteId, websiteName, subAdminName, isActive) 
-      VALUES (?, ?, ?, ?)`;
-      const insertSubadmin = `INSERT INTO WebsiteSubAdmins (websiteId, subAdminId, isDeposit, isWithdraw, isEdit, 
-      isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-      await database.execute(insertWebsiteDetails, [
-        approvedWebsiteRequest[0].websiteId,
-        approvedWebsiteRequest[0].websiteName,
-        approvedWebsiteRequest[0].subAdminName,
-        true,
-      ]);
-      await Promise.all(
-        subAdmins.map(async (subAdmin) => {
-          const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
-          // Insert subadmin details
-          await database.execute(insertSubadmin, [
-            approvedWebsiteRequest[0].websiteId,
-            subAdminId,
-            isDeposit,
-            isWithdraw,
-            isEdit,
-            isRenew,
-            isDelete,
-          ]);
-        }),
-      );
-      return subAdmins.length;
-    } catch (error) {
-      throw error; // Propagate error to the caller
-    }
-  },
-
-  deleteWebsiteRequest: async (websiteId) => {
-    const deleteWebsiteRequestQuery = `DELETE FROM WebsiteRequest WHERE websiteId = ?`;
-    const result = await database.execute(deleteWebsiteRequestQuery, [websiteId]);
-    return result.affectedRows; // Return the number of rows deleted for further verification
-  },
 
   getBankRequests: async () => {
     try {

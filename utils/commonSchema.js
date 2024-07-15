@@ -41,6 +41,16 @@ export const validateResetPassword = [
 
 ];
 
+export const validateLogin = [
+  body('userName').notEmpty().withMessage('Username is required'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long')
+
+];
+
 export const updateUserProfileValidationSchema = [
   body('firstName')
     .notEmpty().withMessage('First name is required')
@@ -187,4 +197,33 @@ export const validateRejectBankDetail = [
 
 export const validateRejectWebsiteDetail = [
   param('websiteId').notEmpty().withMessage('Website ID is required').isUUID(4).withMessage('Website ID must be a valid UUID v4'),
+];
+
+export const validatePasswordReset = [
+  body('userName')
+    .notEmpty().withMessage('Username is required')
+    .isString().withMessage('Username must be a string'),
+
+  body('oldPassword')
+    .notEmpty().withMessage('Old password is required')
+    .isString().withMessage('Old password must be a string'),
+
+  body('password')
+    .notEmpty().withMessage('New password is required')
+    .isString().withMessage('New password must be a string')
+    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters long')
+];
+
+export const validateUserId = [
+  param('userId').notEmpty().withMessage('User ID is required').isUUID(4).withMessage('User ID must be a valid UUID v4'),
+];
+
+export const validateSubAdminId = [
+  param('subAdminId').notEmpty().withMessage('SubAdmin ID is required').isUUID(4).withMessage('SubAdmin ID must be a valid UUID v4'),
+];
+
+export const validateApproval = [
+  param('websiteId').notEmpty().withMessage('Website ID must be provided'),
+  body('isApproved').isBoolean().withMessage('isApproved must be a boolean'),
+  body('subAdmins').isArray().withMessage('subAdmins must be an array'),
 ];

@@ -109,8 +109,7 @@ const BankRoutes = (app) => {
 
   // API To View Bank Name
 //  no need to refactor this
-  app.get(
-    '/api/get-bank-name',
+  app.get('/api/get-bank-name',
     Authorize([
       'superAdmin',
       'Bank-View',

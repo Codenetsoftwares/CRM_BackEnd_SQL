@@ -1,11 +1,11 @@
 import { database } from '../services/database.service.js';
 import bcrypt from 'bcrypt';
-import AccountServices, { createAdmin, editSubAdminRoles, getAllSubAdmins, getClientData, getIntroducerById, getIntroducerUserSingleData, getSingleIntroducer, getSingleSubAdmin, getSubAdminsWithBankView, getSubAdminsWithWebsiteView, getUserById, getUserProfile, subAdminPasswordResetCode, updateUserProfile } from '../services/Account.Services.js';
+import AccountServices, { createAdmin, editSubAdminRoles, getAllSubAdmins, getClientData, getIntroducerAccountSummary, getIntroducerById, getIntroducerUserSingleData, getSingleIntroducer, getSingleSubAdmin, getSingleUserProfile, getSubAdminsWithBankView, getSubAdminsWithWebsiteView, getUserById, getUserProfile, subAdminPasswordResetCode, SuperAdminPasswordResetCode, updateSubAdminProfile, updateUserProfile, viewSubAdminTransactions } from '../services/Account.Services.js';
 import { createIntroducerUser, introducerPasswordResetCode, introducerUser, updateIntroducerProfile } from '../services/introducer.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 import UserServices, { createUser, userPasswordResetCode } from '../services/User.services.js';
 import TransactionServices, { createIntroducerDepositTransaction, createIntroducerWithdrawTransaction } from '../services/Transaction.services.js';
-import { createIntroducerDepositTransactionValidator, createIntroducerWithdrawalTransactionValidator, updateIntroducerValidationSchema, updateUserProfileValidationSchema, validateAdminCreate, validateCreateUser, validateEditSubAdminRoles, validateIntroducerCreate, validateResetPassword } from '../utils/commonSchema.js';
+import { createIntroducerDepositTransactionValidator, createIntroducerWithdrawalTransactionValidator, updateIntroducerValidationSchema, updateUserProfileValidationSchema, validateAdminCreate, validateCreateUser, validateEditSubAdminRoles, validateSubAdminId, validateIntroducerCreate, validatePasswordReset, validateResetPassword, validateUserId } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
 
@@ -107,7 +107,7 @@ const AccountRoute = (app) => {
   );
 
   // done
-  app.put('/api/admin/introducer-profile-edit/:intro_id',
+  app.put('/api/admin/introducer-profile-edit/:introId',
     Authorize([
       string.superAdmin,
       string.profileView,
@@ -117,7 +117,7 @@ const AccountRoute = (app) => {
   );
 
   // done
-  app.get('/api/introducer/client-data/:intro_id',
+  app.get('/api/introducer/client-data/:introId',
     Authorize([
       string.superAdmin,
       string.profileView,
@@ -127,7 +127,7 @@ const AccountRoute = (app) => {
   );
 
   // done
-  app.get('/api/get-single-Introducer/:intro_id',
+  app.get('/api/get-single-Introducer/:introId',
     customErrorHandler,
     Authorize([
       string.superAdmin,
@@ -244,7 +244,6 @@ const AccountRoute = (app) => {
     introducerPasswordResetCode
   );
 
-
   // done
   app.post('/api/admin/create/introducer/deposit-transaction',
     createIntroducerDepositTransactionValidator,
@@ -269,138 +268,54 @@ const AccountRoute = (app) => {
     createIntroducerWithdrawTransaction
   );
 
-  app.get('/api/admin/introducer-account-summary/:id',
-    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
-    async (req, res) => {
-      try {
-        const id = req.params.id;
-        // Query to retrieve introducer transactions for the specified user ID
-        const [introSummary] = await database.execute(
-          `SELECT * FROM IntroducerTransaction WHERE introUserId = '${id}' ORDER BY createdAt DESC;`,
-        );
-        let balances = 0;
-        // Calculate balances based on transaction type
-        let accountData = JSON.parse(JSON.stringify(introSummary));
-        accountData
-          .slice(0)
-          .reverse()
-          .map((data) => {
-            if (data.transactionType === 'Deposit') {
-              balances += parseFloat(data.amount);
-              data.balance = balances;
-            } else {
-              balances -= parseFloat(data.amount);
-              data.balance = balances;
-            }
-          });
-        res.status(200).send(accountData);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message || 'Internal server error' });
-      }
-    },
+  app.get('/api/admin/introducer-account-summary/:id', // in id actually we are getting user name
+    customErrorHandler,
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.introducerProfileView
+    ]),
+    getIntroducerAccountSummary
   );
 
+  //  what is the meaning of authorize array of string
   app.post('/api/super-admin/reset-password',
+    validatePasswordReset,
+    customErrorHandler,
     Authorize([
-      'superAdmin',
-      'Dashboard-View',
-      'Transaction-View',
-      'Bank-View',
-      'Website-View',
-      'Profile-View',
-      'User-Profile-View',
-      'Introducer-Profile-View',
-      'Transaction-Edit-Request',
-      'Transaction-Delete-Request',
-      'Create-Deposit-Transaction',
-      'Create-Withdraw-Transaction',
-      'Create-Transaction',
-      'Create-SubAdmin',
-      'Create-User',
-      'Create-Introducer',
+      string.superAdmin,
+      string.dashboardView,
+      string.transactionView,
+      string.websiteView,
+      string.bankView,
+      string.profileView,
+      string.introducerProfileView,
+      string.userProfileView,
+      string.transactionEditRequest,
+      string.transactionDeleteRequest,
+      string.createWithdrawTransaction,
+      string.createTransaction,
+      string.createSubAdmin,
+      string.createUser,
+      string.createIntroducer
     ]),
-    async (req, res) => {
-      try {
-        const { userName, oldPassword, password } = req.body;
-        await AccountServices.SuperAdminPasswordResetCode(userName, oldPassword, password);
-        res.status(200).send({ code: 200, message: 'Password reset successful!' });
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
+    SuperAdminPasswordResetCode
   );
 
   app.get('/api/single-user-profile/:userId',
-    Authorize(['superAdmin', 'Profile-View', 'User-Profile-View']),
-    async (req, res) => {
-      try {
-        const id = req.params.userId;
-        const [userProfile] = await database.execute(`SELECT * FROM User WHERE userId = ?`, [id]);
-        const UserName = userProfile[0].userName;
-        if (userProfile.length === 0) {
-          return res.status(404).send({ message: 'User not found' });
-        }
-
-        // Fetch UserTransactionDetail for the user
-        const [userTransactionDetail] = await database.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
-          UserName,
-        ]);
-        userProfile[0].UserTransactionDetail = userTransactionDetail;
-
-        res.status(200).send(userProfile);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-      }
-    },
+    validateUserId,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.profileView, string.userProfileView,]),
+    getSingleUserProfile
   );
 
-  app.put('/api/admin/subAdmin-profile-edit/:adminId', Authorize(['superAdmin']), async (req, res) => {
-    try {
-      const adminId = req.params.adminId;
-      const [id] = await database.execute(`SELECT * FROM Admin WHERE adminId = ? `, [adminId]);
-      const updateResult = await AccountServices.updateSubAdminProfile(id, req.body);
-      console.log(updateResult);
-      if (updateResult) {
-        res.status(201).send('Profile updated');
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
+  app.put('/api/admin/subAdmin-profile-edit/:adminId', Authorize([string.superAdmin]), updateSubAdminProfile);
 
-  app.get('/api/view-subadmin-transaction/:subadminId',
-    Authorize(['superAdmin', 'report-my-txn']),
-    async (req, res) => {
-      try {
-        const userId = req.params.subadminId;
-
-        const [transaction] = await database.execute(
-          `SELECT * FROM Transaction WHERE subAdminId = '${userId}' ORDER BY createdAt DESC;`,
-        );
-
-        const [bankTransaction] = await database.execute(
-          `SELECT * FROM BankTransaction WHERE subAdminId = '${userId}' ORDER BY createdAt DESC;`,
-        );
-
-        const [webisteTransaction] = await database.execute(
-          `SELECT * FROM WebsiteTransaction WHERE subAdminId = '${userId}' ORDER BY createdAt DESC;`,
-        );
-
-        if (!transaction && !bankTransaction && !webisteTransaction) {
-          return res.status(404).send({ message: 'No transaction found' });
-        }
-        const allTransactions = [...transaction, ...bankTransaction, ...webisteTransaction];
-        allTransactions.sort((a, b) => b.createdAt - a.createdAt);
-        res.status(200).send(allTransactions);
-      } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal server error' });
-      }
-    },
+  app.get('/api/view-subAdmin-transaction/:subAdminId',
+    validateSubAdminId,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.reportMyTxn]),
+    viewSubAdminTransactions
   );
 
   // no need to refactor this
