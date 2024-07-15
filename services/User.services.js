@@ -6,9 +6,10 @@ import User from '../models/user.model.js';
 import Admin from '../models/admin.model.js';
 import IntroducerUser from '../models/introducerUser.model.js';
 import sequelize from '../db.js';
-import CustomError from '../utils/extendError.js';
 import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
+import UserTransactionDetail from '../models/userTransactionDetail.model.js';
+import { string } from '../constructor/string.js';
 
 export const createUser = async (req, res) => {
   const {
@@ -42,24 +43,27 @@ export const createUser = async (req, res) => {
     transaction = await sequelize.transaction();
 
     const userId = uuidv4();
-    const newUser = await User.create({
-      userId,
-      firstName,
-      lastName,
-      contactNumber,
-      userName,
-      password: hashedPassword,
-      introducersUserName,
-      introducerPercentage,
-      introducersUserName1,
-      introducerPercentage1,
-      introducersUserName2,
-      introducerPercentage2,
-    }, { transaction });
+    const newUser = await User.create(
+      {
+        userId,
+        firstName,
+        lastName,
+        contactNumber,
+        userName,
+        role : string.user,
+        password: hashedPassword,
+        introducersUserName,
+        introducerPercentage,
+        introducersUserName1,
+        introducerPercentage1,
+        introducersUserName2,
+        introducerPercentage2,
+      },
+      { transaction },
+    );
 
     await transaction.commit();
     return apiResponseSuccess(newUser, true, statusCode.create, 'User created successfully', res);
-
   } catch (error) {
     if (transaction) await transaction.rollback();
     console.error(error);
@@ -68,20 +72,18 @@ export const createUser = async (req, res) => {
       false,
       error.responseCode ?? statusCode.internalServerError,
       error.errMessage ?? error.message,
-      res
+      res,
     );
   }
 };
 
-
 export const userPasswordResetCode = async (req, res) => {
   const { userName, password } = req.body;
-
   try {
     // Check if the user exists
     const existingUser = await User.findOne({ where: { userName } });
     if (!existingUser) {
-      throw new CustomError('User not found', 404);
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
     // Compare new password with the existing password
@@ -104,60 +106,245 @@ export const userPasswordResetCode = async (req, res) => {
       false,
       error.responseCode ?? statusCode.internalServerError,
       error.errMessage ?? error.message,
-      res
+      res,
     );
   }
 };
 
-export const UserServices = {
-  generateAccessToken: async (userName, password, persist) => {
-    try {
-      if (!userName) {
-        throw { code: 400, message: 'Invalid value for: User Name' };
-      }
-      if (!password) {
-        throw { code: 400, message: 'Invalid value for: Password' };
-      }
+// not understanding the body fot testing
+export const addBankDetails = async (req, res) => {
+  try {
+    console.log('user')
+    const bankDetailsArray = req.body.bank_details;
+    const user = req.user;
 
-      const [rows] = await database.execute('SELECT * FROM User WHERE userName = ?', [userName]);
-      const existingUser = rows[0];
-      console.log('deee', existingUser);
-      if (!existingUser) {
-        throw { code: 401, message: 'Invalid User Name or Password' };
-      }
+    const existingUser = await User.findOne({ where: { userId: user.userId } });
 
-      const passwordValid = await bcrypt.compare(password, existingUser.password);
-      if (!passwordValid) {
-        throw { code: 401, message: 'Invalid User Name or Password' };
-      }
-
-      const accessTokenResponse = {
-        userId: existingUser.userId,
-        firstName: existingUser.firstName,
-        lastName: existingUser.lastName,
-        userName: existingUser.userName,
-        role: existingUser.role,
-      };
-
-      const expiresIn = persist ? '1y' : '8h';
-      const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, { expiresIn });
-
-      return {
-        userName: existingUser.userName,
-        accessToken: accessToken,
-        role: existingUser.role,
-        userId: existingUser.userId,
-      };
-    } catch (err) {
-      console.error(err);
-      if (err.code) {
-        throw err; // Re-throw the specific error with code and message
-      } else {
-        throw { code: 500, message: 'Internal Server Error' }; // Generic error for unhandled cases
-      }
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
-  },
 
+    let bankDetails = existingUser.Bank_Details ? JSON.parse(existingUser.Bank_Details) : [];
+
+    for (const bankDetail of bankDetailsArray) {
+      if (bankDetails.some((existingBankDetail) => existingBankDetail.bank_name === bankDetail.bank_name)) {
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.badRequest,
+          `Bank details already exist for account number ${bankDetail.bank_name}`,
+          res,
+        );
+      }
+      bankDetails.push({
+        account_holder_name: bankDetail.account_holder_name,
+        bank_name: bankDetail.bank_name,
+        ifsc_code: bankDetail.ifsc_code,
+        account_number: bankDetail.account_number,
+      });
+    } 
+
+    existingUser.Bank_Details = JSON.stringify(bankDetails);
+    await existingUser.save();
+
+    return apiResponseSuccess(null, true, statusCode.create, 'User bank details added successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+};
+
+export const addWebsiteDetails = async (req, res) => {
+  try {
+    const websites = req.body.website_name;
+    const user = req.user;
+
+    const existingUser = await User.findOne({ where: { userId: user.userId } });
+
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    let websitesArray = existingUser.Websites_Details ? JSON.parse(existingUser.Websites_Details) : [];
+
+    for (const website of websites) {
+      if (websitesArray.includes(website)) {
+        return apiResponseErr(null, false, statusCode.badRequest, `Website details already exist for ${website}`, res);
+      }
+      websitesArray.push(website);
+    }
+
+    existingUser.Websites_Details = JSON.stringify(websitesArray);
+    await existingUser.save();
+
+    return apiResponseSuccess(websitesArray, true, statusCode.create, 'User website details added successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+};
+
+export const addUpiDetails = async (req, res) => {
+  try {
+    const upiDetailsArray = req.body.upi_details;
+    const user = req.user;
+
+    const existingUser = await User.findOne({ where: { userId: user[0].userId } });
+
+    if (!existingUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    let upiDetails = existingUser.Upi_Details ? JSON.parse(existingUser.Upi_Details) : [];
+
+    for (const upiDetail of upiDetailsArray) {
+      if (upiDetails.some((existingUpiDetail) => existingUpiDetail.upi_id === upiDetail.upi_id)) {
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.badRequest,
+          `UPI details already exist for UPI ID ${upiDetail.upi_id}`,
+          res,
+        );
+      }
+      upiDetails.push({
+        upi_id: upiDetail.upi_id,
+        upi_app: upiDetail.upi_app,
+        upi_number: upiDetail.upi_number,
+      });
+    }
+
+    existingUser.Upi_Details = JSON.stringify(upiDetails);
+    await existingUser.save();
+
+    return apiResponseSuccess(null, true, statusCode.create, 'User UPI details added successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+};
+export const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const userDetails = await User.findOne({ where: { userId } });
+
+    if (!userDetails) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    const updatedDetails = await userDetails.update(req.body);
+
+    if (updatedDetails) {
+      return apiResponseSuccess(null, true, statusCode.create, 'Profile updated successfully', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Failed to update profile', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+};
+
+export const getUserProfileData = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const userDetails = await User.findOne({ where: { userId } });
+
+    if (!userDetails) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    const userTransactionDetails = await UserTransactionDetail.findAll({ where: { userName: userDetails.userName } });
+    userDetails.dataValues.UserTransactionDetail = userTransactionDetails;
+
+    return apiResponseSuccess(userDetails, true, statusCode.success, 'User profile data retrieved successfully', res);
+  } catch (error) {
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
+  }
+};
+
+export const getSuperAdminUserProfile = async (req, res) => {
+  const page = parseInt(req.params.page, 10);
+  const searchQuery = req.query.search;
+
+  try {
+    if (searchQuery) {
+      console.log('first');
+      const results = await User.findAll({
+        where: {
+          userName: {
+            [Op.like]: `%${searchQuery}%`,
+          },
+        },
+      });
+      const allIntroDataLength = results.length;
+      const pageNumber = Math.ceil(allIntroDataLength / 10);
+
+      return apiResponseSuccess(
+        { results, pageNumber, allIntroDataLength },
+        true,
+        200,
+        'Data retrieved successfully',
+        res,
+      );
+    } else {
+      console.log('second');
+      const introData = await User.findAll();
+      const SecondArray = [];
+      const Limit = page * 10;
+
+      for (let j = Limit - 10; j < Limit; j++) {
+        if (introData[j]) {
+          SecondArray.push(introData[j]);
+        }
+      }
+      const allIntroDataLength = introData.length;
+
+      if (SecondArray.length === 0) {
+        return apiResponseErr(null, false, statusCode.badRequest, 'No data found for the selected criteria.', res);
+      }
+
+      const pageNumber = Math.ceil(allIntroDataLength / 10);
+      return apiResponseSuccess(
+        { SecondArray, pageNumber, allIntroDataLength },
+        true,
+        statusCode.success,
+        'Data retrieved successfully',
+        res,
+      );
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message,
+      res,
+    );
+  }
+};
+export const UserServices = {
   updateUserProfile: async (userDetails, data) => {
     try {
       const userId = userDetails[0].userId;
@@ -189,7 +376,6 @@ export const UserServices = {
       };
     }
   },
-
 };
 
 export default UserServices;

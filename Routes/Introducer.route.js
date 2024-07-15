@@ -5,7 +5,6 @@ import { database } from '../services/database.service.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 
 export const IntroducerRoutes = (app) => {
-
   app.get('/api/intoducer/profile', AuthorizeRole(['introducer']), async (req, res) => {
     try {
       const id = req.user[0].intro_id;
@@ -83,9 +82,10 @@ export const IntroducerRoutes = (app) => {
 
       const usersWithTransactionDetails = [];
       for (const userData of users) {
-        const [userTransactionDetail] = await database.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
-          userData.userName,
-        ]);
+        const [userTransactionDetail] = await database.execute(
+          `SELECT * FROM UserTransactionDetail WHERE userName = ?`,
+          [userData.userName],
+        );
         userData.UserTransactionDetail = userTransactionDetail;
         usersWithTransactionDetails.push(userData);
       }

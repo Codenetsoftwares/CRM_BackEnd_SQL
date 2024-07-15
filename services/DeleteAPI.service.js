@@ -4,17 +4,16 @@ import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../ut
 import { statusCode } from '../utils/statusCodes.js';
 import BankTransaction from '../models/bankTransaction.model.js';
 import EditRequest from '../models/editBankRequest.model.js';
-import WebsiteTransaction from '../models/websiteTransaction.model.js'
-import Trash from '../models/trash.model.js'
+import WebsiteTransaction from '../models/websiteTransaction.model.js';
+import Trash from '../models/trash.model.js';
 import { Op, Transaction } from 'sequelize';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import IntroducerEditRequest from '../models/introducerEditRequest.model.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
-import EditWebsiteRequest from '../models/websiteRequest.model.js'
+import EditWebsiteRequest from '../models/websiteRequest.model.js';
 import Website from '../models/website.model.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
-
 
 export const deleteBankTransaction = async (req, res) => {
   try {
@@ -28,22 +27,26 @@ export const deleteBankTransaction = async (req, res) => {
     }
 
     const deleteTransaction = async (transaction, user) => {
-      const existingTransaction = await BankTransaction.findOne({ where: { bankTransactionId: transaction.bankTransactionId } });
+      const existingTransaction = await BankTransaction.findOne({
+        where: { bankTransactionId: transaction.bankTransactionId },
+      });
 
       if (!existingTransaction) {
-        return apiResponseErr(null, false, statusCode.badRequest, `Transaction not found with id: ${transaction.bankTransactionId}`, res);
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.badRequest,
+          `Transaction not found with id: ${transaction.bankTransactionId}`,
+          res,
+        );
       }
 
       const existingEditRequest = await EditRequest.findOne({
-        where: { bankTransactionId: transaction.bankTransactionId, type: 'Delete' }
+        where: { bankTransactionId: transaction.bankTransactionId, type: 'Delete' },
       });
 
       if (existingEditRequest) {
-        throw new CustomError(
-          'Request Already Sent For Approval',
-          null,
-          409,
-        );
+        throw new CustomError('Request Already Sent For Approval', null, 409);
       }
 
       const updatedTransactionData = {
@@ -114,9 +117,8 @@ export const deleteBankTransaction = async (req, res) => {
       error.errMessage ?? error.message,
       res,
     );
-    
   }
-}
+};
 
 export const approveBankTransactionRequest = async (req, res) => {
   try {
@@ -166,18 +168,11 @@ export const approveBankTransactionRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
-    
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 
-export const deleteWebsiteTransaction=async (req, res) => {
+export const deleteWebsiteTransaction = async (req, res) => {
   try {
     const user = req.user;
     const { requestId } = req.body;
@@ -188,19 +183,26 @@ export const deleteWebsiteTransaction=async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Website Transaction not found', res);
     }
 
-    const existingTransaction = await WebsiteTransaction.findOne({ where: { websiteTransactionId: transaction.websiteTransactionId } });
+    const existingTransaction = await WebsiteTransaction.findOne({
+      where: { websiteTransactionId: transaction.websiteTransactionId },
+    });
 
     if (!existingTransaction) {
-      return apiResponseErr(null, false, statusCode.badRequest,  `Website Transaction not found with id: ${transaction.websiteTransactionId}`, res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        `Website Transaction not found with id: ${transaction.websiteTransactionId}`,
+        res,
+      );
     }
 
     const existingEditRequest = await EditRequest.findOne({
-      where: { websiteTransactionId: transaction.websiteTransactionId, type: 'Delete' }
+      where: { websiteTransactionId: transaction.websiteTransactionId, type: 'Delete' },
     });
 
     if (existingEditRequest) {
       throw new CustomError('Request Already Sent For Approval', null, 409);
-      
     }
 
     const updatedTransactionData = {
@@ -226,7 +228,7 @@ export const deleteWebsiteTransaction=async (req, res) => {
     const editId = uuidv4();
     const editMessage = `${existingTransaction.transactionType} is sent to Super Admin for moving to trash approval`;
 
-   const deleteWebsiteTransaction= await EditRequest.create({
+    const deleteWebsiteTransaction = await EditRequest.create({
       websiteId: updatedTransactionData.websiteId,
       transactionType: updatedTransactionData.transactionType,
       requestedUserName: name,
@@ -243,7 +245,13 @@ export const deleteWebsiteTransaction=async (req, res) => {
       editId,
       websiteTransactionId: transaction.websiteTransactionId,
     });
-    return apiResponseSuccess(deleteWebsiteTransaction, true, statusCode.create, 'Website Transaction Move to trash request sent to Super Admin', res);
+    return apiResponseSuccess(
+      deleteWebsiteTransaction,
+      true,
+      statusCode.create,
+      'Website Transaction Move to trash request sent to Super Admin',
+      res,
+    );
   } catch (error) {
     apiResponseErr(
       null,
@@ -253,9 +261,9 @@ export const deleteWebsiteTransaction=async (req, res) => {
       res,
     );
   }
-}
+};
 
-export const moveWebsiteTransactionToTrash =async (req, res) => {
+export const moveWebsiteTransactionToTrash = async (req, res) => {
   try {
     const id = req.params.editId;
     const editRequest = await EditRequest.findOne({ where: { editId: id } });
@@ -295,20 +303,13 @@ export const moveWebsiteTransactionToTrash =async (req, res) => {
       return apiResponseSuccess(restoreResult, true, statusCode.success, 'Website Transaction Moved To Trash', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
-      
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
-}
+};
 
-export const deleteTransaction =async (req, res) => {
+export const deleteTransaction = async (req, res) => {
   try {
     const user = req.user;
     const { requestId } = req.body;
@@ -322,19 +323,20 @@ export const deleteTransaction =async (req, res) => {
     // Check for existing transaction and edit request
     const existingTransaction = await Transaction.findOne({ where: { Transaction_Id: transaction.Transaction_Id } });
     if (!existingTransaction) {
-      return apiResponseErr(null, false, statusCode.notFound, `Transaction not found with id: ${transaction.Transaction_Id}`, res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.notFound,
+        `Transaction not found with id: ${transaction.Transaction_Id}`,
+        res,
+      );
     }
 
     const existingEditRequest = await EditRequest.findOne({
-      where: { transactionId: transaction.transactionId, type: 'Delete' }
+      where: { transactionId: transaction.transactionId, type: 'Delete' },
     });
     if (existingEditRequest) {
-      throw new CustomError(
-        'Request Already Sent For Approval',
-        null,
-        409,
-      );
-     
+      throw new CustomError('Request Already Sent For Approval', null, 409);
     }
 
     // Prepare updated transaction data
@@ -370,7 +372,7 @@ export const deleteTransaction =async (req, res) => {
     const editId = uuidv4();
     const editMessage = `${existingTransaction.transactionType} is sent to Super Admin for moving to trash approval`;
 
-   const deleteTransaction= await EditRequest.create({
+    const deleteTransaction = await EditRequest.create({
       ...updatedTransactionData,
       requestedUserName: name,
       message: editMessage,
@@ -379,7 +381,13 @@ export const deleteTransaction =async (req, res) => {
       editId,
       transactionId: transaction.Transaction_Id,
     });
-    return apiResponseSuccess(deleteTransaction, true, statusCode.create, 'Transaction Move to trash request sent to Super Admin', res);
+    return apiResponseSuccess(
+      deleteTransaction,
+      true,
+      statusCode.create,
+      'Transaction Move to trash request sent to Super Admin',
+      res,
+    );
   } catch (error) {
     apiResponseErr(
       null,
@@ -389,9 +397,9 @@ export const deleteTransaction =async (req, res) => {
       res,
     );
   }
-}
+};
 
-export const deleteIntroducerTransaction=async (req, res) => {
+export const deleteIntroducerTransaction = async (req, res) => {
   try {
     const user = req.user;
     const { requestId } = req.body;
@@ -403,20 +411,24 @@ export const deleteIntroducerTransaction=async (req, res) => {
     }
 
     // Check for existing introducer transaction and edit request
-    const existingTransaction = await IntroducerTransaction.findOne({ where: { introTransactionId: transaction.introTransactionId } });
+    const existingTransaction = await IntroducerTransaction.findOne({
+      where: { introTransactionId: transaction.introTransactionId },
+    });
     if (!existingTransaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Introducer Transaction not found with id: ${transaction.introTransactionId}`, res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        `Introducer Transaction not found with id: ${transaction.introTransactionId}`,
+        res,
+      );
     }
 
     const existingEditRequest = await IntroducerEditRequest.findOne({
-      where: { introTransactionId: transaction.introTransactionId, type: 'Delete' }
+      where: { introTransactionId: transaction.introTransactionId, type: 'Delete' },
     });
     if (existingEditRequest) {
-      throw new CustomError(
-        'Request Already Sent For Approval',
-        null,
-        409,
-      );
+      throw new CustomError('Request Already Sent For Approval', null, 409);
     }
 
     // Prepare updated transaction data
@@ -436,7 +448,7 @@ export const deleteIntroducerTransaction=async (req, res) => {
     const IntroEditId = uuidv4();
     const editMessage = `${existingTransaction.transactionType} is sent to Super Admin for moving to trash approval`;
 
-   const deleteIntroducerTransaction=  await IntroducerEditRequest.create({
+    const deleteIntroducerTransaction = await IntroducerEditRequest.create({
       introTransactionId: transaction.introTransactionId,
       amount: updatedTransactionData.amount,
       requestedUserName: name,
@@ -451,7 +463,13 @@ export const deleteIntroducerTransaction=async (req, res) => {
       IntroEditId,
       introUserId: updatedTransactionData.introUserId,
     });
-    return apiResponseSuccess(deleteIntroducerTransaction, true, statusCode.create, 'Introducer Transaction Move to trash request sent to Super Admin', res);
+    return apiResponseSuccess(
+      deleteIntroducerTransaction,
+      true,
+      statusCode.create,
+      'Introducer Transaction Move to trash request sent to Super Admin',
+      res,
+    );
   } catch (error) {
     apiResponseErr(
       null,
@@ -461,129 +479,117 @@ export const deleteIntroducerTransaction=async (req, res) => {
       res,
     );
   }
-}
+};
 
 export const deleteTransactionWithId = async (req, res) => {
   try {
-      const id = req.params.editId;
-      const editRequest = await EditRequest.findOne({ where: { editId: id } });
+    const id = req.params.editId;
+    const editRequest = await EditRequest.findOne({ where: { editId: id } });
 
-      if (!editRequest) {
-        return apiResponseErr(null, false, statusCode.badRequest, 'Edit Website Request not found', res);
-      }
+    if (!editRequest) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Edit Website Request not found', res);
+    }
 
-      const isApproved = true;
+    const isApproved = true;
 
-      if (isApproved) {
-          const dataToRestore = {
-              bankId: editRequest.bankId,
-              websiteId: editRequest.websiteId,
-              transactionID: editRequest.transactionID,
-              transactionType: editRequest.transactionType,
-              remarks: editRequest.remarks,
-              amount: editRequest.amount,
-              subAdminId: editRequest.subAdminId,
-              subAdminName: editRequest.subAdminName,
-              introducerUserName: editRequest.introducerUserName,
-              userId: editRequest.userId,
-              userName: editRequest.userName,
-              paymentMethod: editRequest.paymentMethod,
-              websiteName: editRequest.websiteName,
-              bankName: editRequest.bankName,
-              bonus: editRequest.bonus,
-              bankCharges: editRequest.bankCharges,
-              createdAt: editRequest.createdAt,
-              Transaction_Id: editRequest.Transaction_Id,
-              message: editRequest.message,
-              type: editRequest.type,
-              nameType: editRequest.nameType,
-          };
+    if (isApproved) {
+      const dataToRestore = {
+        bankId: editRequest.bankId,
+        websiteId: editRequest.websiteId,
+        transactionID: editRequest.transactionID,
+        transactionType: editRequest.transactionType,
+        remarks: editRequest.remarks,
+        amount: editRequest.amount,
+        subAdminId: editRequest.subAdminId,
+        subAdminName: editRequest.subAdminName,
+        introducerUserName: editRequest.introducerUserName,
+        userId: editRequest.userId,
+        userName: editRequest.userName,
+        paymentMethod: editRequest.paymentMethod,
+        websiteName: editRequest.websiteName,
+        bankName: editRequest.bankName,
+        bonus: editRequest.bonus,
+        bankCharges: editRequest.bankCharges,
+        createdAt: editRequest.createdAt,
+        Transaction_Id: editRequest.Transaction_Id,
+        message: editRequest.message,
+        type: editRequest.type,
+        nameType: editRequest.nameType,
+      };
 
-          // Assuming 'Trash' is the model representing the table where you store deleted transactions
-          const restoreResult = await Trash.create(dataToRestore);
+      // Assuming 'Trash' is the model representing the table where you store deleted transactions
+      const restoreResult = await Trash.create(dataToRestore);
 
-          // Delete the transaction from the original table
-          await Transaction.destroy({ where: { Transaction_Id: editRequest.Transaction_Id } });
+      // Delete the transaction from the original table
+      await Transaction.destroy({ where: { Transaction_Id: editRequest.Transaction_Id } });
 
-          // Delete the edit request from the original table
-          await EditRequest.destroy({ where: { editId: id } });
+      // Delete the edit request from the original table
+      await EditRequest.destroy({ where: { editId: id } });
 
-          // Remove the transaction detail from the user
-          await UserTransactionDetail.destroy({ where: { Transaction_id: editRequest.Transaction_id } });
-          return apiResponseSuccess(restoreResult, true, statusCode.success, 'Transaction moved to Trash', res);
-      } else {
-        return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
-      }
+      // Remove the transaction detail from the user
+      await UserTransactionDetail.destroy({ where: { Transaction_id: editRequest.Transaction_id } });
+      return apiResponseSuccess(restoreResult, true, statusCode.success, 'Transaction moved to Trash', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
+    }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 
 export const deleteIntroducerTransactionWithId = async (req, res) => {
   try {
-      const id = req.params.IntroEditId;
-      const editRequest = await IntroducerEditRequest.findOne({ where: { IntroEditId: id } });
+    const id = req.params.IntroEditId;
+    const editRequest = await IntroducerEditRequest.findOne({ where: { IntroEditId: id } });
 
-      if (!editRequest) {
-        return apiResponseErr(null, false, statusCode.badRequest,  'Edit Request not found', res);
-      }
+    if (!editRequest) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Edit Request not found', res);
+    }
 
-      const isApproved = true;
+    const isApproved = true;
 
-      if (isApproved) {
-          const dataToRestore = {
-              introTransactionId: editRequest.introTransactionId,
-              amount: editRequest.amount,
-              transactionType: editRequest.transactionType,
-              remarks: editRequest.remarks,
-              subAdminId: editRequest.subAdminId,
-              subAdminName: editRequest.subAdminName,
-              introducerUserName: editRequest.introducerUserName,
-              createdAt: editRequest.createdAt,
-              introUserId: editRequest.introUserId,
-          };
+    if (isApproved) {
+      const dataToRestore = {
+        introTransactionId: editRequest.introTransactionId,
+        amount: editRequest.amount,
+        transactionType: editRequest.transactionType,
+        remarks: editRequest.remarks,
+        subAdminId: editRequest.subAdminId,
+        subAdminName: editRequest.subAdminName,
+        introducerUserName: editRequest.introducerUserName,
+        createdAt: editRequest.createdAt,
+        introUserId: editRequest.introUserId,
+      };
 
-          // Assuming 'Trash' is the model representing the table where you store deleted transactions
-          const restoreResult = await Trash.create({
-              introTransactionId: dataToRestore.introTransactionId,
-              introUserId: dataToRestore.introUserId,
-              transactionType: dataToRestore.transactionType,
-              amount: dataToRestore.amount,
-              subAdminId: dataToRestore.subAdminId,
-              subAdminName: dataToRestore.subAdminName,
-              remarks: dataToRestore.remarks,
-              createdAt: dataToRestore.createdAt,
-              nameType: 'Introducer',
-              introducerUserName: dataToRestore.introducerUserName,
-          });
+      // Assuming 'Trash' is the model representing the table where you store deleted transactions
+      const restoreResult = await Trash.create({
+        introTransactionId: dataToRestore.introTransactionId,
+        introUserId: dataToRestore.introUserId,
+        transactionType: dataToRestore.transactionType,
+        amount: dataToRestore.amount,
+        subAdminId: dataToRestore.subAdminId,
+        subAdminName: dataToRestore.subAdminName,
+        remarks: dataToRestore.remarks,
+        createdAt: dataToRestore.createdAt,
+        nameType: 'Introducer',
+        introducerUserName: dataToRestore.introducerUserName,
+      });
 
-          // Delete the transaction from the original table
-          await IntroducerTransaction.destroy({ where: { introTransactionId: editRequest.introTransactionId } });
+      // Delete the transaction from the original table
+      await IntroducerTransaction.destroy({ where: { introTransactionId: editRequest.introTransactionId } });
 
-          // Delete the edit request from the original table
-          await IntroducerEditRequest.destroy({ where: { IntroEditId: id } });
-          return apiResponseSuccess(restoreResult, true, statusCode.success, 'Transaction moved to Trash', res);
-      } else {
-        return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
-      }
+      // Delete the edit request from the original table
+      await IntroducerEditRequest.destroy({ where: { IntroEditId: id } });
+      return apiResponseSuccess(restoreResult, true, statusCode.success, 'Transaction moved to Trash', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
+    }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 
-export const deleteBankRequest=async (req, res) => {
+export const deleteBankRequest = async (req, res) => {
   try {
     const { requestId } = req.body;
 
@@ -591,30 +597,26 @@ export const deleteBankRequest=async (req, res) => {
     const transaction = await Bank.findOne({ where: { bankId: requestId } });
 
     if (!transaction) {
-      return apiResponseErr(null, false, statusCode.notFound,  'Bank not found', res);
+      return apiResponseErr(null, false, statusCode.notFound, 'Bank not found', res);
     }
 
     // Find the existing bank transaction
     const existingTransaction = await Bank.findOne({ where: { bankId: transaction.bankId } });
 
     if (!existingTransaction) {
-      return apiResponseErr(null, false, statusCode.badRequest,  `Bank not found with id: ${transaction.bankId}`, res);
+      return apiResponseErr(null, false, statusCode.badRequest, `Bank not found with id: ${transaction.bankId}`, res);
     }
 
     // Check if a delete request already exists
     const existingEditRequest = await EditBankRequest.findOne({
       where: {
         bankId: transaction.bankId,
-        type: 'Delete'
-      }
+        type: 'Delete',
+      },
     });
 
     if (existingEditRequest) {
-      throw new CustomError(
-        'Request Already Sent For Approval',
-        null,
-        409,
-      );
+      throw new CustomError('Request Already Sent For Approval', null, 409);
     }
 
     // Prepare data for the new edit request
@@ -641,7 +643,7 @@ export const deleteBankRequest=async (req, res) => {
     const editMessage = `${existingTransaction.bankName} is sent to Super Admin for deleting approval`;
 
     // Create the new edit request
-    const restoreResult=await EditBankRequest.create({
+    const restoreResult = await EditBankRequest.create({
       bankId: updatedTransactionData.bankId,
       accountHolderName: updatedTransactionData.accountHolderName,
       bankName: updatedTransactionData.bankName,
@@ -665,9 +667,9 @@ export const deleteBankRequest=async (req, res) => {
       res,
     );
   }
-}
+};
 
-export const deleteBank=async (req, res) => {
+export const deleteBank = async (req, res) => {
   try {
     const bankId = req.params.bankId;
 
@@ -675,7 +677,7 @@ export const deleteBank=async (req, res) => {
     const editRequest = await EditBankRequest.findOne({ where: { bankId: bankId } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest,  'Bank Request not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank Request not found', res);
     }
 
     const isApproved = true; // Replace with actual approval logic
@@ -692,17 +694,11 @@ export const deleteBank=async (req, res) => {
       return apiResponseErr(null, true, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
-}
+};
 
-export const saveWebsiteRequest=async (req, res) => {
+export const saveWebsiteRequest = async (req, res) => {
   try {
     const { requestId } = req.body;
 
@@ -710,7 +706,7 @@ export const saveWebsiteRequest=async (req, res) => {
     const website = await Website.findOne({ where: { websiteId: requestId } });
 
     if (!website) {
-      return apiResponseErr(null, false, statusCode.badRequest,  'Website not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
     }
 
     // Find existing website transaction
@@ -724,16 +720,12 @@ export const saveWebsiteRequest=async (req, res) => {
     const existingEditRequest = await EditWebsiteRequest.findOne({
       where: {
         websiteId: website.websiteId,
-        type: 'Delete'
-      }
+        type: 'Delete',
+      },
     });
 
     if (existingEditRequest) {
-      throw new CustomError(
-        'Request Already Sent For Approval',
-        null,
-        409,
-      );
+      throw new CustomError('Request Already Sent For Approval', null, 409);
     }
 
     // Prepare data for the new edit request
@@ -754,8 +746,8 @@ export const saveWebsiteRequest=async (req, res) => {
     const editMessage = `${existingTransaction.websiteName} is sent to Super Admin for deleting approval`;
 
     // Create the new edit request
-   const result= await EditWebsiteRequest.create({
-    websiteId: updatedTransactionData.websiteId,
+    const result = await EditWebsiteRequest.create({
+      websiteId: updatedTransactionData.websiteId,
       subAdminName: updatedTransactionData.subAdminName,
       websiteName: updatedTransactionData.websiteName,
       createdAt: updatedTransactionData.createdAt,
@@ -772,7 +764,7 @@ export const saveWebsiteRequest=async (req, res) => {
       res,
     );
   }
-}
+};
 
 export const deleteWebsite = async (req, res) => {
   try {
@@ -782,7 +774,7 @@ export const deleteWebsite = async (req, res) => {
     const editRequest = await EditWebsiteRequest.findOne({ where: { websiteId } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest,  'Website Request not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website Request not found', res);
     }
 
     const isApproved = true; // Replace with actual approval logic
@@ -798,13 +790,7 @@ export const deleteWebsite = async (req, res) => {
       return apiResponseErr(null, true, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 
@@ -818,16 +804,10 @@ export const rejectBankDetail = async (req, res) => {
     if (result === 1) {
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest,  'Data not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 
@@ -841,19 +821,12 @@ export const rejectWebsiteDetail = async (req, res) => {
     if (result === 1) {
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest,  'Data not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
-
 
 const DeleteApiService = {
   // Functions For Moveing The Transaction Into Trash

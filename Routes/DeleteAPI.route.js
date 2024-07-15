@@ -1,83 +1,178 @@
 import { validate } from 'uuid';
 import { string } from '../constructor/string.js';
 import { Authorize } from '../middleware/Authorize.js';
-import DeleteApiService, { approveBankTransactionRequest, deleteBank, deleteBankRequest, deleteIntroducerTransaction, deleteIntroducerTransactionWithId, deleteTransaction, deleteTransactionWithId, deleteWebsite, deleteWebsiteTransaction, moveWebsiteTransactionToTrash, rejectBankDetail, rejectWebsiteDetail, saveWebsiteRequest } from '../services/DeleteAPI.service.js';
-import { deleteBankTransaction } from '../services/DeleteAPI.service.js'
+import DeleteApiService, {
+  approveBankTransactionRequest,
+  deleteBank,
+  deleteBankRequest,
+  deleteIntroducerTransaction,
+  deleteIntroducerTransactionWithId,
+  deleteTransaction,
+  deleteTransactionWithId,
+  deleteWebsite,
+  deleteWebsiteTransaction,
+  moveWebsiteTransactionToTrash,
+  rejectBankDetail,
+  rejectWebsiteDetail,
+  saveWebsiteRequest,
+} from '../services/DeleteAPI.service.js';
+import { deleteBankTransaction } from '../services/DeleteAPI.service.js';
 import { database } from '../services/database.service.js';
-import { deleteWebsiteTransactionValidate, validateDeleteBank, validateDeleteBankTransaction, validateDeleteIntroducerTransaction, validateDeleteIntroducerTransactionWithId, validateDeleteTransaction, validateDeleteTransactionWithId, validateDeleteWebsite, validateMoveToTrash, validateRejectBankDetail, validateRejectWebsiteDetail, validates, validateSaveWebsiteRequest, validationDeleteBankRequest } from '../utils/commonSchema.js';
+import {
+  deleteWebsiteTransactionValidate,
+  validateDeleteBank,
+  validateDeleteBankTransaction,
+  validateDeleteIntroducerTransaction,
+  validateDeleteIntroducerTransactionWithId,
+  validateDeleteTransaction,
+  validateDeleteTransactionWithId,
+  validateDeleteWebsite,
+  validateMoveToTrash,
+  validateRejectBankDetail,
+  validateRejectWebsiteDetail,
+  validates,
+  validateSaveWebsiteRequest,
+  validationDeleteBankRequest,
+} from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 
 const DeleteAPIRoute = (app) => {
   // API To Move The Bank Transaction Into Trash
   app.post(
-    '/api/admin/save-bank-transaction-request',validateDeleteBankTransaction,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteBankTransaction);
+    '/api/admin/save-bank-transaction-request',
+    validateDeleteBankTransaction,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
+    deleteBankTransaction,
+  );
 
   // API To Approve Bank Transaction To Move Into Trash Request
 
-  app.post('/api/delete-bank-transaction/:editId',validates,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin ]), approveBankTransactionRequest);
+  app.post(
+    '/api/delete-bank-transaction/:editId',
+    validates,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    approveBankTransactionRequest,
+  );
 
   // API To Move The Website Transaction Into Trash
-  app.post('/api/admin/save-website-transaction-request',deleteWebsiteTransactionValidate,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteWebsiteTransaction);
+  app.post(
+    '/api/admin/save-website-transaction-request',
+    deleteWebsiteTransactionValidate,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
+    deleteWebsiteTransaction,
+  );
 
   // API To Approve Website Transaction To Move Into Trash Request
 
-  app.post('/api/delete-website-transaction/:editId',validateMoveToTrash,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), moveWebsiteTransactionToTrash);
-  
+  app.post(
+    '/api/delete-website-transaction/:editId',
+    validateMoveToTrash,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    moveWebsiteTransactionToTrash,
+  );
 
   // API To Move The Transaction Into Trash
 
-  app.post('/api/admin/save-transaction-request',validateDeleteTransaction,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteTransaction);
+  app.post(
+    '/api/admin/save-transaction-request',
+    validateDeleteTransaction,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
+    deleteTransaction,
+  );
 
-   // API To Move The Introducer Transaction Into Trash
-   app.post('/api/admin/save-introducer-transaction-request',validateDeleteIntroducerTransaction,customErrorHandler,Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),deleteIntroducerTransaction);
+  // API To Move The Introducer Transaction Into Trash
+  app.post(
+    '/api/admin/save-introducer-transaction-request',
+    validateDeleteIntroducerTransaction,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
+    deleteIntroducerTransaction,
+  );
 
-   app.post('/api/delete-transaction/:editId',validateDeleteTransactionWithId,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]),deleteTransactionWithId );
+  app.post(
+    '/api/delete-transaction/:editId',
+    validateDeleteTransactionWithId,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    deleteTransactionWithId,
+  );
 
-   app.post('/api/delete-introducer-transaction/:IntroEditId',validateDeleteIntroducerTransactionWithId,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), deleteIntroducerTransactionWithId);
+  app.post(
+    '/api/delete-introducer-transaction/:IntroEditId',
+    validateDeleteIntroducerTransactionWithId,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    deleteIntroducerTransactionWithId,
+  );
 
-   app.post('/api/admin/save-bank-request',validationDeleteBankRequest,customErrorHandler,Authorize([string.superAdmin, string.transactionView, string.bankView]), deleteBankRequest);
+  app.post(
+    '/api/admin/save-bank-request',
+    validationDeleteBankRequest,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.transactionView, string.bankView]),
+    deleteBankRequest,
+  );
 
-   // API For Bank Delete Request
+  // API For Bank Delete Request
 
-   app.post('/api/delete-bank/:bankId',validateDeleteBank,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]),deleteBank );
+  app.post(
+    '/api/delete-bank/:bankId',
+    validateDeleteBank,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    deleteBank,
+  );
 
-   // API TO Sent deleting Website Detail's approval
-   app.post('/api/admin/save-website-request',validateSaveWebsiteRequest,customErrorHandler, Authorize([string.superAdmin, string.transactionView, string.websiteView]),saveWebsiteRequest );
+  // API TO Sent deleting Website Detail's approval
+  app.post(
+    '/api/admin/save-website-request',
+    validateSaveWebsiteRequest,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.transactionView, string.websiteView]),
+    saveWebsiteRequest,
+  );
 
-    // API For Website Delete Request
-  app.post('/api/delete-website/:websiteId',validateDeleteWebsite,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), deleteWebsite);
+  // API For Website Delete Request
+  app.post(
+    '/api/delete-website/:websiteId',
+    validateDeleteWebsite,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    deleteWebsite,
+  );
 
   // API For Rejecting Bank Detail
 
-  app.delete('/api/reject/bank-detail/:bankId',validateRejectBankDetail,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), rejectBankDetail);
+  app.delete(
+    '/api/reject/bank-detail/:bankId',
+    validateRejectBankDetail,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    rejectBankDetail,
+  );
 
   // API For Rejecting Website Detail
 
-  app.delete('/api/reject/website-detail/:websiteId',validateRejectWebsiteDetail,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), rejectWebsiteDetail);
-
-
-
-
-
-
-
-
+  app.delete(
+    '/api/reject/website-detail/:websiteId',
+    validateRejectWebsiteDetail,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    rejectWebsiteDetail,
+  );
 
   // API To Approve Transaction To Move Into Trash Request
-
- 
 
   // API To Approve Introducer Transaction To Move Into Trash Request
 
   // API TO Sent deleting Bank Detail's approval
 
   // API For Bank Delete Request
-
-  
-
-  
-
-  
 
   // API For Rejecting Website Detail
 

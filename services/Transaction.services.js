@@ -40,18 +40,16 @@ export const createIntroducerDepositTransaction = async (req, res) => {
     }
 
     return apiResponseSuccess(newTransaction, true, statusCode.create, 'Transaction created successfully', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
-
-
 
 export const createIntroducerWithdrawTransaction = async (req, res) => {
   const { amount, transactionType, remarks, introducerUserName } = req.body;
@@ -84,13 +82,13 @@ export const createIntroducerWithdrawTransaction = async (req, res) => {
     }
 
     return apiResponseSuccess(newTransaction, true, statusCode.create, 'Transaction created successfully', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -368,8 +366,6 @@ const TransactionServices = {
       return res.status(500).json({ status: false, message: error });
     }
   },
-
-
 };
 
 export default TransactionServices;

@@ -4,7 +4,6 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import sequelize from './db.js';
 
-
 // Route Imports
 import AccountRoute from './Routes/Account.route.js';
 import UserRoutes from './Routes/User.route.js';

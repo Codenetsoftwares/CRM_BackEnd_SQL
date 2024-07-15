@@ -1,17 +1,29 @@
 import { Authorize } from '../middleware/Authorize.js';
 import BankServices, { deleteSubAdmin } from '../services/Bank.services.js';
-import {deleteBankRequest} from '../services/Bank.services.js'
+import { deleteBankRequest } from '../services/Bank.services.js';
 import AccountServices from '../services/Account.Services.js';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
 import { validateDeleteBankRequest, validateDeleteSubAdmin } from '../utils/commonSchema.js';
-import customErrorHandler from '../utils/customErrorHandler.js';;
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 const BankRoutes = (app) => {
-  app.delete('/api/bank/reject/:bankId',validateDeleteBankRequest,customErrorHandler, Authorize([string.superAdmin]),deleteBankRequest);
+  app.delete(
+    '/api/bank/reject/:bankId',
+    validateDeleteBankRequest,
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    deleteBankRequest,
+  );
 
-  app.delete('/api/bank/delete-subAdmin/:bankId/:subAdminId',validateDeleteSubAdmin,customErrorHandler,Authorize([string.superAdmin, string.requestAdmin, string.bankView]),deleteSubAdmin);
+  app.delete(
+    '/api/bank/delete-subAdmin/:bankId/:subAdminId',
+    validateDeleteSubAdmin,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
+    deleteSubAdmin,
+  );
 
   app.post('/api/add-bank-name', Authorize(['superAdmin', 'Bank-View', 'Transaction-View']), async (req, res) => {
     try {
@@ -34,7 +46,9 @@ const BankRoutes = (app) => {
 
       // Check if the bank name already exists in Bank or BankRequest tables
       const [existingBank, existingBankRequest] = await Promise.all([
-        database.execute('SELECT * FROM Bank WHERE REPLACE(LOWER(bankName), " ", "") = ?', [trimmedBankName.toLowerCase()]),
+        database.execute('SELECT * FROM Bank WHERE REPLACE(LOWER(bankName), " ", "") = ?', [
+          trimmedBankName.toLowerCase(),
+        ]),
         database.execute('SELECT * FROM BankRequest WHERE REPLACE(LOWER(bankName), " ", "") = ?', [
           trimmedBankName.toLowerCase(),
         ]),
@@ -73,7 +87,9 @@ const BankRoutes = (app) => {
 
       const bankId = req.params.bank_id;
 
-      const approvedBankRequests = (await database.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId]))[0];
+      const approvedBankRequests = (
+        await database.execute(`SELECT * FROM BankRequest WHERE (bank_id) = (?)`, [bankId])
+      )[0];
 
       if (!approvedBankRequests || approvedBankRequests.length === 0) {
         throw { code: 404, message: 'Bank not found in the approval requests!' };
@@ -106,9 +122,8 @@ const BankRoutes = (app) => {
     }
   });
 
-
   // API To View Bank Name
-//  no need to refactor this
+  //  no need to refactor this
   app.get(
     '/api/get-bank-name',
     Authorize([
@@ -131,7 +146,9 @@ const BankRoutes = (app) => {
           const balancePromises = bankData.map(async (bank) => {
             bank.balance = await BankServices.getBankBalance(bank.bank_id);
             // Fetch BankSubAdmins for each bank
-            const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
+            const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [
+              bank.bank_id,
+            ]);
             if (subAdmins && subAdmins.length > 0) {
               bank.subAdmins = subAdmins;
             } else {
@@ -148,7 +165,9 @@ const BankRoutes = (app) => {
           console.log('userSubAdminId', userSubAdminId);
           if (userSubAdminId) {
             const filteredBanksPromises = bankData.map(async (bank) => {
-              const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [bank.bank_id]);
+              const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [
+                bank.bank_id,
+              ]);
               if (subAdmins && subAdmins.length > 0) {
                 bank.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
@@ -394,7 +413,7 @@ const BankRoutes = (app) => {
       }
     },
   );
-// no need to refactor this
+  // no need to refactor this
   app.get(
     '/api/admin/manual-user-bank-account-summary/:bankId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),

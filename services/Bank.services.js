@@ -2,7 +2,7 @@ import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../ut
 import { statusCode } from '../utils/statusCodes.js';
 import { v4 as uuidv4 } from 'uuid';
 import Bank from '../models/bank.model.js';
-import BankSubAdmin from '../models/bankSubAdmins.model.js'
+import BankSubAdmin from '../models/bankSubAdmins.model.js';
 import { Op } from 'sequelize';
 import { database } from '../services/database.service.js';
 
@@ -13,36 +13,29 @@ export const deleteBankRequest = async (req, res) => {
     // Use Sequelize to delete the record
     const result = await Bank.destroy({
       where: {
-        bankId: id
-      }
+        bankId: id,
+      },
     });
 
     if (result === 1) {
       return apiResponseSuccess(newAdmin, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
-
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
-}
+};
 
-export const deleteSubAdmin =async (req, res) => {
+export const deleteSubAdmin = async (req, res) => {
   try {
     const { bankId, subAdminId } = req.params;
 
     // Check if the bank exists
     const bank = await BankSubAdmin.findOne({
       where: {
-        bankId: bankId
-      }
+        bankId: bankId,
+      },
     });
 
     if (!bank) {
@@ -53,8 +46,8 @@ export const deleteSubAdmin =async (req, res) => {
     const result = await BankSubAdmin.destroy({
       where: {
         bankId: bankId,
-        subAdminId: subAdminId
-      }
+        subAdminId: subAdminId,
+      },
     });
 
     if (result === 0) {
@@ -62,15 +55,9 @@ export const deleteSubAdmin =async (req, res) => {
     }
     return apiResponseSuccess(newAdmin, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
-}
+};
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {

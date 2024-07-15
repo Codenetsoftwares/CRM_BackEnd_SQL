@@ -15,7 +15,14 @@ export const apiResponseSuccess = (data, success, successCode, message, res) => 
   });
 };
 
-export const apiResponsePagination = (data, success, successCode, message, { page,limit, totalPages, totalItems }, res) => {
+export const apiResponsePagination = (
+  data,
+  success,
+  successCode,
+  message,
+  { page, limit, totalPages, totalItems },
+  res,
+) => {
   return res.status(successCode).send({
     data: data,
     success: success,

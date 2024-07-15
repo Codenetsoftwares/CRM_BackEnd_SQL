@@ -162,7 +162,7 @@ const WebisteRoutes = (app) => {
     },
   );
 
-// no need to refactor this
+  // no need to refactor this
   app.get(
     '/api/get-website-name',
     Authorize([
@@ -423,7 +423,7 @@ const WebisteRoutes = (app) => {
     },
   );
 
-// no need to refactor this
+  // no need to refactor this
   app.post(
     '/api/admin/manual-user-website-account-summary/:websiteId',
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View', 'Website-View']),

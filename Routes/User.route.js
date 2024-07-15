@@ -1,253 +1,75 @@
-import { AuthorizeRole } from '../middleware/auth.js';
-import { Authorize } from '../middleware/Authorize.js';
-import UserServices from '../services/User.services.js';
-import { database } from '../services/database.service.js';
+import { string } from "../constructor/string.js";
+import { AuthorizeRole } from "../middleware/auth.js";
+import { Authorize } from "../middleware/Authorize.js";
+import UserServices, {
+  addBankDetails,
+  addUpiDetails,
+  addWebsiteDetails,
+  getSuperAdminUserProfile,
+  getUserProfileData,
+  updateUserProfile,
+  userPasswordResetCode,
+} from "../services/User.services.js";
+import customErrorHandler from "../utils/customErrorHandler.js";
 
 export const UserRoutes = (app) => {
-  app.post('/api/accounts/user/login', async (req, res) => {
-    try {
-      const { userName, password } = req.body;
-      if (!userName) {
-        throw { code: 400, message: 'User Name is required' };
-      }
-
-      if (!password) {
-        throw { code: 400, message: 'Password is required' };
-      }
-      const accessToken = await UserServices.generateAccessToken(userName, password);
-
-      if (!accessToken) {
-        throw { code: 500, message: 'Failed to generate access token' };
-      }
-      const [user] = await database.execute('SELECT * FROM User WHERE userName = ? LIMIT 1', [userName]);
-      if (!user) {
-        throw { code: 404, message: 'User not found' };
-      }
-      if (user && accessToken) {
-        res.status(200).send({
-          token: accessToken,
-        });
-      } else {
-        // User not found or access token is invalid
-        res.status(404).json({ error: 'User not found or access token is invalid' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
 
   // API To Add Bank Name
-
-  app.post('/api/user/add-bank-name', AuthorizeRole(['user']), async (req, res) => {
-    try {
-      const bankDetailsArray = req.body.bank_details;
-      const user = req.user;
-      const [existingUserData] = await database.execute('SELECT * FROM User WHERE userId = ?', [user[0].userId]);
-
-      let bankDetails = existingUserData[0].Bank_Details || [];
-
-      for (const bankDetail of bankDetailsArray) {
-        if (bankDetails.some((existingBankDetail) => existingBankDetail.bank_name === bankDetail.bank_name)) {
-          return res
-            .status(400)
-            .send({ message: `Bank details already exist for account number ${bankDetail.bank_name}` });
-        }
-        bankDetails.push({
-          account_holder_name: bankDetail.account_holder_name,
-          bank_name: bankDetail.bank_name,
-          ifsc_code: bankDetail.ifsc_code,
-          account_number: bankDetail.account_number,
-        });
-      }
-
-      const [updateResult] = await database.execute('UPDATE User SET Bank_Details = ? WHERE userId = ?', [
-        JSON.stringify(bankDetails),
-        user[0].userId,
-      ]);
-
-      if (updateResult.affectedRows === 1) {
-        return res.status(201).send({ message: 'User bank details added successfully' });
-      } else {
-        throw { code: 500, message: 'Failed to add user bank details' };
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
-    }
-  });
+  app.post(
+    "/api/user/add-bank-name",
+    AuthorizeRole([string.user]),
+    customErrorHandler,
+    addBankDetails
+  );
 
   // API To Add Website Name
 
-  app.post('/api/user/add-website-name', AuthorizeRole(['user']), async (req, res) => {
-    try {
-      const websites = req.body.website_name;
-      const user = req.user;
-
-      const [existingUserData] = await database.execute('SELECT * FROM User WHERE userId = ?', [user[0].userId]);
-
-      if (existingUserData.length === 0) {
-        return res.status(404).send({ message: 'User not found' });
-      }
-
-      let websitesArray = existingUserData[0].Websites_Details || [];
-
-      for (const website of websites) {
-        if (websitesArray.includes(website)) {
-          return res.status(400).send({ message: `Website details already exist for ${website}` });
-        }
-        websitesArray.push(website);
-      }
-
-      const [updateResult] = await database.execute('UPDATE User SET Websites_Details = ? WHERE userId = ?', [
-        JSON.stringify(websitesArray),
-        user[0].userId,
-      ]);
-
-      if (updateResult.affectedRows === 1) {
-        return res.status(201).send({ message: 'User website details added successfully' });
-      } else {
-        throw { code: 500, message: 'Failed to add user website details' };
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
-    }
-  });
+  app.post(
+    "/api/user/add-website-name",
+    AuthorizeRole([string.user]),
+    customErrorHandler,
+    addWebsiteDetails
+  );
 
   // API To Add UPI Details
 
-  app.post('/api/user/add-upi-name', AuthorizeRole(['user']), async (req, res) => {
-    try {
-      const upiDetailsArray = req.body.upi_details;
-      const user = req.user;
-
-      const [existingUserData] = await database.execute('SELECT * FROM User WHERE userId = ?', [user[0].userId]);
-
-      let upiDetails = existingUserData[0].Upi_Details || [];
-
-      for (const upiDetail of upiDetailsArray) {
-        if (upiDetails.some((existingUpiDetail) => existingUpiDetail.upi_id === upiDetail.upi_id)) {
-          return res.status(400).send({ message: `UPI details already exist for UPI ID ${upiDetail.upi_id}` });
-        }
-        upiDetails.push({
-          upi_id: upiDetail.upi_id,
-          upi_app: upiDetail.upi_app,
-          upi_number: upiDetail.upi_number,
-        });
-      }
-
-      const [updateResult] = await database.execute('UPDATE User SET Upi_Details = ? WHERE userId = ?', [
-        JSON.stringify(upiDetails),
-        user[0].userId,
-      ]);
-
-      if (updateResult.affectedRows === 1) {
-        return res.status(201).send({ message: 'User UPI details added successfully' });
-      } else {
-        throw { code: 500, message: 'Failed to add user UPI details' };
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
-    }
-  });
+  app.post(
+    "/api/user/add-upi-name",
+    AuthorizeRole([string.user]),
+    customErrorHandler,
+    addUpiDetails
+  );
 
   // API To Edit User Profiles
 
-  app.put('/api/user-profile-edit/:userId', AuthorizeRole(['user']), async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const [userDetails] = await database.execute(`SELECT * FROM User WHERE userId = (?)`, [userId]);
-      const updateResult = await UserServices.updateUserProfile(userDetails, req.body);
-      console.log(updateResult);
-      if (updateResult) {
-        res.status(201).send('Profile updated');
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
+  app.put(
+    "/api/user-profile-edit/:userId",
+    AuthorizeRole([string.user]),
+    customErrorHandler,
+    updateUserProfile
+  );
 
   // API To View User Profiles
 
-  app.get('/api/user-profile-data/:userId', AuthorizeRole(['user']), async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const [userDetails] = await database.execute(`SELECT * FROM User WHERE userId = ?`, [userId]);
+  app.get(
+    "/api/user-profile-data/:userId",
+    AuthorizeRole([string.user]),
+    customErrorHandler,
+    getUserProfileData
+  );
 
-      if (!userDetails || userDetails.length === 0) {
-        return res.status(404).send({ message: 'User not found' });
-      }
-      const user = userDetails[0];
-      const [userTransactionDetail] = await database.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
-        user.userName,
-      ]);
-      user.UserTransactionDetail = userTransactionDetail;
+  app.post(
+    "/api/user/reset-password",
+    AuthorizeRole([string.user]),
+    userPasswordResetCode
+  );
 
-      res.status(200).send(user);
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/user/reset-password', AuthorizeRole(['user']), async (req, res) => {
-    try {
-      const { userName, password } = req.body;
-      await UserServices.userPasswordResetCode(userName, password);
-      res.status(200).send({ code: 200, message: 'Password reset successful!' });
-    } catch (e) {
-      console.error(e);
-      res.status(e.code).send({ message: e.message });
-    }
-  });
-
-  app.get('/api/super-admin/user-profile/:page', Authorize(['superAdmin']), async (req, res) => {
-    const page = req.params.page;
-    const searchQuery = req.query.search;
-    try {
-      if (searchQuery) {
-        console.log('first');
-        const selectQuery = `
-          SELECT *
-          FROM User
-          WHERE userName LIKE ?`;
-        const values = [`%${searchQuery}%`];
-        const results = await query(selectQuery, values);
-        const allIntroDataLength = results.length;
-        const pageNumber = Math.ceil(allIntroDataLength / 10);
-        res.status(200).json({ SecondArray: results, pageNumber, allIntroDataLength });
-      } else {
-        console.log('second');
-        const selectAllQuery = `
-          SELECT *
-          FROM User`;
-        const [results] = await database.execute(selectAllQuery);
-        const introData = results;
-        const SecondArray = [];
-        const Limit = page * 10;
-
-        for (let j = Limit - 10; j < Limit; j++) {
-          if (introData[j]) {
-            SecondArray.push(introData[j]);
-          }
-        }
-        const allIntroDataLength = introData.length;
-
-        if (SecondArray.length === 0) {
-          return res.status(404).json({ message: 'No data found for the selected criteria.' });
-        }
-
-        const pageNumber = Math.ceil(allIntroDataLength / 10);
-        res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).send({ message: 'Internal Server Error' });
-    }
-  });
+  app.get(
+    "/api/super-admin/user-profile/:page",
+    Authorize(["superAdmin"]),
+    customErrorHandler,
+    getSuperAdminUserProfile
+  );
 
   // app.post("/api/super-admin/login", async (req, res) => {
   //   try {
@@ -400,6 +222,7 @@ export const UserRoutes = (app) => {
   //     connection.end();
   //   }
   // });
+  // };
 };
 
 export default UserRoutes;
