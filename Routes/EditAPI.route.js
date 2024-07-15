@@ -1,8 +1,6 @@
-import mysql from "mysql2/promise";
 import { Authorize } from "../middleware/Authorize.js";
-import BankServices, { approveBankDetailEditRequest, updateBank } from "../services/Bank.services.js";
-import WebsiteServices, { approveWebsiteDetailEditRequest, updateWebsite } from "../services/WebSite.Service.js";
-import { database } from "../services/database.service.js";
+import { approveBankDetailEditRequest, updateBank } from "../services/Bank.services.js";
+import { approveWebsiteDetailEditRequest, updateWebsite } from "../services/WebSite.Service.js";
 import { approveBankDetailEditRequestValidator, approveWebValidate, validateBankUpdate, validateUpdateWebsite } from "../utils/commonSchema.js";
 import customErrorHandler from "../utils/customErrorHandler.js";
 import { string } from "../constructor/string.js";

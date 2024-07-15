@@ -190,7 +190,7 @@ export const validateRejectWebsiteDetail = [
 ];
 
 export const validateBankId = [
-  param('bankId').notEmpty().withMessage('Bank Id is required').isString().withMessage('Bank Id must be a string')
+  param('bank_id').notEmpty().withMessage('Bank Id is required').isString().withMessage('Bank Id must be a string')
 ]
 
 export const validateWebsiteId = [
@@ -259,3 +259,76 @@ export const approveWebValidate=[
       .isBoolean()
       .withMessage('isApproved field must be a boolean value')
 ]
+
+export const validateAddBankName = [
+  body('bankName')
+    .trim()
+    .notEmpty()
+    .withMessage('Please provide a bank name to add'),
+    body('accountHolderName')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('Account Holder Name must be a string'),
+    body('accountNumber')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('Account Number must be a string'),
+    body('ifscCode')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('IFSC Code must be a string'),
+    body('upiId')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('UPI ID must be a string'),
+    body('upiAppName')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('UPI App Name must be a string'),
+    body('upiNumber')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('UPI Number must be a string'),
+];
+
+export const validateApproveBank = [
+  param('bankId').isString().withMessage('bankId  must be a string')
+  .notEmpty().withMessage('bankId  is required'),
+  body('isApproved').isBoolean().withMessage('isApproved must be a boolean value'),
+  body('subAdmins').notEmpty().withMessage('subAdmins  is required'),
+];
+
+export const addBankBalanceValidate=[
+  param('bank_id').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
+  body('amount').isNumeric().withMessage('Amount must be a number'),
+  body('transactionType').equals('Manual-Bank-Deposit').withMessage('Invalid transaction type'),
+  body('remarks').notEmpty().withMessage('Remark is required'),
+];
+
+
+
+export const updateBankStatusValidate = [
+  param('bank_id').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
+  body('isActive').isBoolean().withMessage('isActive field must be a boolean value')
+]
+
+export const viewSubAdminBanksValidate = [
+  param('subAdminId').notEmpty().withMessage('subAdminId is required').isString().withMessage('subAdminId must be a string'),
+];
+
+export const updateBankPermissionsValidator = [
+  param('bankId').notEmpty().withMessage('subAdminId is required').isString().withMessage('bankId must be a string'),
+  body('subAdmins').isArray().withMessage('subAdmins must be an array'),
+  body('subAdmins.*.subAdminId').isString().withMessage('subAdminId must be a string'),
+  body('subAdmins.*.isDeposit').isBoolean().withMessage('isDeposit must be a boolean'),
+  body('subAdmins.*.isWithdraw').isBoolean().withMessage('isWithdraw must be a boolean'),
+  body('subAdmins.*.isEdit').isBoolean().withMessage('isEdit must be a boolean'),
+  body('subAdmins.*.isRenew').isBoolean().withMessage('isRenew must be a boolean'),
+  body('subAdmins.*.isDelete').isBoolean().withMessage('isDelete must be a boolean')
+];

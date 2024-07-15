@@ -2,10 +2,17 @@ import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../ut
 import { statusCode } from '../utils/statusCodes.js';
 import { v4 as uuidv4 } from 'uuid';
 import Bank from '../models/bank.model.js';
+import Transaction from '../models/transaction.model.js';
+import bankTransaction from '../models/bankTransaction.model.js';
+import BankRequest from '../models/bankRequest.model.js';
 import BankSubAdmin from '../models/bankSubAdmins.model.js'
 import { Op } from 'sequelize';
 import { database } from '../services/database.service.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
+import BankSubAdmins from '../models/bankSubAdmins.model.js';
+import sequelize from '../db.js';
+import BankTransaction from '../models/bankTransaction.model.js';
+import Website from '../models/website.model.js';
 
 
 
@@ -229,6 +236,553 @@ export const deleteSubAdmin =async (req, res) => {
     );
   }
 }
+
+export const addBankName = async (req, res) => {
+  try {
+    const userName = req.user;
+    const {
+      accountHolderName = '',
+      bankName,
+      accountNumber = '',
+      ifscCode = '',
+      upiId = '',
+      upiAppName = '',
+      upiNumber = '',
+    } = req.body;
+
+    const trimmedBankName = bankName.replace(/\s+/g, '');
+    if (!trimmedBankName) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Please provide a bank name to add', res);
+    }
+
+    // Check if the bank name already exists in Bank or BankRequest tables
+    const [existingBank, existingBankRequest] = await Promise.all([
+      Bank.findOne({
+        where: sequelize.where(sequelize.fn('REPLACE', sequelize.fn('LOWER', sequelize.col('bankName')), ' ', ''), trimmedBankName.toLowerCase()),
+      }),
+      BankRequest.findOne({
+        where: sequelize.where(sequelize.fn('REPLACE', sequelize.fn('LOWER', sequelize.col('bankName')), ' ', ''), trimmedBankName.toLowerCase()),
+      }),
+    ]);
+
+    if (existingBank || existingBankRequest) {
+      return apiResponseErr(null, false,statusCode.badRequest, 'Bank name already exists!', res);
+    }
+
+    const bankId = uuidv4();
+    // Insert new bank name
+   const bank= await BankRequest.create({
+      bankId,
+      bankName: trimmedBankName,
+      accountHolderName: accountHolderName || null,
+      accountNumber: accountNumber || null,
+      ifscCode: ifscCode || null,
+      upiId: upiId || null,
+      upiAppName: upiAppName || null,
+      upiNumber: upiNumber || null,
+      subAdminName: userName && userName.firstName ? userName.firstName : null,
+      subAdminId: userName && userName.userName ? userName.userName : null,
+    });
+
+    return apiResponseSuccess(bank, true, statusCode.success, 'Bank name sent for approval!', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+
+export const approveBank = async (req, res) => {
+  try {
+    const { isApproved, subAdmins } = req.body;
+    const bankId = req.params.bankId;
+
+    // Find the bank request by bankId
+    const approvedBankRequest = await BankRequest.findOne({ where: { bankId } });
+
+    // Throw error if bank request not found
+    if (!approvedBankRequest) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found in the approval requests!', res);
+    }
+
+    // If approval is granted, insert bank details and assign subAdmins
+    if (isApproved) {
+      await sequelize.transaction(async (t) => {
+        // Insert bank details into Bank table
+        const newBank = await Bank.create({
+          bankId: approvedBankRequest.bankId,
+          bankName: approvedBankRequest.bankName,
+          accountHolderName: approvedBankRequest.accountHolderName,
+          accountNumber: approvedBankRequest.accountNumber,
+          ifscCode: approvedBankRequest.ifscCode,
+          upiId: approvedBankRequest.upiId,
+          upiAppName: approvedBankRequest.upiAppName,
+          upiNumber: approvedBankRequest.upiNumber,
+          subAdminName: approvedBankRequest.subAdminName,
+          isActive: true,
+        }, { transaction: t });
+
+        // Check if subAdmins is an array before mapping
+        if (Array.isArray(subAdmins)) {
+          // Insert subAdmins into BankSubAdmins table
+          await Promise.all(
+            subAdmins.map(async (subAdmin) => {
+              await BankSubAdmins.create({
+                bankId: newBank.bankId,
+                subAdminId: subAdmin.subAdminId,
+                isDeposit: subAdmin.isDeposit,
+                isWithdraw: subAdmin.isWithdraw,
+                isEdit: subAdmin.isEdit,
+                isRenew: subAdmin.isRenew,
+                isDelete: subAdmin.isDelete,
+              }, { transaction: t });
+            })
+          );
+        }
+
+        // Delete bank request after successful insertion
+        await BankRequest.destroy({ where: { bankId } }, { transaction: t });
+      });
+
+      // Send success response
+      return apiResponseSuccess(null, true, statusCode.success, 'Bank approved successfully & SubAdmin Assigned', res);
+    } else {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank approval was not granted.', res);
+    }
+  } catch (error) {
+    console.error('Error approving bank:', error);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    )
+  }
+};
+export const viewBankRequests = async (req, res) => {
+  try {
+    // Database query using Sequelize
+    const bankRequests = await BankRequest.findAll();
+
+    // Send response
+    return apiResponseSuccess(bankRequests, true, statusCode.success, 'Bank requests retrieved successfully', res);
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message ?? error.message,
+      res,
+    );
+  }
+};
+
+export const getSingleBankDetails = async (req, res) => {
+  try {
+    const bankId = req.params.bank_id;
+
+    // Fetch bank details and related transactions using Sequelize
+    const [bank, bankTransactions, transactions] = await Promise.all([
+      Bank.findOne({
+        where: { bankId },
+        attributes: ['bankId', 'bankName', 'subAdminName'], // Specify attributes you want to fetch
+      }),
+      bankTransaction.findAll({
+        where: { bankId },
+      }),
+      Transaction.findAll({
+        where: { bankId },
+      }),
+    ]);
+
+    // Handle case where bank is not found
+    if (!bank) {
+      return apiResponseErr(null, false,statusCode.badRequest,  'Bank not found' , res);
+    }
+
+    // Calculate bank balance based on fetched transactions
+    let balance = 0;
+
+    for (const transaction of bankTransactions) {
+      if (transaction.depositAmount) {
+        balance += parseFloat(transaction.depositAmount);
+      }
+      if (transaction.withdrawAmount) {
+        balance -= parseFloat(transaction.withdrawAmount);
+      }
+    }
+
+    for (const transaction of transactions) {
+      if (transaction.transactionType === 'Deposit') {
+        balance += parseFloat(transaction.amount);
+      } else {
+        balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
+      }
+    }
+
+    // Prepare response object
+    const response = {
+      bankId: bank.bankId,
+      bankName: bank.bankName,
+      subAdminName: bank.subAdminName,
+      balance: balance,
+    };
+
+    // Send response
+    return apiResponseSuccess(response, true, statusCode.success, res);
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const addBankBalance = async (req, res) => {
+  try {
+    const { bank_id } = req.params;
+    const { amount, transactionType, remarks } = req.body;
+    const { userName } = req.user; // Assuming `userName` is available in `req.user`
+
+    // Validate input
+    if (transactionType !== 'Manual-Bank-Deposit') {
+      return apiResponseErr(null, false,statusCode.badRequest, 'Invalid transaction type' , res);
+    }
+    if (!amount || typeof amount !== 'number') {
+      return apiResponseErr(null, false,statusCode.badRequest, 'Invalid amount' , res);
+    }
+    if (!remarks) {
+      return apiResponseErr(null, false,statusCode.badRequest,'Remark is required' , res);
+    }
+
+    // Fetch bank details
+    const bank = await Bank.findOne({ where: { bankId: bank_id } });
+
+    if (!bank) {
+      return apiResponseErr(null, false,statusCode.badRequest, 'Bank not found' , res);
+    }
+
+    // Create bank transaction
+    const bankTransaction = await BankTransaction.create({
+      bankId: bank.bankId,
+      accountHolderName: bank.accountHolderName,
+      bankName: bank.bankName,
+      accountNumber: bank.accountNumber,
+      ifscCode: bank.ifscCode,
+      transactionType: transactionType,
+      upiId: bank.upiId,
+      upiAppName: bank.upiAppName,
+      upiNumber: bank.upiNumber,
+      depositAmount: Math.round(parseFloat(amount)),
+      subAdminId: userName,
+      subAdminName: req.user.firstName, // Adjust according to your user structure
+      remarks: remarks,
+      createdAt: new Date().toISOString(),
+    });
+    return apiResponseSuccess(null, true, statusCode.success, 'Wallet Balance Added to Your Bank Account', res);
+  } catch (error) {
+    apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const withdrawBankBalance = async (req, res) => {
+  try {
+    const { bank_id } = req.params;
+    const { amount, transactionType, remarks } = req.body;
+    const { userName } = req.user; // Assuming `userName` is available in `req.user`
+
+    // Validate input
+    if (transactionType !== 'Manual-Bank-Withdraw') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid transaction type', res);
+    }
+    if (!amount || typeof amount !== 'number') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid amount', res);
+    }
+    if (!remarks) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Remark is required', res);
+    }
+
+    // Fetch bank details
+    const bank = await Bank.findOne({ where: { bankId: bank_id } });
+
+    if (!bank) {
+      return apiResponseErr(null, false, statusCode.notFound, 'Bank account not found', res);
+    }
+
+    // Calculate current bank balance
+    const bankTransactions = await BankTransaction.findAll({ where: { bankId: bank.bankId } });
+    let balance = 0;
+
+    for (const transaction of bankTransactions) {
+      if (transaction.depositAmount) {
+        balance += parseFloat(transaction.depositAmount);
+      }
+      if (transaction.withdrawAmount) {
+        balance -= parseFloat(transaction.withdrawAmount);
+      }
+    }
+
+    // Check if withdrawal amount exceeds balance
+    if (balance < Number(amount)) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Insufficient Bank Balance', res);
+    }
+
+    // Create bank transaction for withdrawal
+    const newBankTransaction = await BankTransaction.create({
+      bankId: bank.bankId,
+      accountHolderName: bank.accountHolderName,
+      bankName: bank.bankName,
+      accountNumber: bank.accountNumber,
+      ifscCode: bank.ifscCode,
+      transactionType: transactionType,
+      upiId: bank.upiId,
+      upiAppName: bank.upiAppName,
+      upiNumber: bank.upiNumber,
+      withdrawAmount: Math.round(parseFloat(amount)),
+      subAdminId: userName,
+      subAdminName: req.user.firstName, // Adjust according to your user structure
+      remarks: remarks,
+      createdAt: new Date().toISOString(),
+    });
+
+    return apiResponseSuccess(newBankTransaction, true, statusCode.success, 'Wallet Balance Deducted from your Bank Account', res);
+  } catch (error) {
+    console.error(error);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const getBankNames = async (req, res) => {
+  try {
+    const banks = await Bank.findAll({
+      attributes: ['bankName', 'bankId'], // Selecting specific attributes
+    });
+
+    if (!banks || banks.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No banks found', res);
+    }
+
+    // Extracting required data to send in response
+    const bankNames = banks.map((bank) => ({
+      bankName: bank.bankName,
+      bank_id: bank.bankId,
+    }));
+
+    return apiResponseSuccess(bankNames, true, statusCode.success, 'Bank names retrieved successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const viewBankEditRequests = async (req, res) => {
+  try {
+    const editRequests = await EditBankRequest.findAll();
+
+    if (!editRequests || editRequests.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No edit requests found', res);
+    }
+    return apiResponseSuccess(editRequests, true, statusCode.success, res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const updateBankStatus = async (req, res) => {
+  try {
+    const bankId = req.params.bank_id;
+    const { isActive } = req.body;
+
+    // Validate isActive field
+    if (typeof isActive !== 'boolean') {
+      return apiResponseErr(null, false, statusCode.badRequest, 'isActive field must be a boolean value', res);
+    }
+
+    // Find bank by bankId
+    const bank = await Bank.findOne({ where: { bankId } });
+
+    if (!bank) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+    }
+
+    // Update isActive status
+    await bank.update({ isActive });
+    return apiResponseSuccess(null, true, statusCode.success,'Bank status updated successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const viewSubAdminBanks = async (req, res) => {
+  try {
+    const { subAdminId } = req.params;
+
+    // Using Sequelize to fetch bank names associated with the subAdminId
+    const bankData = await Bank.findAll({
+      attributes: ['bankName'],
+      include: [{
+        model: BankSubAdmins,
+        where: { subAdminId },
+        attributes: [] // Exclude BankSubAdmins attributes from result
+      }]
+    });
+    return apiResponseSuccess(bankData, true, statusCode.success, res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const updateBankPermissions = async (req, res) => {
+  try {
+    const { subAdmins } = req.body;
+    const bankId = req.params.bankId;
+
+    // Update subAdmins for the bank
+    for (const subAdminData of subAdmins) {
+      // Check if the subAdmin already exists in the database for this bank
+      const existingSubAdmin = await BankSubAdmins.findOne({
+        where: { bankId, subAdminId: subAdminData.subAdminId }
+      });
+
+      if (!existingSubAdmin) {
+        // If the subAdmin does not exist, insert a new record
+        await BankSubAdmins.create({
+          bankId,
+          subAdminId: subAdminData.subAdminId,
+          isDeposit: subAdminData.isDeposit,
+          isWithdraw: subAdminData.isWithdraw,
+          isEdit: subAdminData.isEdit,
+          isRenew: subAdminData.isRenew,
+          isDelete: subAdminData.isDelete
+        });
+      } else {
+        // If the subAdmin exists, update their permissions
+        await existingSubAdmin.update({
+          isDeposit: subAdminData.isDeposit,
+          isWithdraw: subAdminData.isWithdraw,
+          isEdit: subAdminData.isEdit,
+          isRenew: subAdminData.isRenew,
+          isDelete: subAdminData.isDelete
+        });
+      }
+    }
+
+    return apiResponseSuccess(null, true, statusCode.success, 'Bank Permission Updated successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const getActiveVisibleBankAndWebsite = async (req, res) => {
+  try {
+    // Retrieve active banks from the database
+    const activeBanks = await Bank.findAll({
+      attributes: ['bankName'],
+      where: { isActive: true },
+    });
+
+    // Retrieve active websites from the database
+    const activeWebsites = await Website.findAll({
+      attributes: ['websiteName'],
+      where: { isActive: true },
+    });
+
+    // Check if active banks and websites exist
+    if (activeBanks.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No bank found', res);
+    }
+    if (activeWebsites.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest,  'No Website found', res);
+    }
+
+    return apiResponseSuccess(
+      { bank: activeBanks, website: activeWebsites },
+      true,
+      statusCode.success,
+      'Active banks and websites fetched successfully',
+      res
+    );
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
+export const getActiveBanks = async (req, res) => {
+  try {
+    const activeBanks = await Bank.findAll({
+      attributes: ['bankName', 'isActive'],
+      where: { isActive: true },
+    });
+
+    if (!activeBanks.length) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No active banks found', res);
+    }
+
+    return apiResponseSuccess(activeBanks, true, statusCode.success, 'Active banks fetched successfully', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ,
+      res,
+    );
+  }
+};
+
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
