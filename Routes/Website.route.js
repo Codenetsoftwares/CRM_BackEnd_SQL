@@ -3,10 +3,14 @@ import { Authorize } from '../middleware/Authorize.js';
 import WebsiteServices, { addWebsiteBalance, addWebsiteName, deleteEditWebsiteRequest, deleteSubAdminFromWebsite, deleteWebsiteRequest, getActiveWebsiteNames, getEditWebsiteRequests, getSingleWebsiteDetails, getWebsiteNames, handleApproveWebsite, rejectWebsiteRequest, updateWebsitePermissions, viewWebsiteRequests, websiteActive, websiteSubAdminView, withdrawWebsiteBalance } from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
-import { validateApproval } from '../utils/commonSchema.js';
+import { validateApproval, validateWebsite } from '../utils/commonSchema.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 const WebsiteRoutes = (app) => {
+  // done
   app.post('/api/add-website-name',
+    validateWebsite,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.websiteView,
@@ -15,16 +19,20 @@ const WebsiteRoutes = (app) => {
     addWebsiteName
   );
 
+  // done
   app.post('/api/approve-website/:websiteId',
     validateApproval,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
     ]),
     handleApproveWebsite
   );
 
+  // done
   // API To View Website-Requests
   app.get('/api/superAdmin/view-website-requests',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
     ]),
@@ -32,6 +40,7 @@ const WebsiteRoutes = (app) => {
   );
 
   app.delete('/api/reject/:websiteId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
     ]),
@@ -39,6 +48,7 @@ const WebsiteRoutes = (app) => {
   ); // not understanding this ... two apis work same "rejectWebsiteRequest"
 
   app.delete('/api/website/reject/:websiteId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
     ]),
@@ -46,14 +56,15 @@ const WebsiteRoutes = (app) => {
   );// not understanding this ... two apis work same "deleteWebsiteRequest"
 
   app.delete('/api/reject-website-edit/:websiteId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
     ]),
     deleteEditWebsiteRequest
   );
 
-  app.get(
-    '/api/get-activeWebsite-name',
+  app.get('/api/get-activeWebsite-name',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.bankView,
@@ -65,8 +76,8 @@ const WebsiteRoutes = (app) => {
     getActiveWebsiteNames
   );
 
-  app.delete(
-    '/api/website/delete-subAdmin/:websiteId/:subAdminId',
+  app.delete('/api/website/delete-subAdmin/:websiteId/:subAdminId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.requestAdmin,
@@ -75,8 +86,8 @@ const WebsiteRoutes = (app) => {
     deleteSubAdminFromWebsite
   );
 
-  app.get(
-    '/api/get-single-website-name/:websiteId',
+  app.get('/api/get-single-website-name/:websiteId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.transactionView,
@@ -85,8 +96,8 @@ const WebsiteRoutes = (app) => {
     getSingleWebsiteDetails
   );
 
-  app.post(
-    '/api/admin/add-website-balance/:websiteId',
+  app.post('/api/admin/add-website-balance/:websiteId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.websiteView,
@@ -95,8 +106,8 @@ const WebsiteRoutes = (app) => {
     addWebsiteBalance
   );
 
-  app.post(
-    '/api/admin/withdraw-website-balance/:websiteId',
+  app.post('/api/admin/withdraw-website-balance/:websiteId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.websiteView,
@@ -105,8 +116,8 @@ const WebsiteRoutes = (app) => {
     withdrawWebsiteBalance
   );
 
-  app.get(
-    '/api/admin/website-name',
+  app.get('/api/admin/website-name',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,

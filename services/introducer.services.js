@@ -6,6 +6,9 @@ import IntroducerUser from '../models/introducerUser.model.js';
 import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
+import AccountServices from './Account.Services.js';
+import User from '../models/user.model.js';
+import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 
 export const createIntroducerUser = async (req, res) => {
   try {
@@ -83,7 +86,7 @@ export const introducerPasswordResetCode = async (req, res) => {
     // Fetch user from the database
     const existingUser = await IntroducerUser.findOne({ where: { userName } });
     if (!existingUser) {
-      throw new CustomError('User not found', 404);
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
     // Compare new password with old password
@@ -100,6 +103,228 @@ export const introducerPasswordResetCode = async (req, res) => {
     const resetIntroducer = await IntroducerUser.update({ password: encryptedPassword }, { where: { userName } });
 
     return apiResponseSuccess(resetIntroducer, true, statusCode.success, 'Password reset successfully', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const getIntroducerProfile = async (req, res) => {
+  try {
+    const id = req.user[0].introId;
+    const introUser = await IntroducerUser.findOne({ where: { introId: id } });
+    if (!introUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
+    }
+
+    const TPDLT = await AccountServices.IntroducerBalance(id);
+    const response = {
+      introId: introUser.introId,
+      firstName: introUser.firstName,
+      lastName: introUser.lastName,
+      role: introUser.role,
+      userName: introUser.userName,
+      balance: Number(TPDLT),
+    };
+
+    const liveBalance = await AccountServices.introducerLiveBalance(id);
+    const currentDue = liveBalance - response.balance;
+    response.currentDue = currentDue;
+
+    return apiResponseSuccess(response, true, statusCode.success, 'success', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+}
+
+export const listIntroducerUsers = async (req, res) => {
+  try {
+    const introId = req.params.introId;
+
+    // Fetch the introducer user
+    const introducerUser = await IntroducerUser.findOne({ where: { introId } });
+    if (!introducerUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'IntroducerUser not found', res);
+    }
+
+    const introducerUserName = introducerUser.userName;
+
+    // Fetch users associated with the introducer user
+    const users = await User.findAll({
+      where: {
+        [Sequelize.Op.or]: [
+          { introducersUserName: introducerUserName },
+          { introducersUserName1: introducerUserName },
+          { introducersUserName2: introducerUserName },
+        ],
+      },
+      include: [{ model: UserTransactionDetail, as: 'UserTransactionDetail' }],
+    });
+
+    return apiResponseSuccess(users, true, statusCode.success, 'success', res);
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+}
+
+export const getIntroducerUserData = async (req, res) => {
+  try {
+    const id = req.params.user_id;
+    const user = req.user;
+    const introUser = user[0].userName;
+
+    // Fetch the user by user_id
+    const introducerUser = await User.findOne({ where: { user_id: id } });
+
+    if (!introducerUser) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    let filteredIntroducerUser = {
+      user_id: introducerUser.user_id,
+      firstName: introducerUser.firstName,
+      lastName: introducerUser.lastName,
+      userName: introducerUser.userName,
+      wallet: introducerUser.wallet,
+      role: introducerUser.role,
+      transactionDetail: null, // Initialize to null
+    };
+
+    // Fetching and attaching transaction details for the user
+    const userTransactionDetail = await UserTransactionDetail.findAll({
+      where: { userName: introducerUser.userName },
+    });
+    filteredIntroducerUser.transactionDetail = userTransactionDetail;
+
+    let matchedIntroducersUserName = null;
+    let matchedIntroducerPercentage = null;
+
+    // Check if req.user.userName exists in introducerUser's introducersUserName, introducersUserName1, or introducersUserName2 fields
+    if (introducerUser.introducersUserName === introUser) {
+      matchedIntroducersUserName = introducerUser.introducersUserName;
+      matchedIntroducerPercentage = introducerUser.introducerPercentage;
+    } else if (introducerUser.introducersUserName1 === introUser) {
+      matchedIntroducersUserName = introducerUser.introducersUserName1;
+      matchedIntroducerPercentage = introducerUser.introducerPercentage1;
+    } else if (introducerUser.introducersUserName2 === introUser) {
+      matchedIntroducersUserName = introducerUser.introducersUserName2;
+      matchedIntroducerPercentage = introducerUser.introducerPercentage2;
+    }
+
+    // If matched introducersUserName found, include it along with percentage in the response
+    if (matchedIntroducersUserName) {
+      filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
+      filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
+      return apiResponseSuccess(filteredIntroducerUser, true, statusCode.success, 'success', res);
+    } else {
+      return apiResponseErr(null, true, statusCode.unauthorize, 'Unauthorized', res);
+    }
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const getIntroducerLiveBalance = async (req, res) => {
+  try {
+    const introId = req.params.introId;
+
+    // Fetch the introducer user by introId
+    const introducerUser = await IntroducerUser.findOne({ where: { introId } });
+
+    if (!introducerUser) {
+      return apiResponseSuccess(null, true, statusCode.badRequest, 'IntroducerUser not found', res);
+    }
+
+    const data = await AccountServices.introducerLiveBalance(introId);
+    console.log('data', data);
+    return apiResponseSuccess({ LiveBalance: data }, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const introducerAccountSummary = async (req,res) => {
+  try {
+    const introUserId = req.params.introId;
+
+    const introSummary = await IntroducerTransaction.findAll({
+      where: { introUserId },
+      order: [['createdAt', 'ASC']],
+    });
+    return apiResponseSuccess(introSummary, true, statusCode.success, 'success', res);
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.errMessage ?? error.message, res
+    );
+  }
+};
+
+export const getIntroducerUserAccountSummary = async (introUserName) => {
+  try {
+    const users = await User.findAll({
+      where: {
+        [Sequelize.Op.or]: [
+          { introducersUserName: introUserName },
+          { introducersUserName1: introUserName },
+          { introducersUserName2: introUserName },
+        ],
+      },
+    });
+
+    const transactions = [];
+    for (const userData of users) {
+      const userTransactions = await UserTransactionDetail.findAll({
+        where: { userName: userData.userName },
+      });
+
+      userTransactions.forEach((transaction) => {
+        transactions.push({
+          AccountNumber: transaction.accountNumber,
+          BankName: transaction.bankName,
+          WebsiteName: transaction.websiteName,
+          Amount: transaction.amount,
+          PaymentMethod: transaction.paymentMethod,
+          TransactionID: transaction.transactionID,
+          TransactionType: transaction.transactionType,
+          Introducer: transaction.introducerUserName,
+          SubAdminName: transaction.subAdminName,
+          UserName: transaction.userName,
+          Remarks: transaction.remarks,
+          createdAt: transaction.createdAt,
+        });
+      });
+    }
+    return apiResponseSuccess(transactions, true, statusCode.success, 'success', res);
 
   } catch (error) {
     return apiResponseErr(

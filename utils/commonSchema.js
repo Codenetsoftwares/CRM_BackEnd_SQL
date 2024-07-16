@@ -56,20 +56,20 @@ export const updateUserProfileValidationSchema = [
     .notEmpty().withMessage('First name is required')
     .isString().withMessage('First name must be a string')
     .isLength({ max: 50 }).withMessage('First name must be at most 50 characters long'),
-  
+
   body('lastName')
     .notEmpty().withMessage('Last name is required')
     .isString().withMessage('Last name must be a string')
     .isLength({ max: 50 }).withMessage('Last name must be at most 50 characters long'),
-  
+
   body('introducerPercentage')
     .optional({ checkFalsy: true })
     .isFloat({ min: 0, max: 100 }).withMessage('Introducer percentage must be a number between 0 and 100'),
-  
+
   body('introducerPercentage1')
     .optional({ checkFalsy: true })
     .isFloat({ min: 0, max: 100 }).withMessage('Introducer percentage 1 must be a number between 0 and 100'),
-  
+
   body('introducerPercentage2')
     .optional({ checkFalsy: true })
     .isFloat({ min: 0, max: 100 }).withMessage('Introducer percentage 2 must be a number between 0 and 100')
@@ -79,12 +79,12 @@ export const updateIntroducerValidationSchema = [
   param('introId')
     .notEmpty().withMessage('Introducer ID is required')
     .isUUID().withMessage('Introducer ID must be a valid UUID'),
-  
+
   body('firstName')
     .notEmpty().withMessage('First name is required')
     .isString().withMessage('First name must be a string')
     .isLength({ max: 50 }).withMessage('First name must be at most 50 characters long'),
-  
+
   body('lastName')
     .notEmpty().withMessage('Last name is required')
     .isString().withMessage('Last name must be a string')
@@ -94,7 +94,7 @@ export const updateIntroducerValidationSchema = [
 export const validateEditSubAdminRoles = [
   param('adminId')
     .notEmpty().withMessage('SubAdmin ID is required')
-    .isUUID().withMessage('Introducer ID must be a valid UUID'), 
+    .isUUID().withMessage('Introducer ID must be a valid UUID'),
   body('roles')
     .notEmpty().withMessage('Roles are required')
     .isArray({ min: 1 }).withMessage('Roles must be provided as an array and must contain at least one role')
@@ -152,11 +152,11 @@ export const validates = [
 ];
 
 export const deleteWebsiteTransactionValidate = [
-    body('requestId').trim().notEmpty().withMessage('Request ID is required').isUUID().withMessage('Invalid Request ID format'),
+  body('requestId').trim().notEmpty().withMessage('Request ID is required').isUUID().withMessage('Invalid Request ID format'),
 ];
 
 export const validateMoveToTrash = [
-    param('editId').notEmpty().withMessage('editId is required').isUUID(4).withMessage('editId must be a valid UUID v4'),
+  param('editId').notEmpty().withMessage('editId is required').isUUID(4).withMessage('editId must be a valid UUID v4'),
 ];
 
 export const validateDeleteTransaction = [
@@ -211,19 +211,78 @@ export const validatePasswordReset = [
   body('password')
     .notEmpty().withMessage('New password is required')
     .isString().withMessage('New password must be a string')
-    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters long')
 ];
 
 export const validateUserId = [
-  param('userId').notEmpty().withMessage('User ID is required').isUUID(4).withMessage('User ID must be a valid UUID v4'),
+  param('userId').notEmpty().withMessage('User ID is required').isUUID(4).withMessage('User ID is not valid'),
 ];
 
 export const validateSubAdminId = [
-  param('subAdminId').notEmpty().withMessage('SubAdmin ID is required').isUUID(4).withMessage('SubAdmin ID must be a valid UUID v4'),
+  param('subAdminId').notEmpty().withMessage('SubAdmin ID is required').isUUID(4).withMessage('SubAdmin ID is not valid'),
 ];
 
 export const validateApproval = [
   param('websiteId').notEmpty().withMessage('Website ID must be provided'),
   body('isApproved').isBoolean().withMessage('isApproved must be a boolean'),
   body('subAdmins').isArray().withMessage('subAdmins must be an array'),
+];
+
+export const update = [
+  param('adminId')
+    .notEmpty().withMessage('Admin Id is required'),
+
+  body('firstName')
+    .if(body('firstName').exists()) // Check if firstName exists in the request body
+    .notEmpty().withMessage('First name is required')
+    .isString().withMessage('First name must be a string'),
+
+  body('lastName')
+    .if(body('lastName').exists()) // Check if lastName exists in the request body
+    .notEmpty().withMessage('Last name is required')
+    .isString().withMessage('Last name must be a string')
+];
+
+export const updateUserProfileValidators = [
+  param('userId')
+    .notEmpty().withMessage('User Id is required')
+    .isUUID(4).withMessage('User Id is not valid'),
+
+  body('firstName')
+    .optional({ nullable: true })
+    .isString().withMessage('First name must be a string'),
+
+  body('lastName')
+    .optional({ nullable: true })
+    .isString().withMessage('Last name must be a string'),
+
+  body('introducersUserName')
+    .optional({ nullable: true })
+    .isString().withMessage('Introducer user name must be a string'),
+
+  body('introducerPercentage')
+    .notEmpty().withMessage('introducerPercentage is required')
+    .isFloat({ min: 0, max: 100 }).withMessage('Introducer percentage must be a number between 0 and 100'),
+
+  body('introducersUserName1')
+    .optional({ nullable: true })
+    .isString().withMessage('Introducer user name must be a string'),
+
+  body('introducerPercentage1')
+    .notEmpty().withMessage('introducerPercentage1 is required')
+    .isFloat({ min: 0, max: 100 }).withMessage('Introducer percentage must be a number between 0 and 100'),
+
+  body('introducersUserName2')
+    .optional({ nullable: true })
+    .isString().withMessage('Introducer user name must be a string'),
+
+  body('introducerPercentage2')
+    .notEmpty().withMessage('introducerPercentage2 is required')
+    .isFloat({ min: 0, max: 100 }).withMessage('Introducer percentage must be a number between 0 and 100'),
+];
+
+export const validateWebsite = [
+  body('websiteName')
+    .trim()
+    .notEmpty().withMessage('Website name is required')
+    .isString().withMessage('Website name must be a string'),
 ];

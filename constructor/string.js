@@ -1,6 +1,7 @@
 class stringConst {
   constructor() {
     this.superAdmin = 'superAdmin';
+    this.introducer = 'introducer'
     this.createSubAdmin = 'Create-SubAdmin';
     this.createIntroducer = 'Create-Introducer';
     this.createAdmin = 'Create-Admin';
@@ -21,6 +22,7 @@ class stringConst {
     this.transactionDeleteRequest = 'Transaction-Delete-Request';
     this.reportMyTxn = 'Report-My-Txn';
     this.requestAdmin = 'Request-Admin'
+    this.user = 'user';
   }
 }
 

@@ -3,9 +3,9 @@ import bcrypt from 'bcrypt';
 import AccountServices, { createAdmin, editSubAdminRoles, getAllSubAdmins, getClientData, getIntroducerAccountSummary, getIntroducerById, getIntroducerUserSingleData, getSingleIntroducer, getSingleSubAdmin, getSingleUserProfile, getSubAdminsWithBankView, getSubAdminsWithWebsiteView, getUserById, getUserProfile, subAdminPasswordResetCode, SuperAdminPasswordResetCode, updateSubAdminProfile, updateUserProfile, viewSubAdminTransactions } from '../services/Account.Services.js';
 import { createIntroducerUser, introducerPasswordResetCode, introducerUser, updateIntroducerProfile } from '../services/introducer.services.js';
 import { Authorize } from '../middleware/Authorize.js';
-import UserServices, { createUser, userPasswordResetCode } from '../services/User.services.js';
-import TransactionServices, { createIntroducerDepositTransaction, createIntroducerWithdrawTransaction } from '../services/Transaction.services.js';
-import { createIntroducerDepositTransactionValidator, createIntroducerWithdrawalTransactionValidator, updateIntroducerValidationSchema, updateUserProfileValidationSchema, validateAdminCreate, validateCreateUser, validateEditSubAdminRoles, validateSubAdminId, validateIntroducerCreate, validatePasswordReset, validateResetPassword, validateUserId } from '../utils/commonSchema.js';
+import { createUser, userPasswordResetCode } from '../services/User.services.js';
+import { createIntroducerDepositTransaction, createIntroducerWithdrawTransaction } from '../services/Transaction.services.js';
+import { createIntroducerDepositTransactionValidator, createIntroducerWithdrawalTransactionValidator, validateAdminCreate, validateCreateUser, validateEditSubAdminRoles, validateSubAdminId, validateIntroducerCreate, validatePasswordReset, validateResetPassword, validateUserId, update, updateUserProfileValidators } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
 
@@ -34,7 +34,9 @@ const AccountRoute = (app) => {
 
   // done
   // API To Edit User Profile
-  app.put('/api/admin/user-profile-edit/:user_id',
+  app.put('/api/admin/user-profile-edit/:userId',
+    updateUserProfileValidators,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.userProfileView,
@@ -108,6 +110,7 @@ const AccountRoute = (app) => {
 
   // done
   app.put('/api/admin/introducer-profile-edit/:introId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.profileView,
@@ -118,6 +121,7 @@ const AccountRoute = (app) => {
 
   // done
   app.get('/api/introducer/client-data/:introId',
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.profileView,
@@ -185,7 +189,9 @@ const AccountRoute = (app) => {
   // done
   app.post('/api/admin/single-sub-admin/:adminId',
     customErrorHandler,
-    Authorize([string.superAdmin]),
+    Authorize([
+      string.superAdmin
+    ]),
     getSingleSubAdmin
   );
 
@@ -268,6 +274,7 @@ const AccountRoute = (app) => {
     createIntroducerWithdrawTransaction
   );
 
+  // done
   app.get('/api/admin/introducer-account-summary/:id', // in id actually we are getting user name
     customErrorHandler,
     Authorize([
@@ -278,7 +285,7 @@ const AccountRoute = (app) => {
     getIntroducerAccountSummary
   );
 
-  //  what is the meaning of authorize array of string
+  // done
   app.post('/api/super-admin/reset-password',
     validatePasswordReset,
     customErrorHandler,
@@ -302,14 +309,27 @@ const AccountRoute = (app) => {
     SuperAdminPasswordResetCode
   );
 
+  //done
   app.get('/api/single-user-profile/:userId',
     validateUserId,
     customErrorHandler,
-    Authorize([string.superAdmin, string.profileView, string.userProfileView,]),
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.userProfileView,
+    ]),
     getSingleUserProfile
   );
 
-  app.put('/api/admin/subAdmin-profile-edit/:adminId', Authorize([string.superAdmin]), updateSubAdminProfile);
+  // done
+  app.put('/api/admin/subAdmin-profile-edit/:adminId',
+    update,
+    customErrorHandler,
+    Authorize([
+      string.superAdmin
+    ]),
+    updateSubAdminProfile
+  );
 
   app.get('/api/view-subAdmin-transaction/:subAdminId',
     validateSubAdminId,

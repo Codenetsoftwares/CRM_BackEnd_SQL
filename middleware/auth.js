@@ -1,7 +1,7 @@
 // middleware/authorizeRole.js (example)
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
-import IntroducerUser from '../models/introducerUser.model';
+import IntroducerUser from '../models/introducerUser.model.js';
+import User from '../models/user.model.js';
 
 export const AuthorizeRole = (roles) => {
   return async (req, res, next) => {

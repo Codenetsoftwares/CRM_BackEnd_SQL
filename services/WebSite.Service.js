@@ -1,10 +1,15 @@
+import { validationResult } from 'express-validator';
+import sequelize from '../db.js';
 import EditWebsiteRequest from '../models/editWebsiteRequest.model.js';
 import Website from '../models/website.model.js';
 import WebsiteRequest from '../models/websiteRequest.model.js';
 import WebsiteSubAdmins from '../models/websiteSubAdmins.model.js';
+import WebsiteTransaction from '../models/websiteTransaction.model.js';
 import { database } from '../services/database.service.js';
 import CustomError from '../utils/extendError.js';
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export const addWebsiteName = async (req, res) => {
   try {
@@ -36,8 +41,8 @@ export const addWebsiteName = async (req, res) => {
     const newWebsiteRequest = await WebsiteRequest.create({
       websiteId,
       websiteName,
-      subAdminId: userData && userData[0].userName ? userData[0].userName : null,
-      subAdminName: userData && userData[0].firstName ? userData[0].firstName : null,
+      subAdminId: userData && userData.userName ? userData.userName : null,
+      subAdminName: userData && userData.firstName ? userData.firstName : null,
     });
     return apiResponseSuccess(newWebsiteRequest, true, statusCode.create, 'Website name sent for approval!', res);
   } catch (error) {
@@ -45,11 +50,12 @@ export const addWebsiteName = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
-export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, subAdmins) => {
+
+export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, subAdmins, res) => {
   try {
     const insertedWebsite = await Website.create({
       websiteId: approvedWebsiteRequest[0].websiteId,
@@ -79,7 +85,7 @@ export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, su
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -123,25 +129,57 @@ export const handleApproveWebsite = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
 
 export const viewWebsiteRequests = async (req, res) => {
   try {
-    const websiteRequests = await WebsiteRequest.findAll();
-    return apiResponseSuccess(websiteRequests, true, statusCode.ok, 'Website requests fetched successfully', res);
+    const { page = 1, size = 10, search = '' } = req.query;
+
+    const limit = parseInt(size);
+    const offset = (parseInt(page) - 1) * limit;
+
+    const whereCondition = search
+      ? {
+        websiteName: {
+          [Op.like]: `%${search}%`
+        }
+      }
+      : {};
+
+    const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
+      where: whereCondition,
+      limit,
+      offset,
+    });
+
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      websiteRequests,
+      true,
+      statusCode.success,
+      'Website requests fetched successfully',
+      {
+        page: parseInt(page),
+        limit: limit,
+        totalItems: count,
+        totalPages,
+      },
+      res
+    );
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
-}
+};
 
 export const deleteWebsiteRequest = async (req, res) => {
   try {
@@ -155,16 +193,16 @@ export const deleteWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.ok, 'Data deleted successfully', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -183,16 +221,16 @@ export const rejectWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.ok, 'Data deleted successfully', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -211,16 +249,16 @@ export const deleteEditWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.ok, 'Data deleted successfully', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.notFound, 'Data not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -235,13 +273,13 @@ export const getActiveWebsiteNames = async (req, res) => {
       },
     });
 
-    return apiResponseSuccess(activeWebsites, true, statusCode.ok, 'Active websites fetched successfully', res);
+    return apiResponseSuccess(activeWebsites, true, statusCode.success, 'Active websites fetched successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -254,7 +292,7 @@ export const deleteSubAdminFromWebsite = async (req, res) => {
     // Check if the website exists
     const website = await WebsiteSubAdmins.findOne({ where: { websiteId } });
     if (!website) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Website not found!', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found!', res);
     }
 
     // Delete the sub-admin with the specified subAdminId
@@ -268,14 +306,14 @@ export const deleteSubAdminFromWebsite = async (req, res) => {
     if (result) {
       return apiResponseSuccess(null, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.notFound, 'SubAdmin not found!', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
     }
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -288,7 +326,7 @@ export const getSingleWebsiteDetails = async (req, res) => {
     // Fetch website data
     const dbWebsiteData = await Website.findOne({ where: { websiteId: id } });
     if (!dbWebsiteData) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Website not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
     }
 
     // Fetch website balance
@@ -303,13 +341,13 @@ export const getSingleWebsiteDetails = async (req, res) => {
       balance: websiteBalance,
     };
 
-    return apiResponseSuccess([response], true, statusCode.ok, 'Website data retrieved successfully', res);
+    return apiResponseSuccess([response], true, statusCode.success, 'Website data retrieved successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -336,7 +374,7 @@ export const addWebsiteBalance = async (req, res) => {
     // Fetch website data
     const website = await Website.findOne({ where: { websiteId: id } });
     if (!website) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Website not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
     }
 
     // Prepare the transaction data
@@ -355,13 +393,13 @@ export const addWebsiteBalance = async (req, res) => {
     // Insert the transaction data into WebsiteTransaction table
     await WebsiteTransaction.create(websiteTransaction);
 
-    return apiResponseSuccess(null, true, statusCode.ok, 'Wallet Balance Added to Your Website', res);
+    return apiResponseSuccess(null, true, statusCode.success, 'Wallet Balance Added to Your Website', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -388,7 +426,7 @@ export const withdrawWebsiteBalance = async (req, res) => {
     // Fetch website data
     const website = await Website.findOne({ where: { websiteId: id } });
     if (!website) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Website not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
     }
 
     // Fetch website balance
@@ -413,13 +451,13 @@ export const withdrawWebsiteBalance = async (req, res) => {
     // Insert the transaction data into WebsiteTransaction table
     await WebsiteTransaction.create(websiteTransaction);
 
-    return apiResponseSuccess(null, true, statusCode.ok, 'Wallet Balance Deducted from your Website', res);
+    return apiResponseSuccess(null, true, statusCode.success, 'Wallet Balance Deducted from your Website', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -432,16 +470,16 @@ export const getWebsiteNames = async (req, res) => {
     });
 
     if (!websites) {
-      return apiResponseErr(null, false, statusCode.notFound, 'No websites found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'No websites found', res);
     }
 
-    return apiResponseSuccess(websites, true, statusCode.ok, 'Websites retrieved successfully', res);
+    return apiResponseSuccess(websites, true, statusCode.success, 'Websites retrieved successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -456,7 +494,7 @@ export const getEditWebsiteRequests = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -483,13 +521,13 @@ export const websiteActive = async (req, res) => {
       return apiResponseErr(null, false, statusCode.notFound, 'No websites found', res);
     }
     // Send success response
-    return apiResponseSuccess(updatedRowsCount, true, statusCode.ok, 'Website status updated successfully', res);
+    return apiResponseSuccess(updatedRowsCount, true, statusCode.success, 'Website status updated successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -509,16 +547,17 @@ export const websiteSubAdminView = async (req, res) => {
     });
 
     if (!websiteData) {
-      return res.status(404).send({ message: 'Website not found for this sub-admin' });
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found for this sub-admin', res);
     }
 
-    res.status(200).send(websiteData);
+    return apiResponseSuccess(websiteData, true, statusCode.success, 'success', res);
+
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }
@@ -560,13 +599,14 @@ export const updateWebsitePermissions = async (req, res) => {
 
     await Promise.all(promises);
 
-    res.status(200).send({ message: 'Website Permission Updated successfully' });
+    return apiResponseSuccess(null, true, statusCode.success, 'Website Permission Updated successfully', res);
+
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res
     );
   }

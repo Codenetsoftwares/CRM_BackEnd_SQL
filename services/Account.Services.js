@@ -9,10 +9,11 @@ import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
-import { Op, Transaction, where } from 'sequelize';
+import { Op, where } from 'sequelize';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import BankTransaction from '../models/bankTransaction.model.js';
 import WebsiteTransaction from '../models/websiteTransaction.model.js';
+import Transaction from '../models/transaction.model.js';
 
 export const createAdmin = async (req, res) => {
   try {
@@ -36,7 +37,7 @@ export const createAdmin = async (req, res) => {
       lastName,
       userName,
       password: encryptedPassword,
-      roles: JSON.stringify(rolesArray),
+      roles: rolesArray,
     });
 
     if (newAdmin) {
@@ -49,7 +50,7 @@ export const createAdmin = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -134,13 +135,13 @@ export const updateUserProfile = async (req, res) => {
     existingUser.introducerPercentage2 = introducerPercentage2 || existingUser.introducerPercentage2;
 
     await existingUser.save();
-    return apiResponseSuccess({ user: existingUser }, true, statusCode.success, 'Profile updated successfully', res);
+    return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -192,7 +193,7 @@ export const getUserProfile = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -213,7 +214,7 @@ export const getSubAdminsWithBankView = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -229,7 +230,7 @@ export const getAllSubAdmins = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -250,7 +251,7 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -274,7 +275,7 @@ export const getClientData = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -295,7 +296,7 @@ export const getSingleIntroducer = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -316,7 +317,7 @@ export const getUserById = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -335,7 +336,7 @@ export const getIntroducerById = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -361,7 +362,7 @@ export const getSingleSubAdmin = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -390,7 +391,7 @@ export const editSubAdminRoles = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -474,7 +475,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -510,7 +511,7 @@ export const subAdminPasswordResetCode = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -542,7 +543,7 @@ export const getIntroducerAccountSummary = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -554,6 +555,17 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
     const existingUser = await Admin.findOne({ where: { userName } });
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+    }
+
+    // Check if the old password is correct
+    const oldPasswordMatches = await bcrypt.compare(oldPassword, existingUser.password);
+    if (!oldPasswordMatches) {
+      return apiResponseErr(null, false, statusCode.unauthorize, 'Old password is incorrect', res);
+    }
+
+    // Compare new password with the old password
+    if (oldPassword === password) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'New password cannot be the same as the old password', res);
     }
 
     // Compare new password with the existing password
@@ -569,14 +581,14 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
     // Update the password in the database
     await Admin.update({ password: encryptedPassword }, { where: { userName } });
 
-    return apiResponseSuccess(accountData, true, statusCode.success, 'Password reset successful!', res);
+    return apiResponseSuccess(null, true, statusCode.success, 'Password reset successful!', res);
 
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -604,25 +616,28 @@ export const getSingleUserProfile = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     );
   }
 };
 
-export const updateSubAdminProfile = async (req, res, data) => {
+export const updateSubAdminProfile = async (req, res) => {
   try {
     // Check if the user exists
     const adminId = req.params.adminId;
-
+    const { firstName, lastName } = req.body;
     const existingUser = await Admin.findOne({ where: { adminId } });
     if (!existingUser) {
       throw new CustomError(`Existing User not found with id: ${adminId}`, null, statusCode.badRequest);
     }
 
-    // Update fields if provided in data
-    existingUser.firstName = data.firstName || existingUser.firstName;
-    existingUser.lastName = data.lastName || existingUser.lastName;
-
+    // Update fields if provided in req.body
+    if (firstName) {
+      existingUser.firstName = firstName;
+    }
+    if (lastName) {
+      existingUser.lastName = lastName;
+    }
     // Save the updated user
     const updateAdmin = await existingUser.save();
     return apiResponseSuccess(updateAdmin, true, statusCode.success, 'Updated successfully', res);
@@ -632,7 +647,7 @@ export const updateSubAdminProfile = async (req, res, data) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     );
   }
 };
@@ -642,17 +657,17 @@ export const viewSubAdminTransactions = async (req, res) => {
     const userId = req.params.subAdminId;
 
     const transactions = await Transaction.findAll({
-      where: { userId },
+      where: { subAdminId: userId },
       order: [['createdAt', 'DESC']],
     });
 
     const bankTransactions = await BankTransaction.findAll({
-      where: { userId },
+      where: { subAdminId: userId },
       order: [['createdAt', 'DESC']],
     });
 
     const websiteTransactions = await WebsiteTransaction.findAll({
-      where: { userId },
+      where: { subAdminId: userId },
       order: [['createdAt', 'DESC']],
     });
 
@@ -669,7 +684,7 @@ export const viewSubAdminTransactions = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     );
   }
 };
