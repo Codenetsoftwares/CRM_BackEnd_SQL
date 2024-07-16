@@ -7,8 +7,7 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 
 const DeleteAPIRoute = (app) => {
   // API To Move The Bank Transaction Into Trash
-  app.post(
-    '/api/admin/save-bank-transaction-request', validateDeleteBankTransaction, customErrorHandler, Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]), deleteBankTransaction);
+  app.post('/api/admin/save-bank-transaction-request', validateDeleteBankTransaction, customErrorHandler, Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]), deleteBankTransaction);
 
   // API To Approve Bank Transaction To Move Into Trash Request
 

@@ -311,6 +311,12 @@ export const addBankBalanceValidate=[
   body('remarks').notEmpty().withMessage('Remark is required'),
 ];
 
+export const withdrawBankBalanceValidate=[
+  param('bank_id').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
+  body('amount').isNumeric().withMessage('Amount must be a number'),
+  body('transactionType').equals('Manual-Bank-Withdraw').withMessage('Invalid transaction type'),
+  body('remarks').notEmpty().withMessage('Remark is required'),
+];
 
 
 export const updateBankStatusValidate = [

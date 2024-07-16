@@ -5,26 +5,39 @@ import AccountServices from '../services/Account.Services.js';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
-import { addBankBalanceValidate, updateBankPermissionsValidator, updateBankStatusValidate, validateAddBankName, validateApproveBank, validateBankId, validateDeleteBankRequest, validateDeleteSubAdmin, viewSubAdminBanksValidate } from '../utils/commonSchema.js';
+import { addBankBalanceValidate, updateBankPermissionsValidator, updateBankStatusValidate, validateAddBankName, validateApproveBank, validateBankId, validateDeleteBankRequest, validateDeleteSubAdmin, viewSubAdminBanksValidate, withdrawBankBalanceValidate } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';;
 
 const BankRoutes = (app) => {
+   // Testing Done
   app.delete('/api/bank/reject/:bankId',validateDeleteBankRequest,customErrorHandler, Authorize([string.superAdmin]),deleteBankRequest);
-
+   // Testing Not Done
   app.delete('/api/bank/delete-subAdmin/:bankId/:subAdminId',validateDeleteSubAdmin,customErrorHandler,Authorize([string.superAdmin, string.requestAdmin, string.bankView]),deleteSubAdmin);
-
+    // Testing Done
   app.post('/api/add-bank-name',validateAddBankName,customErrorHandler, Authorize([string.superAdmin, string.transactionView, string.bankView]), addBankName);
+   // Testing Done
   app.post('/api/approve-bank/:bankId',validateApproveBank,customErrorHandler, Authorize([string.superAdmin]),approveBank);
+   // Testing Done
   app.get('/api/superAdmin/view-bank-requests',customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
+   // Testing Done       
   app.get('/api/get-single-bank-name/:bank_id',validateBankId,customErrorHandler,Authorize([string.superAdmin, string.transactionView, string.bankView]), getSingleBankDetails);
+  // Testing Done  
   app.post('/api/admin/add-bank-balance/:bank_id',addBankBalanceValidate,customErrorHandler,Authorize([string.superAdmin, string.transactionView, string.bankView]),addBankBalance);
-  app.post('/api/admin/withdraw-bank-balance/:bank_id',addBankBalanceValidate,customErrorHandler,Authorize([string.superAdmin, string.transactionView, string.bankView]), withdrawBankBalance );
+  // Testing Done 
+  app.post('/api/admin/withdraw-bank-balance/:bank_id',withdrawBankBalanceValidate,customErrorHandler,Authorize([string.superAdmin, string.transactionView, string.bankView]), withdrawBankBalance );
+  // Testing Done 
   app.get('/api/admin/bank-name',customErrorHandler, Authorize([string.superAdmin,string.dashboardView,string.transactionView,string.bankView,string.websiteView,string.profileView,string.transactionEditRequest,string.transactionDeleteRequest]), getBankNames);
+  // Testing Done
   app.get('/api/super-admin/view-bank-edit-requests',customErrorHandler, Authorize([string.superAdmin]), viewBankEditRequests);
+  // Testing Done
   app.post('/api/admin/bank/isActive/:bank_id',updateBankStatusValidate,customErrorHandler, Authorize([string.superAdmin,string.requestAdmin]), updateBankStatus);
+  // Testing Not Done
   app.get('/api/admin/bank/view-subAdmin/:subAdminId',viewSubAdminBanksValidate,customErrorHandler, Authorize([string.superAdmin,string.requestAdmin]), viewSubAdminBanks);
+  // Testing Not Done
   app.put('/api/bank/edit-request/:bankId',updateBankPermissionsValidator,customErrorHandler, Authorize([string.superAdmin, string.requestAdmin, string.bankView]), updateBankPermissions);
+  // Testing Not Done
   app.get('/api/active-visible-bank',customErrorHandler,Authorize([string.superAdmin,string.requestAdmin]),getActiveVisibleBankAndWebsite);
+  // Testing Done
   app.get('/api/get-activeBank-name',customErrorHandler,Authorize([string.superAdmin,string.bankView,string.transactionView,string.createTransaction,string.createDepositTransaction,string.createWithdrawTransaction]),getActiveBanks);
 
 

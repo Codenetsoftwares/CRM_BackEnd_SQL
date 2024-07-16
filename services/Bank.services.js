@@ -99,13 +99,12 @@ export const updateBank = async (req, res) => {
     );
 
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -159,13 +158,12 @@ export const approveBankDetailEditRequest = async (req, res) => {
       return apiResponseSuccess(null, true, statusCode.success, 'Edit request is already approved', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -183,19 +181,18 @@ export const deleteBankRequest = async (req, res) => {
     });
 
     if (result === 1) {
-      return apiResponseSuccess(newAdmin, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
 
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -227,13 +224,12 @@ export const deleteSubAdmin =async (req, res) => {
     }
     return apiResponseSuccess(newAdmin, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -290,7 +286,7 @@ export const addBankName = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -353,12 +349,11 @@ export const approveBank = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank approval was not granted.', res);
     }
   } catch (error) {
-    console.error('Error approving bank:', error);
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.message, res
     )
   }
 };
@@ -370,79 +365,93 @@ export const viewBankRequests = async (req, res) => {
     // Send response
     return apiResponseSuccess(bankRequests, true, statusCode.success, 'Bank requests retrieved successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.message ?? error.message,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
 export const getSingleBankDetails = async (req, res) => {
   try {
-    const bankId = req.params.bank_id;
+    const id = req.params.bank_id;
+    console.log('id', id);
 
-    // Fetch bank details and related transactions using Sequelize
-    const [bank, bankTransactions, transactions] = await Promise.all([
-      Bank.findOne({
-        where: { bankId },
-        attributes: ['bankId', 'bankName', 'subAdminName'], // Specify attributes you want to fetch
-      }),
-      bankTransaction.findAll({
-        where: { bankId },
-      }),
-      Transaction.findAll({
-        where: { bankId },
-      }),
-    ]);
+    const dbBankData = await Bank.findOne({ where: { bankId: id } });
+    console.log('bankdata', dbBankData);
 
-    // Handle case where bank is not found
-    if (!bank) {
-      return apiResponseErr(null, false,statusCode.badRequest,  'Bank not found' , res);
+    if (!dbBankData) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+      // return res.status(404).send({ message: 'Bank not found' });
     }
 
-    // Calculate bank balance based on fetched transactions
     let balance = 0;
 
-    for (const transaction of bankTransactions) {
+    const bankTransactions = await BankTransaction.findAll({ where: { bankId: dbBankData.bankId } });
+    const transactions = await Transaction.findAll({ where: { bankId: dbBankData.bankId } });
+
+    // Uncomment if needed
+    // const editTransactions = await EditRequest.findAll({ where: { bankId: dbBankData.bankId } });
+
+    bankTransactions.forEach(transaction => {
       if (transaction.depositAmount) {
         balance += parseFloat(transaction.depositAmount);
       }
       if (transaction.withdrawAmount) {
         balance -= parseFloat(transaction.withdrawAmount);
       }
-    }
+    });
 
-    for (const transaction of transactions) {
+    transactions.forEach(transaction => {
       if (transaction.transactionType === 'Deposit') {
         balance += parseFloat(transaction.amount);
       } else {
         balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
       }
-    }
+    });
 
-    // Prepare response object
+    // Uncomment and adjust if needed
+    // editTransactions.forEach(data => {
+    //   switch (data.transactionType) {
+    //     case 'Manual-Bank-Deposit':
+    //       balance += parseFloat(data.depositAmount);
+    //       break;
+    //     case 'Manual-Bank-Withdraw':
+    //       balance -= parseFloat(data.withdrawAmount);
+    //       break;
+    //     case 'Deposit':
+    //       balance += parseFloat(data.amount);
+    //       break;
+    //     case 'Withdraw':
+    //       balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
+    //       break;
+    //     default:
+    //       break;
+    //   }
+    // });
+
     const response = {
-      bankId: bank.bankId,
-      bankName: bank.bankName,
-      subAdminName: bank.subAdminName,
+      bank_id: dbBankData.bankId,
+      bankName: dbBankData.bankName,
+      subAdminName: dbBankData.subAdminName,
       balance: balance,
     };
 
-    // Send response
-    return apiResponseSuccess(response, true, statusCode.success, res);
+    return apiResponseSuccess([response],true,statusCode.success,'Bank Details retractive successfully',res)
+
+    // res.status(200).send([response]);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
-};
+}
+
 
 export const addBankBalance = async (req, res) => {
   try {
@@ -470,6 +479,7 @@ export const addBankBalance = async (req, res) => {
 
     // Create bank transaction
     const bankTransaction = await BankTransaction.create({
+      bankTransactionId: uuidv4(),
       bankId: bank.bankId,
       accountHolderName: bank.accountHolderName,
       bankName: bank.bankName,
@@ -485,15 +495,14 @@ export const addBankBalance = async (req, res) => {
       remarks: remarks,
       createdAt: new Date().toISOString(),
     });
-    return apiResponseSuccess(null, true, statusCode.success, 'Wallet Balance Added to Your Bank Account', res);
+    return apiResponseSuccess(bankTransaction, true, statusCode.success, 'Wallet Balance Added to Your Bank Account', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -559,14 +568,12 @@ export const withdrawBankBalance = async (req, res) => {
 
     return apiResponseSuccess(newBankTransaction, true, statusCode.success, 'Wallet Balance Deducted from your Bank Account', res);
   } catch (error) {
-    console.error(error);
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -592,9 +599,8 @@ export const getBankNames = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -611,9 +617,8 @@ export const viewBankEditRequests = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -642,9 +647,8 @@ export const updateBankStatus = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -667,9 +671,8 @@ export const viewSubAdminBanks = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -714,9 +717,8 @@ export const updateBankPermissions = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -754,9 +756,8 @@ export const getActiveVisibleBankAndWebsite = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -777,9 +778,8 @@ export const getActiveBanks = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 

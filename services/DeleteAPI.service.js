@@ -106,13 +106,12 @@ export const deleteBankTransaction = async (req, res) => {
       return apiResponseSuccess(updateResult, true, statusCode.success, 'Transaction status updated successfully', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+      error.message, res
+    )
     
   }
 }
@@ -165,13 +164,12 @@ export const approveBankTransactionRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
     
   }
 };
@@ -244,13 +242,12 @@ export const deleteWebsiteTransaction=async (req, res) => {
     });
     return apiResponseSuccess(deleteWebsiteTransaction, true, statusCode.create, 'Website Transaction Move to trash request sent to Super Admin', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -297,13 +294,12 @@ export const moveWebsiteTransactionToTrash =async (req, res) => {
       
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -380,13 +376,12 @@ export const deleteTransaction =async (req, res) => {
     });
     return apiResponseSuccess(deleteTransaction, true, statusCode.create, 'Transaction Move to trash request sent to Super Admin', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -452,13 +447,12 @@ export const deleteIntroducerTransaction=async (req, res) => {
     });
     return apiResponseSuccess(deleteIntroducerTransaction, true, statusCode.create, 'Introducer Transaction Move to trash request sent to Super Admin', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -514,13 +508,12 @@ export const deleteTransactionWithId = async (req, res) => {
         return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
       }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -572,13 +565,12 @@ export const deleteIntroducerTransactionWithId = async (req, res) => {
         return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
       }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -656,13 +648,12 @@ export const deleteBankRequest=async (req, res) => {
     });
     return apiResponseSuccess(restoreResult, true, statusCode.create, 'Bank delete request sent to Super Admin', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -691,13 +682,12 @@ export const deleteBank=async (req, res) => {
       return apiResponseErr(null, true, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -763,13 +753,12 @@ export const saveWebsiteRequest=async (req, res) => {
     });
     return apiResponseSuccess(result, true, statusCode.create, 'Website Delete request sent to Super Admin', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -797,13 +786,12 @@ export const deleteWebsite = async (req, res) => {
       return apiResponseErr(null, true, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -820,13 +808,12 @@ export const rejectBankDetail = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest,  'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -843,13 +830,12 @@ export const rejectWebsiteDetail = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest,  'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -858,13 +844,12 @@ export const viewTrash=async (req, res) => {
     const resultArray = await Trash.findAll();
     return apiResponseSuccess(resultArray, true, statusCode.success, 'Data fetched successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -908,13 +893,12 @@ export const restoreBankData=async (req, res) => {
 
     return apiResponseSuccess(restoredData, true, statusCode.success, 'Data restored successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -951,13 +935,12 @@ export const restoreWebsiteData =async (req, res) => {
 
     return apiResponseSuccess(restoredData, true, statusCode.success, 'Data restored successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 }
 
@@ -1011,13 +994,12 @@ export const restoreTransactionData = async (req, res) => {
 
     return apiResponseSuccess(restoredTransaction, true, statusCode.success, 'Data restored successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -1059,13 +1041,12 @@ export const restoreIntroducerData = async (req, res) => {
 
     return apiResponseSuccess(restoredTransaction, true, statusCode.success, 'Data restored successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -1082,13 +1063,12 @@ export const deleteIntroducerEditRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -1099,13 +1079,12 @@ export const viewDeleteRequests = async (req, res) => {
 
     return apiResponseSuccess(resultArray, true, statusCode.success, 'Data retrieved successfully', res);
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -1124,13 +1103,12 @@ export const rejectDeleteRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
 
@@ -1149,12 +1127,11 @@ export const deleteTrashTransaction = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ,
-      res,
-    );
+      error.message, res
+    )
   }
 };
