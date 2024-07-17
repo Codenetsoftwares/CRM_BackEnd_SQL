@@ -1,30 +1,70 @@
-import { getIntroducerLiveBalance, getIntroducerProfile, getIntroducerUserAccountSummary, getIntroducerUserData, introducerAccountSummary, introducerPasswordResetCode, introducerUser, listIntroducerUsers, updateIntroducerProfile } from '../services/introducer.services.js';
+import {
+  getIntroducerLiveBalance,
+  getIntroducerProfile,
+  getIntroducerUserAccountSummary,
+  getIntroducerUserData,
+  introducerAccountSummary,
+  introducerPasswordResetCode,
+  introducerUser,
+  listIntroducerUsers,
+  updateIntroducerProfile,
+} from '../services/introducer.services.js';
 import { AuthorizeRole } from '../middleware/auth.js';
 import { database } from '../services/database.service.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
 
 export const IntroducerRoutes = (app) => {
-
   app.get('/api/introducer/profile', customErrorHandler, AuthorizeRole([string.introducer]), getIntroducerProfile);
 
-  app.put('/api/introducer-profile-edit/:introId', customErrorHandler, AuthorizeRole([string.introducer]), updateIntroducerProfile);
-
-  app.get('/api/list-introducer-user/:introId', customErrorHandler, AuthorizeRole([string.introducer]), listIntroducerUsers);
-
-  app.get('/api/introducer-user-single-data/:user_id', customErrorHandler, AuthorizeRole([string.introducer]), getIntroducerUserData);
-
-  app.get('/api/introducer/introducer-live-balance/:introId', customErrorHandler, AuthorizeRole([string.introducer]), getIntroducerLiveBalance);
-
-  app.get('/api/introducer-account-summary/:introId', customErrorHandler, AuthorizeRole([string.introducer]), introducerAccountSummary);
-
-  app.post('/api/introducer/reset-password', customErrorHandler, AuthorizeRole([string.introducer]), introducerPasswordResetCode);
-
-  app.get('/api/introducer-user/accountSummary/:introducerUsername',
-    customErrorHandler, AuthorizeRole([string.introducer]),
-    getIntroducerUserAccountSummary
+  app.put(
+    '/api/introducer-profile-edit/:introId',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    updateIntroducerProfile,
   );
 
+  app.get(
+    '/api/list-introducer-user/:introId',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    listIntroducerUsers,
+  );
+
+  app.get(
+    '/api/introducer-user-single-data/:user_id',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    getIntroducerUserData,
+  );
+
+  app.get(
+    '/api/introducer/introducer-live-balance/:introId',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    getIntroducerLiveBalance,
+  );
+
+  app.get(
+    '/api/introducer-account-summary/:introId',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    introducerAccountSummary,
+  );
+
+  app.post(
+    '/api/introducer/reset-password',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    introducerPasswordResetCode,
+  );
+
+  app.get(
+    '/api/introducer-user/accountSummary/:introducerUsername',
+    customErrorHandler,
+    AuthorizeRole([string.introducer]),
+    getIntroducerUserAccountSummary,
+  );
 
   // // Not in user
   // app.get('/api/introducer/user-data/:introId', AuthorizeRole(['introducer']), async (req, res) => {
@@ -48,7 +88,6 @@ export const IntroducerRoutes = (app) => {
   //   }
   // });
 
-
   // app.get('/api/introducer-user-single-data/:id', AuthorizeRole(['introducer']), async (req, res) => {
   //   const pool = await connectToDB();
   //   try {
@@ -62,7 +101,5 @@ export const IntroducerRoutes = (app) => {
   //     res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
   //   }
   // });
-
-
 };
 export default IntroducerRoutes;

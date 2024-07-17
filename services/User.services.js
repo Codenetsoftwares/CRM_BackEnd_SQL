@@ -44,37 +44,32 @@ export const createUser = async (req, res) => {
     transaction = await sequelize.transaction();
 
     const userId = uuidv4();
-    const newUser = await User.create({
-      userId,
-      firstName,
-      lastName,
-      contactNumber,
-      userName,
-      password: hashedPassword,
-      introducersUserName,
-      introducerPercentage,
-      introducersUserName1,
-      introducerPercentage1,
-      introducersUserName2,
-      introducerPercentage2,
-    }, { transaction });
+    const newUser = await User.create(
+      {
+        userId,
+        firstName,
+        lastName,
+        contactNumber,
+        userName,
+        password: hashedPassword,
+        introducersUserName,
+        introducerPercentage,
+        introducersUserName1,
+        introducerPercentage1,
+        introducersUserName2,
+        introducerPercentage2,
+      },
+      { transaction },
+    );
 
     await transaction.commit();
     return apiResponseSuccess(newUser, true, statusCode.create, 'User created successfully', res);
-
   } catch (error) {
     if (transaction) await transaction.rollback();
     console.error(error);
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const userPasswordResetCode = async (req, res) => {
   const { userName, password } = req.body;
@@ -101,19 +96,13 @@ export const userPasswordResetCode = async (req, res) => {
 
     return apiResponseSuccess(resetUser, true, statusCode.success, 'Password reset successful!', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 // not understanding the body fot testing
 export const addBankDetails = async (req, res) => {
   try {
-    console.log('user')
+    console.log('user');
     const bankDetailsArray = req.body.bank_details;
     const user = req.user;
 
@@ -148,13 +137,7 @@ export const addBankDetails = async (req, res) => {
 
     return apiResponseSuccess(null, true, statusCode.create, 'User bank details added successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -183,13 +166,7 @@ export const addWebsiteDetails = async (req, res) => {
 
     return apiResponseSuccess(websitesArray, true, statusCode.create, 'User website details added successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -228,13 +205,7 @@ export const addUpiDetails = async (req, res) => {
 
     return apiResponseSuccess(null, true, statusCode.create, 'User UPI details added successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 export const updateUserProfile = async (req, res) => {
@@ -254,13 +225,7 @@ export const updateUserProfile = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to update profile', res);
     }
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -334,13 +299,7 @@ export const getSuperAdminUserProfile = async (req, res) => {
       );
     }
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 export const UserServices = {

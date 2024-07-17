@@ -43,37 +43,32 @@ export const createAdmin = async (req, res) => {
     if (newAdmin) {
       return apiResponseSuccess(newAdmin, true, statusCode.create, 'Admin create successfully', res);
     } else {
-      throw new CustomError('Failed to create new admin', null, 400);
+      throw new CustomError('Failed to create new admin', null, statusCode.badRequest);
     }
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
-export const generateAdminAccessToken = async (userName, password, persist) => {
+export const generateAdminAccessToken = async (userName, password, persist, res) => {
   if (!userName) {
-    throw new CustomError('Invalid value for: User Name', null, 400);
+    throw new CustomError('Invalid value for: User Name', null, statusCode.badRequest);
   }
   if (!password) {
-    throw new CustomError('Invalid value for: Password', null, 400);
+    throw new CustomError('Invalid value for: Password', null, statusCode.badRequest);
   }
 
   try {
     const admin = await Admin.findOne({ where: { userName } });
 
     if (!admin) {
-      throw new CustomError('Invalid User Name or Password', null, 400);
+      throw new CustomError('Invalid User Name ', null, statusCode.badRequest);
     }
 
     const passwordValid = await bcrypt.compare(password, admin.password);
 
     if (!passwordValid) {
-      throw new CustomError('Invalid Password', null, 400);
+      throw new CustomError('Invalid Password', null, statusCode.badRequest);
     }
 
     const accessTokenPayload = {
@@ -93,7 +88,7 @@ export const generateAdminAccessToken = async (userName, password, persist) => {
       roles: admin.roles,
     };
   } catch (error) {
-    throw new Error(error.message || 'Internal Server Error');
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -121,8 +116,18 @@ export const updateUserProfile = async (req, res) => {
       return typeof percentage === 'number' && !isNaN(percentage) && percentage >= 0 && percentage <= 100;
     };
 
-    if (!validatePercentage(introducerPercentage) || !validatePercentage(introducerPercentage1) || !validatePercentage(introducerPercentage2)) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer percentages must be valid numbers between 0 and 100.', res);
+    if (
+      !validatePercentage(introducerPercentage) ||
+      !validatePercentage(introducerPercentage1) ||
+      !validatePercentage(introducerPercentage2)
+    ) {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        'Introducer percentages must be valid numbers between 0 and 100.',
+        res,
+      );
     }
 
     existingUser.firstName = firstName || existingUser.firstName;
@@ -137,12 +142,7 @@ export const updateUserProfile = async (req, res) => {
     await existingUser.save();
     return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -186,15 +186,15 @@ export const getUserProfile = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'No data found for the selected criteria.', res);
     }
 
-    return apiResponseSuccess({ SecondArray, pageNumber, allIntroDataLength }, true, statusCode.success, 'Profile retrieved successfully', res);
-
+    return apiResponseSuccess(
+      { SecondArray, pageNumber, allIntroDataLength },
+      true,
+      statusCode.success,
+      'Profile retrieved successfully',
+      res,
+    );
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -210,12 +210,7 @@ export const getSubAdminsWithBankView = async (req, res) => {
     });
     return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -226,12 +221,7 @@ export const getAllSubAdmins = async (req, res) => {
     });
     return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -247,12 +237,7 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
     });
     return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -271,12 +256,7 @@ export const getClientData = async (req, res) => {
 
     return apiResponseSuccess(introducerUsers, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -292,12 +272,7 @@ export const getSingleIntroducer = async (req, res) => {
 
     return apiResponseSuccess(introducer, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -309,16 +284,10 @@ export const getUserById = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'No users found', res);
     }
 
-    const userNames = users.map(user => user.userName);
+    const userNames = users.map((user) => user.userName);
     return apiResponseSuccess(userNames, true, statusCode.success, 'success', res);
-
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -330,14 +299,8 @@ export const getIntroducerById = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'No introducers found', res);
     }
     return apiResponseSuccess(introducers, true, statusCode.success, 'success', res);
-
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -356,14 +319,8 @@ export const getSingleSubAdmin = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Sub Admin not found with the given Id', res);
     }
     return apiResponseSuccess(subAdmin, true, statusCode.success, 'success', res);
-
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -376,23 +333,20 @@ export const editSubAdminRoles = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Id not found', res);
     }
 
-    const [updatedRows] = await Admin.update(
-      { roles: JSON.stringify(roles) },
-      { where: { adminId: subAdminId } }
-    );
+    const [updatedRows] = await Admin.update({ roles: JSON.stringify(roles) }, { where: { adminId: subAdminId } });
 
     if (updatedRows === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found with the given Id', res);
-
     }
-    return apiResponseSuccess(updatedRows, true, statusCode.success, `SubAdmin roles updated with ${JSON.stringify(roles)}`, res);
+    return apiResponseSuccess(
+      updatedRows,
+      true,
+      statusCode.success,
+      `SubAdmin roles updated with ${JSON.stringify(roles)}`,
+      res,
+    );
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -471,12 +425,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
     }
     return apiResponseSuccess(filteredIntroducerUsers, true, statusCode.success, `success`, res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -493,7 +442,13 @@ export const subAdminPasswordResetCode = async (req, res) => {
     // Compare new password with the existing password
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'New Password cannot be the same as existing password', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        'New Password cannot be the same as existing password',
+        res,
+      );
     }
 
     // Hash the new password
@@ -501,18 +456,10 @@ export const subAdminPasswordResetCode = async (req, res) => {
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
 
     // Update the password in the database
-    const resetData = await Admin.update(
-      { password: encryptedPassword },
-      { where: { userName } }
-    );
+    const resetData = await Admin.update({ password: encryptedPassword }, { where: { userName } });
     return apiResponseSuccess(resetData, true, statusCode.success, 'Password reset successful!', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -539,12 +486,7 @@ export const getIntroducerAccountSummary = async (req, res) => {
     });
     return apiResponseSuccess(accountData, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -565,7 +507,13 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
 
     // Compare new password with the old password
     if (oldPassword === password) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'New password cannot be the same as the old password', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        'New password cannot be the same as the old password',
+        res,
+      );
     }
 
     // Compare new password with the existing password
@@ -582,14 +530,8 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
     await Admin.update({ password: encryptedPassword }, { where: { userName } });
 
     return apiResponseSuccess(null, true, statusCode.success, 'Password reset successful!', res);
-
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    )
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -610,14 +552,8 @@ export const getSingleUserProfile = async (req, res) => {
     userProfile.dataValues.UserTransactionDetail = userTransactionDetail;
 
     return apiResponseSuccess(userProfile, true, statusCode.success, 'User profile fetched successfully', res);
-
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -641,14 +577,8 @@ export const updateSubAdminProfile = async (req, res) => {
     // Save the updated user
     const updateAdmin = await existingUser.save();
     return apiResponseSuccess(updateAdmin, true, statusCode.success, 'Updated successfully', res);
-
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -680,16 +610,10 @@ export const viewSubAdminTransactions = async (req, res) => {
 
     return apiResponseSuccess(allTransactions, true, statusCode.success, 'Updated successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message, res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 const AccountServices = {
-
   IntroducerBalance: async (introUserId) => {
     try {
       console.log('introUserId', introUserId);

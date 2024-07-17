@@ -1,9 +1,15 @@
-import { createTransaction, depositView, viewEditIntroducerTransactionRequests, withdrawView } from '../services/Transaction.services.js';
+import {
+  createTransaction,
+  depositView,
+  viewEditIntroducerTransactionRequests,
+  withdrawView,
+} from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 import { string } from '../constructor/string.js';
 
 const TransactionRoutes = (app) => {
-  app.post('/api/admin/create/transaction',
+  app.post(
+    '/api/admin/create/transaction',
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -11,34 +17,22 @@ const TransactionRoutes = (app) => {
       string.createWithdrawTransaction,
       string.createTransaction,
     ]),
-    createTransaction
+    createTransaction,
   );
 
   // API To View Deposit Transaction Details
 
-  app.get('/api/deposit/view',
-    Authorize([
-      string.superAdmin
-    ]),
-    depositView
-  );
+  app.get('/api/deposit/view', Authorize([string.superAdmin]), depositView);
 
   // API To View Withdraw Transaction Details
 
-  app.get('/api/withdraw/view',
-    Authorize([
-      string.superAdmin
-    ]),
-    withdrawView);
+  app.get('/api/withdraw/view', Authorize([string.superAdmin]), withdrawView);
 
-  app.get('/api/superAdmin/view-edit-introducer-transaction-requests',
-    Authorize([
-      string.superAdmin,
-      string.requestAdmin
-    ]),
-    viewEditIntroducerTransactionRequests
+  app.get(
+    '/api/superAdmin/view-edit-introducer-transaction-requests',
+    Authorize([string.superAdmin, string.requestAdmin]),
+    viewEditIntroducerTransactionRequests,
   );
-
 };
 
 export default TransactionRoutes;

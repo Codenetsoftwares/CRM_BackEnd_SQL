@@ -1,6 +1,23 @@
 import { database } from '../services/database.service.js';
 import { Authorize } from '../middleware/Authorize.js';
-import WebsiteServices, { addWebsiteBalance, addWebsiteName, deleteEditWebsiteRequest, deleteSubAdminFromWebsite, deleteWebsiteRequest, getActiveWebsiteNames, getEditWebsiteRequests, getSingleWebsiteDetails, getWebsiteNames, handleApproveWebsite, rejectWebsiteRequest, updateWebsitePermissions, viewWebsiteRequests, websiteActive, websiteSubAdminView, withdrawWebsiteBalance } from '../services/WebSite.Service.js';
+import WebsiteServices, {
+  addWebsiteBalance,
+  addWebsiteName,
+  deleteEditWebsiteRequest,
+  deleteSubAdminFromWebsite,
+  deleteWebsiteRequest,
+  getActiveWebsiteNames,
+  getEditWebsiteRequests,
+  getSingleWebsiteDetails,
+  getWebsiteNames,
+  handleApproveWebsite,
+  rejectWebsiteRequest,
+  updateWebsitePermissions,
+  viewWebsiteRequests,
+  websiteActive,
+  websiteSubAdminView,
+  withdrawWebsiteBalance,
+} from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
 import { validateApproval, validateWebsite } from '../utils/commonSchema.js';
@@ -8,62 +25,50 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 
 const WebsiteRoutes = (app) => {
   // done
-  app.post('/api/add-website-name',
+  app.post(
+    '/api/add-website-name',
     validateWebsite,
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.websiteView,
-      string.transactionView,
-    ]),
-    addWebsiteName
+    Authorize([string.superAdmin, string.websiteView, string.transactionView]),
+    addWebsiteName,
   );
 
   // done
-  app.post('/api/approve-website/:websiteId',
+  app.post(
+    '/api/approve-website/:websiteId',
     validateApproval,
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-    ]),
-    handleApproveWebsite
+    Authorize([string.superAdmin]),
+    handleApproveWebsite,
   );
 
   // done
   // API To View Website-Requests
-  app.get('/api/superAdmin/view-website-requests',
+  app.get(
+    '/api/superAdmin/view-website-requests',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-    ]),
-    viewWebsiteRequests
+    Authorize([string.superAdmin]),
+    viewWebsiteRequests,
   );
 
-  app.delete('/api/reject/:websiteId',
-    customErrorHandler,
-    Authorize([
-      string.superAdmin,
-    ]),
-    deleteWebsiteRequest
-  ); // not understanding this ... two apis work same "rejectWebsiteRequest"
+  app.delete('/api/reject/:websiteId', customErrorHandler, Authorize([string.superAdmin]), deleteWebsiteRequest); // not understanding this ... two apis work same "rejectWebsiteRequest"
 
-  app.delete('/api/website/reject/:websiteId',
+  app.delete(
+    '/api/website/reject/:websiteId',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-    ]),
-    rejectWebsiteRequest
-  );// not understanding this ... two apis work same "deleteWebsiteRequest"
+    Authorize([string.superAdmin]),
+    rejectWebsiteRequest,
+  ); // not understanding this ... two apis work same "deleteWebsiteRequest"
 
-  app.delete('/api/reject-website-edit/:websiteId',
+  app.delete(
+    '/api/reject-website-edit/:websiteId',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-    ]),
-    deleteEditWebsiteRequest
+    Authorize([string.superAdmin]),
+    deleteEditWebsiteRequest,
   );
 
-  app.get('/api/get-activeWebsite-name',
+  app.get(
+    '/api/get-activeWebsite-name',
     customErrorHandler,
     Authorize([
       string.superAdmin,
@@ -73,50 +78,39 @@ const WebsiteRoutes = (app) => {
       string.createDepositTransaction,
       string.createWithdrawTransaction,
     ]),
-    getActiveWebsiteNames
+    getActiveWebsiteNames,
   );
 
-  app.delete('/api/website/delete-subAdmin/:websiteId/:subAdminId',
+  app.delete(
+    '/api/website/delete-subAdmin/:websiteId/:subAdminId',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.requestAdmin,
-      string.bankView
-    ]),
-    deleteSubAdminFromWebsite
+    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
+    deleteSubAdminFromWebsite,
   );
 
-  app.get('/api/get-single-website-name/:websiteId',
+  app.get(
+    '/api/get-single-website-name/:websiteId',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.transactionView,
-      string.bankView
-    ]),
-    getSingleWebsiteDetails
+    Authorize([string.superAdmin, string.transactionView, string.bankView]),
+    getSingleWebsiteDetails,
   );
 
-  app.post('/api/admin/add-website-balance/:websiteId',
+  app.post(
+    '/api/admin/add-website-balance/:websiteId',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.websiteView,
-      string.transactionView
-    ]),
-    addWebsiteBalance
+    Authorize([string.superAdmin, string.websiteView, string.transactionView]),
+    addWebsiteBalance,
   );
 
-  app.post('/api/admin/withdraw-website-balance/:websiteId',
+  app.post(
+    '/api/admin/withdraw-website-balance/:websiteId',
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.websiteView,
-      string.transactionView
-    ]),
-    withdrawWebsiteBalance
+    Authorize([string.superAdmin, string.websiteView, string.transactionView]),
+    withdrawWebsiteBalance,
   );
 
-  app.get('/api/admin/website-name',
+  app.get(
+    '/api/admin/website-name',
     customErrorHandler,
     Authorize([
       string.superAdmin,
@@ -125,42 +119,27 @@ const WebsiteRoutes = (app) => {
       string.transactionEditRequest,
       string.transactionDeleteRequest,
     ]),
-    getWebsiteNames
+    getWebsiteNames,
   );
 
+  app.get('/api/superAdmin/view-website-edit-requests', Authorize([string.superAdmin]), getEditWebsiteRequests);
 
-  app.get('/api/superAdmin/view-website-edit-requests',
-    Authorize([
-      string.superAdmin
-    ]),
-    getEditWebsiteRequests
-  );
-
-  app.post('/api/admin/website/isActive/:websiteId',
-    Authorize([
-      string.superAdmin,
-      string.requestAdmin
-    ]),
-    websiteActive
+  app.post(
+    '/api/admin/website/isActive/:websiteId',
+    Authorize([string.superAdmin, string.requestAdmin]),
+    websiteActive,
   );
 
   app.get(
     '/api/admin/website/view-subAdmin/:subAdminId',
-    Authorize([
-      string.superAdmin,
-      string.requestAdmin
-    ]),
-    websiteSubAdminView
+    Authorize([string.superAdmin, string.requestAdmin]),
+    websiteSubAdminView,
   );
 
   app.put(
     '/api/website/edit-request/:websiteId',
-    Authorize([
-      string.superAdmin,
-      string.requestAdmin,
-      string.bankView
-    ]),
-    updateWebsitePermissions
+    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
+    updateWebsitePermissions,
   );
 
   // no need to refactor this

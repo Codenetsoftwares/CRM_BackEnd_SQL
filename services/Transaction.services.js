@@ -42,13 +42,13 @@ export const createIntroducerDepositTransaction = async (req, res) => {
     }
 
     return apiResponseSuccess(newTransaction, true, statusCode.create, 'Transaction created successfully', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -84,13 +84,13 @@ export const createIntroducerWithdrawTransaction = async (req, res) => {
     }
 
     return apiResponseSuccess(newTransaction, true, statusCode.create, 'Transaction created successfully', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -130,9 +130,9 @@ export const createTransaction = async (req, res) => {
       where: {
         transactionID,
         createdAt: {
-          [Sequelize.Op.gte]: Sequelize.literal('NOW() - INTERVAL 2 DAY')
-        }
-      }
+          [Sequelize.Op.gte]: Sequelize.literal('NOW() - INTERVAL 2 DAY'),
+        },
+      },
     });
 
     if (existingTransaction) {
@@ -143,7 +143,6 @@ export const createTransaction = async (req, res) => {
     const dbWebsiteData = await Website.findOne({ where: { websiteName } });
     if (!dbWebsiteData) {
       throw new CustomError('Website data not found', null, statusCode.notFound);
-
     }
     const websiteId = dbWebsiteData.websiteId;
 
@@ -192,7 +191,7 @@ export const createTransaction = async (req, res) => {
       remarks,
       introducerUserName: introducersUserName,
       createdAt: new Date(),
-      Transaction_Id
+      Transaction_Id,
     };
 
     if (transactionType === 'Deposit') {
@@ -256,13 +255,13 @@ export const createTransaction = async (req, res) => {
     }
 
     return apiResponseSuccess(newTransactionData, true, statusCode.create, 'Transaction created successfully', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -272,21 +271,21 @@ export const depositView = async (req, res) => {
     // Fetch deposits using Sequelize
     const deposits = await Transaction.findAll({
       where: { transactionType: 'Deposit' },
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
     });
 
     // Calculate the total amount of deposits
     const sum = await Transaction.sum('amount', {
-      where: { transactionType: 'Deposit' }
+      where: { transactionType: 'Deposit' },
     });
     return apiResponseSuccess({ totalDeposits: sum, deposits: deposits }, true, statusCode.success, 'success', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -296,22 +295,22 @@ export const withdrawView = async (req, res) => {
     // Fetch withdraws using Sequelize
     const withdraws = await Transaction.findAll({
       where: { transactionType: 'Withdraw' },
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
     });
 
     // Calculate the total amount of withdraws
     const sum = await Transaction.sum('amount', {
-      where: { transactionType: 'Withdraw' }
+      where: { transactionType: 'Withdraw' },
     });
 
     return apiResponseSuccess({ totalDeposits: sum, deposits: deposits }, true, statusCode.success, 'success', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -325,8 +324,8 @@ export const viewEditIntroducerTransactionRequests = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
-  

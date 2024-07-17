@@ -1,6 +1,6 @@
-import { string } from "../constructor/string.js";
-import { AuthorizeRole } from "../middleware/auth.js";
-import { Authorize } from "../middleware/Authorize.js";
+import { string } from '../constructor/string.js';
+import { AuthorizeRole } from '../middleware/auth.js';
+import { Authorize } from '../middleware/Authorize.js';
 import UserServices, {
   addBankDetails,
   addUpiDetails,
@@ -9,66 +9,36 @@ import UserServices, {
   getUserProfileData,
   updateUserProfile,
   userPasswordResetCode,
-} from "../services/User.services.js";
-import customErrorHandler from "../utils/customErrorHandler.js";
+} from '../services/User.services.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 export const UserRoutes = (app) => {
-
   // API To Add Bank Name
-  app.post(
-    "/api/user/add-bank-name",
-    AuthorizeRole([string.user]),
-    customErrorHandler,
-    addBankDetails
-  );
+  app.post('/api/user/add-bank-name', AuthorizeRole([string.user]), customErrorHandler, addBankDetails);
 
   // API To Add Website Name
 
-  app.post(
-    "/api/user/add-website-name",
-    AuthorizeRole([string.user]),
-    customErrorHandler,
-    addWebsiteDetails
-  );
+  app.post('/api/user/add-website-name', AuthorizeRole([string.user]), customErrorHandler, addWebsiteDetails);
 
   // API To Add UPI Details
 
-  app.post(
-    "/api/user/add-upi-name",
-    AuthorizeRole([string.user]),
-    customErrorHandler,
-    addUpiDetails
-  );
+  app.post('/api/user/add-upi-name', AuthorizeRole([string.user]), customErrorHandler, addUpiDetails);
 
   // API To Edit User Profiles
 
-  app.put(
-    "/api/user-profile-edit/:userId",
-    AuthorizeRole([string.user]),
-    customErrorHandler,
-    updateUserProfile
-  );
+  app.put('/api/user-profile-edit/:userId', AuthorizeRole([string.user]), customErrorHandler, updateUserProfile);
 
   // API To View User Profiles
 
-  app.get(
-    "/api/user-profile-data/:userId",
-    AuthorizeRole([string.user]),
-    customErrorHandler,
-    getUserProfileData
-  );
+  app.get('/api/user-profile-data/:userId', AuthorizeRole([string.user]), customErrorHandler, getUserProfileData);
 
-  app.post(
-    "/api/user/reset-password",
-    AuthorizeRole([string.user]),
-    userPasswordResetCode
-  );
+  app.post('/api/user/reset-password', AuthorizeRole([string.user]), userPasswordResetCode);
 
   app.get(
-    "/api/super-admin/user-profile/:page",
-    Authorize(["superAdmin"]),
+    '/api/super-admin/user-profile/:page',
+    Authorize(['superAdmin']),
     customErrorHandler,
-    getSuperAdminUserProfile
+    getSuperAdminUserProfile,
   );
 
   // app.post("/api/super-admin/login", async (req, res) => {

@@ -39,7 +39,13 @@ export const createIntroducerUser = async (req, res) => {
     });
 
     if (newIntroducerUser) {
-      return apiResponseSuccess(newIntroducerUser, true, statusCode.create, 'Introducer User registered successfully!', res);
+      return apiResponseSuccess(
+        newIntroducerUser,
+        true,
+        statusCode.create,
+        'Introducer User registered successfully!',
+        res,
+      );
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to create new Introducer User', res);
     }
@@ -48,7 +54,8 @@ export const createIntroducerUser = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -75,14 +82,15 @@ export const updateIntroducerProfile = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
 
 export const introducerPasswordResetCode = async (req, res) => {
   try {
-    const { userName, password } = req.body
+    const { userName, password } = req.body;
     // Fetch user from the database
     const existingUser = await IntroducerUser.findOne({ where: { userName } });
     if (!existingUser) {
@@ -103,13 +111,13 @@ export const introducerPasswordResetCode = async (req, res) => {
     const resetIntroducer = await IntroducerUser.update({ password: encryptedPassword }, { where: { userName } });
 
     return apiResponseSuccess(resetIntroducer, true, statusCode.success, 'Password reset successfully', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -137,16 +145,16 @@ export const getIntroducerProfile = async (req, res) => {
     response.currentDue = currentDue;
 
     return apiResponseSuccess(response, true, statusCode.success, 'success', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
-}
+};
 
 export const listIntroducerUsers = async (req, res) => {
   try {
@@ -173,16 +181,16 @@ export const listIntroducerUsers = async (req, res) => {
     });
 
     return apiResponseSuccess(users, true, statusCode.success, 'success', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
-}
+};
 
 export const getIntroducerUserData = async (req, res) => {
   try {
@@ -241,7 +249,8 @@ export const getIntroducerUserData = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -265,12 +274,13 @@ export const getIntroducerLiveBalance = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
 
-export const introducerAccountSummary = async (req,res) => {
+export const introducerAccountSummary = async (req, res) => {
   try {
     const introUserId = req.params.introId;
 
@@ -284,7 +294,8 @@ export const introducerAccountSummary = async (req,res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
@@ -325,19 +336,18 @@ export const getIntroducerUserAccountSummary = async (introUserName) => {
       });
     }
     return apiResponseSuccess(transactions, true, statusCode.success, 'success', res);
-
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message, res
+      error.errMessage ?? error.message,
+      res,
     );
   }
 };
 
 export const introducerUser = {
-
   // introducerLiveBalance: async (id) => {
   //   const pool = await connectToDB();
   //   try {
@@ -348,24 +358,19 @@ export const introducerUser = {
   //         message: `Introducer with ID ${id} not found`,
   //       };
   //     }
-
   //     const introducerUserName = introUser[0].userName;
   //     const [userIntroId] = await database.execute(`SELECT * FROM IntroducedUsers WHERE introducerUserName = ?`, [
   //       introducerUserName,
   //     ]);
-
   //     if (userIntroId.length === 0) {
   //       return 0;
   //     }
-
   //     let liveBalance = 0;
   //     for (const user of userIntroId) {
   //       const introducerPercent = user.introducerPercentage;
   //       const transDetails = user.transactionDetail;
-
   //       let totalDep = 0;
   //       let totalWith = 0;
-
   //       transDetails?.forEach((res) => {
   //         if (res.transactionType === 'Deposit') {
   //           totalDep += Number(res.amount);
@@ -374,23 +379,16 @@ export const introducerUser = {
   //           totalWith += Number(res.amount);
   //         }
   //       });
-
   //       let diff = Math.abs(totalDep - totalWith);
   //       let amount = (introducerPercent / 100) * diff;
-
   //       liveBalance += amount;
   //     }
-
   //     return liveBalance;
   //   } catch (error) {
   //     console.error(error);
   //     throw error;
   //   }
   // },
-
-
-
-
   // introducerPercentageCut: async (id, startDate, endDate) => {
   //   const pool = await connectToDB();
   //   try {
@@ -399,30 +397,23 @@ export const introducerUser = {
   //     const userId = user.userId;
   //     const introducerUserId = user.introducersUserId;
   //     console.log("introducerUserId", introducerUserId);
-
   //     const introducerId = await IntroducerUser.findOne({
   //       id: introducerUserId,
   //     }).exec();
   //     console.log("introducerUser", introducerId);
   //     const introducerid = introducerId.introducerId;
   //     console.log("introducerid", introducerid);
-
   //     // This is Introducer's User's Percentage
   //     const introducerpercent = user.introducerPercentage;
-
   //     const transDetails = user.transactionDetail;
-
   //     const selectedStartDate = new Date(startDate);
   //     const selectedEndDate = new Date(endDate);
-
   //     const transactionsWithin7Days = transDetails.filter((transaction) => {
   //       const transDate = new Date(transaction.createdAt);
   //       return transDate >= selectedStartDate && transDate <= selectedEndDate;
   //     });
-
   //     let totalDep = 0;
   //     let totalWith = 0;
-
   //     transactionsWithin7Days.map((res) => {
   //       if (res.transactionType === "Deposit") {
   //         totalDep += Number(res.amount);
@@ -431,7 +422,6 @@ export const introducerUser = {
   //         totalWith += Number(res.amount);
   //       }
   //     });
-
   //     if (totalDep <= totalWith) {
   //       throw { message: "Can't send amount to Introducer" };
   //     }

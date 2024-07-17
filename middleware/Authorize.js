@@ -35,11 +35,13 @@ export const Authorize = (roles) => {
       }
 
       // Convert roles from JSON string to array if necessary
-      const rolesArray = Array.isArray(existingUser.roles) ? existingUser.roles : JSON.parse(existingUser.roles || '[]');
+      const rolesArray = Array.isArray(existingUser.roles)
+        ? existingUser.roles
+        : JSON.parse(existingUser.roles || '[]');
 
       // Check roles if specified
       if (roles && roles.length > 0) {
-        const userHasRequiredRole = roles.some(role => rolesArray.includes(role));
+        const userHasRequiredRole = roles.some((role) => rolesArray.includes(role));
         if (!userHasRequiredRole) {
           return res.status(statusCode.unauthorize).send({ code: 401, message: 'unauthorize access' });
         }

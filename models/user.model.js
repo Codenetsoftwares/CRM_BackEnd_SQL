@@ -11,7 +11,7 @@ const User = sequelize.define('User', {
   userName: { type: DataTypes.STRING },
   password: { type: DataTypes.STRING },
   introducersUserName: { type: DataTypes.STRING },
-  introducerPercentage: { type: DataTypes.INTEGER },  
+  introducerPercentage: { type: DataTypes.INTEGER },
   introducersUserName1: { type: DataTypes.STRING },
   introducerPercentage1: { type: DataTypes.INTEGER },
   introducersUserName2: { type: DataTypes.STRING },
