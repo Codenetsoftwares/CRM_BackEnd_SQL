@@ -12,11 +12,21 @@ const EditWebsiteRequest = sequelize.define('EditWebsiteRequest', {
   subAdminId: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
   websiteName: { type: DataTypes.STRING },
-  createdAt: { type: DataTypes.STRING },
+  // createdAt: { type: DataTypes.STRING },
   message: { type: DataTypes.STRING },
   type: { type: DataTypes.STRING },
   changedFields: { type: DataTypes.JSON },
   isApproved: { type: DataTypes.BOOLEAN },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  timestamps: true,
 });
 
 export default EditWebsiteRequest;

@@ -341,10 +341,10 @@ export const approveBankDetailEditRequestValidator = [
 
 export const validateUpdateWebsite = [
   param('website_id')
-    .isInt()
-    .withMessage('Website ID must be an integer')
     .notEmpty()
-    .withMessage('Website ID is required'),
+    .withMessage('Website ID is required')
+    .isUUID()
+    .withMessage('Website ID must be a valid UUID'),
   body('websiteName')
     .optional()
     .isString()
@@ -355,10 +355,10 @@ export const validateUpdateWebsite = [
 
 export const approveWebValidate = [
   param('requestId')
-    .isInt()
-    .withMessage('requestId  must be an integer')
     .notEmpty()
-    .withMessage('requestId is required'),
+    .withMessage('requestId is required')
+    .isUUID()
+    .withMessage('requestId must be a valid UUID'),
   body('isApproved').isBoolean().withMessage('isApproved field must be a boolean value'),
 ];
 
@@ -517,3 +517,54 @@ export const validateWebsite = [
     .isString()
     .withMessage('Website name must be a string'),
 ];
+
+export const validateDeleteSubAdminFromWebsite = [
+  param('websiteId').isString().withMessage('websiteId must be a string'),
+  param('subAdminId').isString().withMessage('subAdminId must be a string'),
+]
+
+export const validateAddWebsiteBalance = [
+  // Validate amount field
+  body('amount')
+    .notEmpty().withMessage('Amount is required')
+    .isNumeric().withMessage('Amount must be a number'),
+
+  // Validate transactionType field
+  body('transactionType')
+    .notEmpty().withMessage('Transaction type is required')
+    .equals('Manual-Website-Deposit').withMessage('Invalid transaction type'),
+
+  // Validate remarks field
+  body('remarks')
+    .notEmpty().withMessage('Remarks is required'),
+]
+
+export const validateWithdrawalWebsiteBalance = [
+  // Validate amount field
+  body('amount')
+    .notEmpty().withMessage('Amount is required')
+    .isNumeric().withMessage('Amount must be a number'),
+
+  // Validate transactionType field
+  body('transactionType')
+    .notEmpty().withMessage('Transaction type is required')
+    .equals('Manual-Website-Withdraw').withMessage('Invalid transaction type'),
+
+  // Validate remarks field
+  body('remarks')
+    .notEmpty().withMessage('Remarks is required'),
+]
+
+export const validateWebsiteActive = [
+  // Validate isActive field
+  param('websiteId')
+    .notEmpty()
+    .withMessage('Website ID is required')
+    .isUUID(4)
+    .withMessage('Website ID must be a valid UUID v4'),
+
+  body('isActive')
+    .notEmpty().withMessage('isActive is required')
+    .isBoolean().withMessage('isActive must be a boolean value')
+
+]

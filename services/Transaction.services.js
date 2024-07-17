@@ -1,4 +1,4 @@
-import WebsiteServices from '../services/WebSite.Service.js';
+import WebsiteServices, { getWebsiteBalance } from '../services/WebSite.Service.js';
 import BankServices from '../services/Bank.services.js';
 import { v4 as uuidv4 } from 'uuid';
 import IntroducerUser from '../models/introducerUser.model.js';
@@ -146,7 +146,7 @@ export const createTransaction = async (req, res) => {
     }
     const websiteId = dbWebsiteData.websiteId;
 
-    const websiteBalance = await WebsiteServices.getWebsiteBalance(websiteId);
+    const websiteBalance = await getWebsiteBalance(websiteId);
     const totalBalance = parseFloat(bonus) + parseFloat(amount);
     if (websiteBalance < totalBalance) {
       throw new CustomError('Insufficient Website balance', null, statusCode.badRequest);

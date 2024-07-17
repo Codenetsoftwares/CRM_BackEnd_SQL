@@ -9,6 +9,7 @@ import WebsiteServices, {
   getActiveWebsiteNames,
   getEditWebsiteRequests,
   getSingleWebsiteDetails,
+  getWebsiteBalance,
   getWebsiteNames,
   handleApproveWebsite,
   rejectWebsiteRequest,
@@ -20,7 +21,7 @@ import WebsiteServices, {
 } from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
-import { validateApproval, validateWebsite } from '../utils/commonSchema.js';
+import { validateAddWebsiteBalance, validateApproval, validateDeleteSubAdminFromWebsite, validateWebsite, validateWebsiteActive, validateWebsiteId, validateWithdrawalWebsiteBalance } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 
 const WebsiteRoutes = (app) => {
@@ -51,6 +52,7 @@ const WebsiteRoutes = (app) => {
     viewWebsiteRequests,
   );
 
+  // done
   app.delete('/api/reject/:websiteId', customErrorHandler, Authorize([string.superAdmin]), deleteWebsiteRequest); // not understanding this ... two apis work same "rejectWebsiteRequest"
 
   app.delete(
@@ -60,6 +62,7 @@ const WebsiteRoutes = (app) => {
     rejectWebsiteRequest,
   ); // not understanding this ... two apis work same "deleteWebsiteRequest"
 
+  // done
   app.delete(
     '/api/reject-website-edit/:websiteId',
     customErrorHandler,
@@ -67,6 +70,7 @@ const WebsiteRoutes = (app) => {
     deleteEditWebsiteRequest,
   );
 
+  // done
   app.get(
     '/api/get-activeWebsite-name',
     customErrorHandler,
@@ -81,34 +85,42 @@ const WebsiteRoutes = (app) => {
     getActiveWebsiteNames,
   );
 
+  // done
   app.delete(
     '/api/website/delete-subAdmin/:websiteId/:subAdminId',
+    validateDeleteSubAdminFromWebsite,
     customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
     deleteSubAdminFromWebsite,
   );
 
-  app.get(
-    '/api/get-single-website-name/:websiteId',
+  // done
+  app.get('/api/get-single-website-name/:websiteId',
+    validateWebsiteId,
     customErrorHandler,
     Authorize([string.superAdmin, string.transactionView, string.bankView]),
     getSingleWebsiteDetails,
   );
 
+  // done
   app.post(
     '/api/admin/add-website-balance/:websiteId',
+    validateAddWebsiteBalance,
     customErrorHandler,
     Authorize([string.superAdmin, string.websiteView, string.transactionView]),
     addWebsiteBalance,
   );
 
+  // done
   app.post(
     '/api/admin/withdraw-website-balance/:websiteId',
+    validateWithdrawalWebsiteBalance,
     customErrorHandler,
     Authorize([string.superAdmin, string.websiteView, string.transactionView]),
     withdrawWebsiteBalance,
   );
 
+  // done
   app.get(
     '/api/admin/website-name',
     customErrorHandler,
@@ -122,10 +134,13 @@ const WebsiteRoutes = (app) => {
     getWebsiteNames,
   );
 
+  // done
   app.get('/api/superAdmin/view-website-edit-requests', Authorize([string.superAdmin]), getEditWebsiteRequests);
 
+  // done
   app.post(
     '/api/admin/website/isActive/:websiteId',
+    validateWebsiteActive,
     Authorize([string.superAdmin, string.requestAdmin]),
     websiteActive,
   );
@@ -161,7 +176,7 @@ const WebsiteRoutes = (app) => {
         const userRole = req.user[0]?.roles;
         if (userRole.includes('superAdmin')) {
           const balancePromises = websiteData.map(async (website) => {
-            website.balance = await WebsiteServices.getWebsiteBalance(website.websiteId);
+            website.balance = await getWebsiteBalance(website.websiteId);
             const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
               website.websiteId,
             ]);
@@ -186,7 +201,7 @@ const WebsiteRoutes = (app) => {
                 website.subAdmins = subAdmins;
                 const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
                 if (userSubAdmin) {
-                  website.balance = await WebsiteServices.getWebsiteBalance(website.websiteId);
+                  website.balance = await getWebsiteBalance(website.websiteId);
                   website.isDeposit = userSubAdmin.isDeposit;
                   website.isWithdraw = userSubAdmin.isWithdraw;
                   website.isRenew = userSubAdmin.isRenew;
