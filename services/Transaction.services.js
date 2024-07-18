@@ -10,6 +10,7 @@ import Transaction from '../models/transaction.model.js';
 import Website from '../models/website.model.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
+import { Sequelize } from 'sequelize';
 
 export const createIntroducerDepositTransaction = async (req, res) => {
   const { amount, transactionType, remarks, introducerUserName } = req.body;

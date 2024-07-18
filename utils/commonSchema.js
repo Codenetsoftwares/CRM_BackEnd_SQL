@@ -521,39 +521,37 @@ export const validateWebsite = [
 export const validateDeleteSubAdminFromWebsite = [
   param('websiteId').isString().withMessage('websiteId must be a string'),
   param('subAdminId').isString().withMessage('subAdminId must be a string'),
-]
+];
 
 export const validateAddWebsiteBalance = [
   // Validate amount field
-  body('amount')
-    .notEmpty().withMessage('Amount is required')
-    .isNumeric().withMessage('Amount must be a number'),
+  body('amount').notEmpty().withMessage('Amount is required').isNumeric().withMessage('Amount must be a number'),
 
   // Validate transactionType field
   body('transactionType')
-    .notEmpty().withMessage('Transaction type is required')
-    .equals('Manual-Website-Deposit').withMessage('Invalid transaction type'),
+    .notEmpty()
+    .withMessage('Transaction type is required')
+    .equals('Manual-Website-Deposit')
+    .withMessage('Invalid transaction type'),
 
   // Validate remarks field
-  body('remarks')
-    .notEmpty().withMessage('Remarks is required'),
-]
+  body('remarks').notEmpty().withMessage('Remarks is required'),
+];
 
 export const validateWithdrawalWebsiteBalance = [
   // Validate amount field
-  body('amount')
-    .notEmpty().withMessage('Amount is required')
-    .isNumeric().withMessage('Amount must be a number'),
+  body('amount').notEmpty().withMessage('Amount is required').isNumeric().withMessage('Amount must be a number'),
 
   // Validate transactionType field
   body('transactionType')
-    .notEmpty().withMessage('Transaction type is required')
-    .equals('Manual-Website-Withdraw').withMessage('Invalid transaction type'),
+    .notEmpty()
+    .withMessage('Transaction type is required')
+    .equals('Manual-Website-Withdraw')
+    .withMessage('Invalid transaction type'),
 
   // Validate remarks field
-  body('remarks')
-    .notEmpty().withMessage('Remarks is required'),
-]
+  body('remarks').notEmpty().withMessage('Remarks is required'),
+];
 
 export const validateWebsiteActive = [
   // Validate isActive field
@@ -564,7 +562,8 @@ export const validateWebsiteActive = [
     .withMessage('Website ID must be a valid UUID v4'),
 
   body('isActive')
-    .notEmpty().withMessage('isActive is required')
-    .isBoolean().withMessage('isActive must be a boolean value')
-
-]
+    .notEmpty()
+    .withMessage('isActive is required')
+    .isBoolean()
+    .withMessage('isActive must be a boolean value'),
+];

@@ -32,13 +32,7 @@ export const loginAdmin = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to generate access token', res);
     }
 
-    return apiResponseSuccess(
-      accessToken,
-      true,
-      statusCode.success,
-      'Login Successfully',
-      res,
-    );
+    return apiResponseSuccess(accessToken, true, statusCode.success, 'Login Successfully', res);
   } catch (error) {
     console.error(error);
     return apiResponseErr(

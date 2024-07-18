@@ -130,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-        websiteName: {
-          [Op.like]: `%${search}%`,
-        },
-      }
+          websiteName: {
+            [Op.like]: `%${search}%`,
+          },
+        }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -390,7 +390,13 @@ export const withdrawWebsiteBalance = async (req, res) => {
     // Insert the transaction data into WebsiteTransaction table
     await WebsiteTransaction.create(websiteTransaction);
 
-    return apiResponseSuccess(websiteTransaction, true, statusCode.create, 'Wallet Balance Deducted from your Website', res);
+    return apiResponseSuccess(
+      websiteTransaction,
+      true,
+      statusCode.create,
+      'Wallet Balance Deducted from your Website',
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -516,7 +522,7 @@ export const updateWebsite = async (req, res) => {
   try {
     const id = req.params.website_id;
 
-    const { websiteName } = req.body
+    const { websiteName } = req.body;
     // Retrieve existing website details from the database
     const editWebsite = await Website.findOne({ where: { websiteId: id } });
     if (!editWebsite) {
@@ -576,13 +582,7 @@ export const updateWebsite = async (req, res) => {
     // Send success response
     return apiResponseSuccess(null, true, statusCode.create, "Website Detail's Sent to Super Admin For Approval", res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -618,7 +618,7 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
           {
             websiteName: editRequest.websiteName.replace(/\s+/g, ''),
           },
-          { where: { websiteId: editRequest.websiteId } }
+          { where: { websiteId: editRequest.websiteId } },
         );
 
         editRequest.isApproved = true;
@@ -634,13 +634,7 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
       return apiResponseSuccess(null, true, statusCode.badRequest, 'Edit request has already been processed', res);
     }
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 
@@ -679,13 +673,7 @@ export const getWebsiteBalance = async (websiteId) => {
 
     return balance;
   } catch (error) {
-    apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage,
-      res,
-    );
+    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
   }
 };
 const WebsiteServices = {
@@ -699,11 +687,6 @@ const WebsiteServices = {
       throw new Error('Internal Server error');
     }
   },
-
- 
-
-
-
 };
 
 export default WebsiteServices;

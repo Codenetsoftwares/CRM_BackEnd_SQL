@@ -21,7 +21,15 @@ import WebsiteServices, {
 } from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
-import { validateAddWebsiteBalance, validateApproval, validateDeleteSubAdminFromWebsite, validateWebsite, validateWebsiteActive, validateWebsiteId, validateWithdrawalWebsiteBalance } from '../utils/commonSchema.js';
+import {
+  validateAddWebsiteBalance,
+  validateApproval,
+  validateDeleteSubAdminFromWebsite,
+  validateWebsite,
+  validateWebsiteActive,
+  validateWebsiteId,
+  validateWithdrawalWebsiteBalance,
+} from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 
 const WebsiteRoutes = (app) => {
@@ -95,7 +103,8 @@ const WebsiteRoutes = (app) => {
   );
 
   // done
-  app.get('/api/get-single-website-name/:websiteId',
+  app.get(
+    '/api/get-single-website-name/:websiteId',
     validateWebsiteId,
     customErrorHandler,
     Authorize([string.superAdmin, string.transactionView, string.bankView]),
