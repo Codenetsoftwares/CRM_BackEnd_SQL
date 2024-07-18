@@ -229,7 +229,7 @@ const AccountRoute = (app) => {
 
   // done
   app.get(
-    '/api/introducer-user-single-data/:introId',
+    '/introducer-user-single-data/:introId',
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     getIntroducerUserSingleData,

@@ -626,7 +626,7 @@ export const viewSubAdminBanks = async (req, res) => {
       type: QueryTypes.SELECT,
     });
 
-    return apiResponseSuccess(bankData, true, statusCode.success,'Success', res);
+    return apiResponseSuccess(bankData, true, statusCode.success, 'Success', res);
   } catch (error) {
     console.error('Error fetching sub-admin banks:', error); // Log the error for debugging
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -784,16 +784,16 @@ const BankServices = {
     try {
       // Find all bank transactions for the given bankId
       const bankTransactions = await BankTransaction.findAll({
-        where: { bankId }
+        where: { bankId },
       });
-  
+
       // Find all transactions associated with the given bankId
       const transactions = await Transaction.findAll({
-        where: { bankId }
+        where: { bankId },
       });
-  
+
       let balance = 0;
-  
+
       // Calculate balance based on bank transactions
       for (const transaction of bankTransactions) {
         if (transaction.depositAmount) {
@@ -803,7 +803,7 @@ const BankServices = {
           balance -= parseFloat(transaction.withdrawAmount);
         }
       }
-  
+
       // Calculate balance based on regular transactions
       for (const transaction of transactions) {
         if (transaction.transactionType === 'Deposit') {
@@ -812,7 +812,7 @@ const BankServices = {
           balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
         }
       }
-  
+
       return balance;
     } catch (e) {
       console.error(e);

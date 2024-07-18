@@ -10,6 +10,8 @@ import AccountServices from './Account.Services.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 import { Sequelize } from 'sequelize';
+import { string } from '../constructor/string.js';
+import IntroducerTransaction from '../models/introducerTransaction.model.js';
 
 export const createIntroducerUser = async (req, res) => {
   try {
@@ -37,6 +39,7 @@ export const createIntroducerUser = async (req, res) => {
       userName,
       password: encryptedPassword,
       introducerId: user.userName,
+      role: string.introducer,
     });
 
     if (newIntroducerUser) {
@@ -51,13 +54,7 @@ export const createIntroducerUser = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to create new Introducer User', res);
     }
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -79,13 +76,7 @@ export const updateIntroducerProfile = async (req, res) => {
 
     return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -113,13 +104,7 @@ export const introducerPasswordResetCode = async (req, res) => {
 
     return apiResponseSuccess(resetIntroducer, true, statusCode.success, 'Password reset successfully', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -131,7 +116,7 @@ export const getIntroducerProfile = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
     }
 
-    const TPDLT = await AccountServices.IntroducerBalance(id,res);
+    const TPDLT = await AccountServices.IntroducerBalance(id, res);
     const response = {
       introId: introUser.introId,
       firstName: introUser.firstName,
@@ -141,20 +126,14 @@ export const getIntroducerProfile = async (req, res) => {
       balance: Number(TPDLT),
     };
 
-    const liveBalance = await AccountServices.introducerLiveBalance(id,res);
+    const liveBalance = await AccountServices.introducerLiveBalance(id, res);
     const currentDue = liveBalance - response.balance;
     response.currentDue = currentDue;
 
     return apiResponseSuccess(response, true, statusCode.success, 'success', res);
   } catch (error) {
-    console.error(":err");
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    console.error(':err');
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -185,7 +164,7 @@ export const listIntroducerUsers = async (req, res) => {
     const usersWithTransactionDetails = [];
     for (const userData of users) {
       const userTransactionDetail = await UserTransactionDetail.findAll({
-        where: { userName: userData.userName }
+        where: { userName: userData.userName },
       });
       // Attach transaction details to user data
       userData.UserTransactionDetail = userTransactionDetail;
@@ -194,13 +173,7 @@ export const listIntroducerUsers = async (req, res) => {
 
     return apiResponseSuccess(usersWithTransactionDetails, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -208,17 +181,27 @@ export const getIntroducerUserData = async (req, res) => {
   try {
     const id = req.params.user_id;
     const user = req.user;
-    const introUser = user[0].userName;
+    const introUser = user.userName;
+
+    console.log('Intro User:', introUser);
 
     // Fetch the user by user_id
-    const introducerUser = await User.findOne({ where: { user_id: id } });
+    const introducerUser = await User.findOne({ where: { userId: id } });
 
     if (!introducerUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
+    console.log('Fetched Introducer User:', introducerUser);
+
+    console.log('Introducer User Fields:', {
+      introducersUserName: introducerUser.introducersUserName,
+      introducersUserName1: introducerUser.introducersUserName1,
+      introducersUserName2: introducerUser.introducersUserName2,
+    });
+
     let filteredIntroducerUser = {
-      user_id: introducerUser.user_id,
+      userId: introducerUser.userId,
       firstName: introducerUser.firstName,
       lastName: introducerUser.lastName,
       userName: introducerUser.userName,
@@ -248,6 +231,9 @@ export const getIntroducerUserData = async (req, res) => {
       matchedIntroducerPercentage = introducerUser.introducerPercentage2;
     }
 
+    console.log('Matched Introducers UserName:', matchedIntroducersUserName);
+    console.log('Matched Introducer Percentage:', matchedIntroducerPercentage);
+
     // If matched introducersUserName found, include it along with percentage in the response
     if (matchedIntroducersUserName) {
       filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
@@ -257,13 +243,8 @@ export const getIntroducerUserData = async (req, res) => {
       return apiResponseErr(null, true, statusCode.unauthorize, 'Unauthorized', res);
     }
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    console.error('Error in getIntroducerUserData:', error);
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -282,13 +263,7 @@ export const getIntroducerLiveBalance = async (req, res) => {
     console.log('data', data);
     return apiResponseSuccess({ LiveBalance: data }, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -302,18 +277,13 @@ export const introducerAccountSummary = async (req, res) => {
     });
     return apiResponseSuccess(introSummary, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
-export const getIntroducerUserAccountSummary = async (introUserName) => {
+export const getIntroducerUserAccountSummary = async (req, res) => {
   try {
+    const introUserName = req.params.introducerUsername;
     const users = await User.findAll({
       where: {
         [Sequelize.Op.or]: [
@@ -349,13 +319,7 @@ export const getIntroducerUserAccountSummary = async (introUserName) => {
     }
     return apiResponseSuccess(transactions, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 

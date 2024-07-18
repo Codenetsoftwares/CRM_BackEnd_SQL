@@ -5,7 +5,7 @@ import { database } from '../services/database.service.js';
 import Admin from '../models/admin.model.js';
 import User from '../models/user.model.js';
 import IntroducerUser from '../models/introducerUser.model.js';
-import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
@@ -200,15 +200,30 @@ export const getUserProfile = async (req, res) => {
 
 export const getSubAdminsWithBankView = async (req, res) => {
   try {
-    const subAdmins = await Admin.findAll({
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * pageSize;
+
+    const subAdmins = await Admin.findAndCountAll({
       where: {
         roles: {
           [Op.like]: ['%Bank-View%'], // Adjust this based on how roles are stored
         },
       },
       attributes: ['userName'],
+      limit,
+      offset,
     });
-    return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
+    const totalItems = subAdmins.count;
+    const totalPages = Math.ceil(totalItems / limit);
+    return apiResponsePagination(
+      subAdmins.rows,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -216,10 +231,25 @@ export const getSubAdminsWithBankView = async (req, res) => {
 
 export const getAllSubAdmins = async (req, res) => {
   try {
-    const subAdmins = await Admin.findAll({
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    const subAdmins = await Admin.findAndCountAll({
       attributes: ['userName'],
+      offset,
+      limit,
     });
-    return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
+    const totalItems = subAdmins.count;
+    const totalPages = Math.ceil(totalItems / limit);
+    return apiResponsePagination(
+      subAdmins.rows,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -227,15 +257,30 @@ export const getAllSubAdmins = async (req, res) => {
 
 export const getSubAdminsWithWebsiteView = async (req, res) => {
   try {
-    const subAdmins = await Admin.findAll({
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    const subAdmins = await Admin.findAndCountAll({
       where: {
         roles: {
           [Op.like]: ['%Website-View%'],
         },
       },
       attributes: ['userName'],
+      offset,
+      limit,
     });
-    return apiResponseSuccess(subAdmins, true, statusCode.success, 'success', res);
+    const totalItems = subAdmins.count;
+    const totalPages = Math.ceil(totalItems / limit);
+    return apiResponsePagination(
+      subAdmins.rows,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -243,7 +288,6 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
 
 export const getClientData = async (req, res) => {
   const { introId } = req.params;
-
   try {
     const introducer = await IntroducerUser.findOne({ where: { introId } });
 
@@ -278,14 +322,37 @@ export const getSingleIntroducer = async (req, res) => {
 
 export const getUserById = async (req, res) => {
   try {
-    const users = await User.findAll({ attributes: ['userName'] });
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    const { count: totalItems, rows: users } = await User.findAndCountAll({
+      attributes: ['userName'],
+      offset,
+      limit,
+    });
 
     if (!users || users.length === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'No users found', res);
     }
 
     const userNames = users.map((user) => user.userName);
-    return apiResponseSuccess(userNames, true, statusCode.success, 'success', res);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const responseData = {
+      data: userNames,
+      success: true,
+      successCode: statusCode.success,
+      message: 'success',
+      pagination: {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems,
+      },
+    };
+
+    return res.status(statusCode.success).json(responseData);
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -293,12 +360,33 @@ export const getUserById = async (req, res) => {
 
 export const getIntroducerById = async (req, res) => {
   try {
-    const introducers = await IntroducerUser.findAll({ attributes: ['userName', 'introId'] });
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    const { count: totalItems, rows: introducers } = await IntroducerUser.findAndCountAll({
+      attributes: ['userName', 'introId'],
+      offset,
+      limit,
+    });
 
     if (!introducers || introducers.length === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'No introducers found', res);
     }
-    return apiResponseSuccess(introducers, true, statusCode.success, 'success', res);
+
+    return apiResponsePagination(
+      introducers,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+      },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -637,7 +725,6 @@ const AccountServices = {
     } catch (error) {
       console.error(error);
       return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
-
     }
   },
 

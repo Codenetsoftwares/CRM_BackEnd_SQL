@@ -171,7 +171,7 @@ export const createTransaction = async (req, res) => {
     }
 
     // Retrieve user data
-    const user = await User.findOne({ where: { userName } }); 
+    const user = await User.findOne({ where: { userName } });
     if (!user) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
@@ -240,7 +240,7 @@ export const createTransaction = async (req, res) => {
         createdAt: new Date(),
         subAdminId: subAdminName.userName,
       });
-    } 
+    }
     // Handle withdraw transaction
     else if (transactionType === 'Withdraw') {
       newTransactionData = {
@@ -294,21 +294,19 @@ export const createTransaction = async (req, res) => {
   }
 };
 
-
-
 export const depositView = async (req, res) => {
   try {
     // Find all deposit transactions ordered by createdAt descending
     const deposits = await Transaction.findAll({
       where: {
-        transactionType: 'Deposit' // Filter by transactionType
+        transactionType: 'Deposit', // Filter by transactionType
       },
-      order: [['createdAt', 'DESC']] // Order by createdAt descending
+      order: [['createdAt', 'DESC']], // Order by createdAt descending
     });
 
     // Calculate total amount of deposits
     let sum = 0;
-    deposits.forEach(deposit => {
+    deposits.forEach((deposit) => {
       sum += parseFloat(deposit.amount);
     });
 
@@ -329,14 +327,14 @@ export const withdrawView = async (req, res) => {
     // Find all withdraw transactions ordered by createdAt descending
     const withdraws = await Transaction.findAll({
       where: {
-        transactionType: 'Withdraw' // Filter by transactionType
+        transactionType: 'Withdraw', // Filter by transactionType
       },
-      order: [['createdAt', 'DESC']] // Order by createdAt descending
+      order: [['createdAt', 'DESC']], // Order by createdAt descending
     });
 
     // Calculate total amount of withdraws
     let sum = 0;
-    withdraws.forEach(withdraw => {
+    withdraws.forEach((withdraw) => {
       sum += parseFloat(withdraw.amount);
     });
 

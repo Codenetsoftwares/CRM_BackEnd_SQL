@@ -13,17 +13,19 @@ import { AuthorizeRole } from '../middleware/auth.js';
 import { database } from '../services/database.service.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
-import { updateIntroducerValidationSchema, validateIntroId } from '../utils/commonSchema.js';
+import {
+  updateIntroducerValidationSchema,
+  validateIntroducerUsername,
+  validateIntroId,
+  validateIntroUserId,
+  validateResetPassword,
+} from '../utils/commonSchema.js';
 
 export const IntroducerRoutes = (app) => {
-  app.get('/api/introducer/profile',
-    customErrorHandler,
-    AuthorizeRole([
-      string.introducer
-    ]),
-    getIntroducerProfile
-  );
+  // done
+  app.get('/api/introducer/profile', customErrorHandler, AuthorizeRole([string.introducer]), getIntroducerProfile);
 
+  // done
   app.put(
     '/api/introducer-profile-edit/:introId',
     updateIntroducerValidationSchema,
@@ -32,6 +34,7 @@ export const IntroducerRoutes = (app) => {
     updateIntroducerProfile,
   );
 
+  // done
   app.get(
     '/api/list-introducer-user/:introId',
     validateIntroId,
@@ -40,36 +43,46 @@ export const IntroducerRoutes = (app) => {
     listIntroducerUsers,
   );
 
+  // done
   app.get(
     '/api/introducer-user-single-data/:user_id',
+    validateIntroUserId,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     getIntroducerUserData,
   );
 
+  // done
   app.get(
     '/api/introducer/introducer-live-balance/:introId',
+    validateIntroId,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     getIntroducerLiveBalance,
   );
 
+  // done
   app.get(
     '/api/introducer-account-summary/:introId',
+    validateIntroId,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     introducerAccountSummary,
   );
 
+  // done
   app.post(
     '/api/introducer/reset-password',
+    validateResetPassword,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     introducerPasswordResetCode,
   );
 
+  // done
   app.get(
     '/api/introducer-user/accountSummary/:introducerUsername',
+    validateIntroducerUsername,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     getIntroducerUserAccountSummary,

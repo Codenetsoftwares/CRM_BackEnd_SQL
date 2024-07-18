@@ -163,7 +163,8 @@ const WebsiteRoutes = (app) => {
   );
 
   // done
-  app.put('/api/website/edit-request/:websiteId',
+  app.put(
+    '/api/website/edit-request/:websiteId',
     updateWebsitePermissionsValidator,
     Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
     updateWebsitePermissions,

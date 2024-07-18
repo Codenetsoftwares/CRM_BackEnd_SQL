@@ -130,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-        websiteName: {
-          [Op.like]: `%${search}%`,
-        },
-      }
+          websiteName: {
+            [Op.like]: `%${search}%`,
+          },
+        }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -484,44 +484,44 @@ export const updateWebsitePermissions = async (req, res) => {
     const { subAdmins } = req.body;
     const websiteId = req.params.websiteId;
 
-    const results = await Promise.all(subAdmins.map(async (subAdminData) => {
-      const existingSubAdmin = await WebsiteSubAdmins.findOne({
-        where: {
-          websiteId: websiteId,
-          subAdminId: subAdminData.subAdminId,
-        },
-      });
+    const results = await Promise.all(
+      subAdmins.map(async (subAdminData) => {
+        const existingSubAdmin = await WebsiteSubAdmins.findOne({
+          where: {
+            websiteId: websiteId,
+            subAdminId: subAdminData.subAdminId,
+          },
+        });
 
-      if (!existingSubAdmin) {
-        const newSubAdmin = await WebsiteSubAdmins.create({
-          websiteId: websiteId,
-          subAdminId: subAdminData.subAdminId,
-          isDeposit: subAdminData.isDeposit || false,
-          isWithdraw: subAdminData.isWithdraw || false,
-          isEdit: subAdminData.isEdit || false,
-          isRenew: subAdminData.isRenew || false,
-          isDelete: subAdminData.isDelete || false,
-        });
-        return newSubAdmin;
-      } else {
-        await existingSubAdmin.update({
-          isDeposit: subAdminData.isDeposit || false,
-          isWithdraw: subAdminData.isWithdraw || false,
-          isEdit: subAdminData.isEdit || false,
-          isRenew: subAdminData.isRenew || false,
-          isDelete: subAdminData.isDelete || false,
-        });
-        return existingSubAdmin;
-      }
-    }));
+        if (!existingSubAdmin) {
+          const newSubAdmin = await WebsiteSubAdmins.create({
+            websiteId: websiteId,
+            subAdminId: subAdminData.subAdminId,
+            isDeposit: subAdminData.isDeposit || false,
+            isWithdraw: subAdminData.isWithdraw || false,
+            isEdit: subAdminData.isEdit || false,
+            isRenew: subAdminData.isRenew || false,
+            isDelete: subAdminData.isDelete || false,
+          });
+          return newSubAdmin;
+        } else {
+          await existingSubAdmin.update({
+            isDeposit: subAdminData.isDeposit || false,
+            isWithdraw: subAdminData.isWithdraw || false,
+            isEdit: subAdminData.isEdit || false,
+            isRenew: subAdminData.isRenew || false,
+            isDelete: subAdminData.isDelete || false,
+          });
+          return existingSubAdmin;
+        }
+      }),
+    );
 
     return apiResponseSuccess(results, true, statusCode.success, 'Website Permission Updated successfully', res);
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
-
 
 export const updateWebsite = async (req, res) => {
   try {

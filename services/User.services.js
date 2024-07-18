@@ -101,7 +101,6 @@ export const userPasswordResetCode = async (req, res) => {
   }
 };
 
-
 export const addBankDetails = async (req, res) => {
   try {
     console.log('user');
@@ -229,7 +228,6 @@ export const addUpiDetails = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const updateUserProfile = async (req, res) => {
   try {

@@ -569,10 +569,10 @@ export const validateWebsiteActive = [
 ];
 
 export const updateWebsitePermissionsValidator = [
-  param('websiteId')
-    .isInt().withMessage('websiteId must be an integer'),
+  param('websiteId').isInt().withMessage('websiteId must be an integer'),
   body('subAdmins')
-    .isArray().withMessage('subAdmins must be an array')
+    .isArray()
+    .withMessage('subAdmins must be an array')
     .custom((value) => {
       if (!Array.isArray(value)) {
         throw new Error('subAdmins must be an array');
@@ -580,24 +580,17 @@ export const updateWebsitePermissionsValidator = [
       return true;
     }),
   body('subAdmins.*.subAdminId')
-    .isString().withMessage('subAdminId must be a string')
-    .not().isEmpty().withMessage('subAdminId is required'),
-  body('subAdmins.*.isDeposit')
-    .optional()
-    .isBoolean().withMessage('isDeposit must be a boolean'),
-  body('subAdmins.*.isWithdraw')
-    .optional()
-    .isBoolean().withMessage('isWithdraw must be a boolean'),
-  body('subAdmins.*.isEdit')
-    .optional()
-    .isBoolean().withMessage('isEdit must be a boolean'),
-  body('subAdmins.*.isRenew')
-    .optional()
-    .isBoolean().withMessage('isRenew must be a boolean'),
-  body('subAdmins.*.isDelete')
-    .optional()
-    .isBoolean().withMessage('isDelete must be a boolean'),
-]
+    .isString()
+    .withMessage('subAdminId must be a string')
+    .not()
+    .isEmpty()
+    .withMessage('subAdminId is required'),
+  body('subAdmins.*.isDeposit').optional().isBoolean().withMessage('isDeposit must be a boolean'),
+  body('subAdmins.*.isWithdraw').optional().isBoolean().withMessage('isWithdraw must be a boolean'),
+  body('subAdmins.*.isEdit').optional().isBoolean().withMessage('isEdit must be a boolean'),
+  body('subAdmins.*.isRenew').optional().isBoolean().withMessage('isRenew must be a boolean'),
+  body('subAdmins.*.isDelete').optional().isBoolean().withMessage('isDelete must be a boolean'),
+];
 
 export const validateBankDetails = [
   // Validate bank_details array is present and is an array
@@ -607,12 +600,9 @@ export const validateBankDetails = [
   body('bank_details.*.account_holder_name').notEmpty().withMessage('Account holder name is required'),
   body('bank_details.*.bank_name').notEmpty().withMessage('Bank name is required'),
   body('bank_details.*.ifsc_code').notEmpty().withMessage('IFSC code is required'),
-  body('bank_details.*.account_number').notEmpty().withMessage('Account number is required')
-
-]
-export const validateWebsiteName = [
-  body('website_name').isArray().withMessage('Bank details must be an array'),
-]
+  body('bank_details.*.account_number').notEmpty().withMessage('Account number is required'),
+];
+export const validateWebsiteName = [body('website_name').isArray().withMessage('Bank details must be an array')];
 
 export const validateAddUpiDetails = [
   body('upi_details').isArray().withMessage('UPI details must be an array'),
@@ -623,14 +613,18 @@ export const validateAddUpiDetails = [
 
 export const validate = [
   body('userName').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
 ];
 
 export const validateCreateTransaction = [
   body('transactionID').trim().notEmpty().withMessage('Transaction ID is required'),
   body('amount').trim().notEmpty().isNumeric().withMessage('Amount is required and must be a number'),
   body('paymentMethod').trim().notEmpty().withMessage('Payment Method is required'),
-]
+];
 
 export const validateIntroId = [
   param('introId')
@@ -638,4 +632,12 @@ export const validateIntroId = [
     .withMessage('Introducer ID is required')
     .isUUID()
     .withMessage('Introducer ID must be a valid UUID'),
-]
+];
+
+export const validateIntroUserId = [
+  param('user_id').notEmpty().withMessage('User ID is required').isUUID().withMessage('User ID must be a valid UUID'),
+];
+
+export const validateIntroducerUsername = [
+  param('introducerUsername').notEmpty().withMessage('introducerUsername is required'),
+];
