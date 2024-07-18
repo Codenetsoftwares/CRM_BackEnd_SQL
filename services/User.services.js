@@ -11,6 +11,7 @@ import { statusCode } from '../utils/statusCodes.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 import { string } from '../constructor/string.js';
 import CustomError from '../utils/extendError.js';
+import { Op } from 'sequelize';
 
 export const createUser = async (req, res) => {
   const {
@@ -78,7 +79,7 @@ export const userPasswordResetCode = async (req, res) => {
     // Check if the user exists
     const existingUser = await User.findOne({ where: { userName } });
     if (!existingUser) {
-      throw new CustomError('User not found', 404);
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
     // Compare new password with the existing password
@@ -99,12 +100,17 @@ export const userPasswordResetCode = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-// not understanding the body fot testing
+
+
 export const addBankDetails = async (req, res) => {
   try {
     console.log('user');
     const bankDetailsArray = req.body.bank_details;
     const user = req.user;
+
+    if (!user || !user.userId) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not authenticated', res);
+    }
 
     const existingUser = await User.findOne({ where: { userId: user.userId } });
 
@@ -135,7 +141,7 @@ export const addBankDetails = async (req, res) => {
     existingUser.Bank_Details = JSON.stringify(bankDetails);
     await existingUser.save();
 
-    return apiResponseSuccess(null, true, statusCode.create, 'User bank details added successfully', res);
+    return apiResponseSuccess(bankDetails, true, statusCode.success, 'User bank details added successfully', res);
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -153,6 +159,9 @@ export const addWebsiteDetails = async (req, res) => {
     }
 
     let websitesArray = existingUser.Websites_Details ? JSON.parse(existingUser.Websites_Details) : [];
+    if (!Array.isArray(websites)) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for website names', res);
+    }
 
     for (const website of websites) {
       if (websitesArray.includes(website)) {
@@ -175,14 +184,23 @@ export const addUpiDetails = async (req, res) => {
     const upiDetailsArray = req.body.upi_details;
     const user = req.user;
 
-    const existingUser = await User.findOne({ where: { userId: user[0].userId } });
+    // Check if req.user is defined and has userId property
+    if (!user || !user.userId) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not authenticated', res);
+    }
 
+    // Find existing user based on userId
+    const existingUser = await User.findOne({ where: { userId: user.userId } });
+
+    // If user not found, return error
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
+    // Parse existing UPI details or initialize as empty array
     let upiDetails = existingUser.Upi_Details ? JSON.parse(existingUser.Upi_Details) : [];
 
+    // Check for duplicates and add new UPI details
     for (const upiDetail of upiDetailsArray) {
       if (upiDetails.some((existingUpiDetail) => existingUpiDetail.upi_id === upiDetail.upi_id)) {
         return apiResponseErr(
@@ -200,14 +218,19 @@ export const addUpiDetails = async (req, res) => {
       });
     }
 
+    // Update and stringify UPI details in existingUser
     existingUser.Upi_Details = JSON.stringify(upiDetails);
     await existingUser.save();
 
-    return apiResponseSuccess(null, true, statusCode.create, 'User UPI details added successfully', res);
+    // Return success response
+    return apiResponseSuccess(upiDetails, true, statusCode.create, 'User UPI details added successfully', res);
   } catch (error) {
+    // Handle errors and return appropriate error response
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
+
 export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -220,7 +243,7 @@ export const updateUserProfile = async (req, res) => {
     const updatedDetails = await userDetails.update(req.body);
 
     if (updatedDetails) {
-      return apiResponseSuccess(null, true, statusCode.create, 'Profile updated successfully', res);
+      return apiResponseSuccess(updatedDetails, true, statusCode.create, 'Profile updated successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to update profile', res);
     }
@@ -302,6 +325,7 @@ export const getSuperAdminUserProfile = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 export const UserServices = {
   updateUserProfile: async (userDetails, data) => {
     try {

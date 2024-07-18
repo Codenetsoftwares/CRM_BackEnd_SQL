@@ -10,34 +10,37 @@ import UserServices, {
   updateUserProfile,
   userPasswordResetCode,
 } from '../services/User.services.js';
+import { validate, validateAddUpiDetails, validateBankDetails, validateUserId, validateWebsiteName } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 
 export const UserRoutes = (app) => {
+  // DONE
   // API To Add Bank Name
-  app.post('/api/user/add-bank-name', AuthorizeRole([string.user]), customErrorHandler, addBankDetails);
+  app.post('/api/user/add-bank-name', validateBankDetails, customErrorHandler, AuthorizeRole([string.user]), addBankDetails);
 
+  // DONE
   // API To Add Website Name
+  app.post('/api/user/add-website-name', validateWebsiteName, customErrorHandler, AuthorizeRole([string.user]), addWebsiteDetails);
 
-  app.post('/api/user/add-website-name', AuthorizeRole([string.user]), customErrorHandler, addWebsiteDetails);
-
+  // Done
   // API To Add UPI Details
+  app.post('/api/user/add-upi-name', validateAddUpiDetails, customErrorHandler, AuthorizeRole([string.user]), addUpiDetails);
 
-  app.post('/api/user/add-upi-name', AuthorizeRole([string.user]), customErrorHandler, addUpiDetails);
-
+  // DONE
   // API To Edit User Profiles
+  app.put('/api/user-profile-edit/:userId', validateUserId, customErrorHandler, AuthorizeRole([string.user]), updateUserProfile);
 
-  app.put('/api/user-profile-edit/:userId', AuthorizeRole([string.user]), customErrorHandler, updateUserProfile);
-
+  // DONE
   // API To View User Profiles
+  app.get('/api/user-profile-data/:userId', validateUserId, customErrorHandler, AuthorizeRole([string.user]), getUserProfileData);
 
-  app.get('/api/user-profile-data/:userId', AuthorizeRole([string.user]), customErrorHandler, getUserProfileData);
+  // DONE
+  app.post('/api/user/reset-password', validate, customErrorHandler, AuthorizeRole([string.user]), userPasswordResetCode);
 
-  app.post('/api/user/reset-password', AuthorizeRole([string.user]), userPasswordResetCode);
-
-  app.get(
-    '/api/super-admin/user-profile/:page',
-    Authorize(['superAdmin']),
+  // DONE
+  app.get('/api/super-admin/user-profile/:page',
     customErrorHandler,
+    Authorize([string.superAdmin]),
     getSuperAdminUserProfile,
   );
 

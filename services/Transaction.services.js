@@ -11,6 +11,7 @@ import Website from '../models/website.model.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 import { Sequelize } from 'sequelize';
+import Bank from '../models/bank.model.js';
 
 export const createIntroducerDepositTransaction = async (req, res) => {
   const { amount, transactionType, remarks, introducerUserName } = req.body;
@@ -114,6 +115,7 @@ export const createTransaction = async (req, res) => {
       remarks,
     } = req.body;
 
+    // Validate required fields
     if (!transactionID) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Transaction ID is required', res);
     }
@@ -126,7 +128,7 @@ export const createTransaction = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Payment Method is required', res);
     }
 
-    // Checking if transactionID is reusable or not
+    // Check if transactionID is reusable or not
     const existingTransaction = await Transaction.findOne({
       where: {
         transactionID,
@@ -140,41 +142,47 @@ export const createTransaction = async (req, res) => {
       throw new CustomError('Transaction ID is already in use. Please try again after 48 hours.', null, 409);
     }
 
-    // Website
+    // Retrieve website data
     const dbWebsiteData = await Website.findOne({ where: { websiteName } });
     if (!dbWebsiteData) {
-      throw new CustomError('Website data not found', null, statusCode.notFound);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website data not found', res);
     }
     const websiteId = dbWebsiteData.websiteId;
 
+    // Check website balance if needed
     const websiteBalance = await getWebsiteBalance(websiteId);
     const totalBalance = parseFloat(bonus) + parseFloat(amount);
     if (websiteBalance < totalBalance) {
       throw new CustomError('Insufficient Website balance', null, statusCode.badRequest);
     }
 
-    // Bank
+    // Retrieve bank data
     const dbBankData = await Bank.findOne({ where: { bankName } });
     if (!dbBankData) {
       throw new CustomError('Bank data not found', null, statusCode.notFound);
     }
     const bankId = dbBankData.bankId;
+
+    // Check bank balance if needed
     const bankBalance = await BankServices.getBankBalance(bankId);
     const totalBankBalance = parseFloat(bankCharges) + parseFloat(amount);
     if (bankBalance < totalBankBalance) {
       throw new CustomError('Insufficient Bank balance', null, statusCode.badRequest);
     }
 
-    // User
-    const user = await User.findOne({ where: { userName } });
+    // Retrieve user data
+    const user = await User.findOne({ where: { userName } }); 
     if (!user) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    // Introducer
+    // Retrieve introducer's username
     const introducersUserName = user.introducersUserName;
 
+    // Generate unique transaction ID
     const Transaction_Id = uuidv4();
+
+    // Prepare transaction data
     let newTransactionData = {
       bankId,
       websiteId,
@@ -182,8 +190,8 @@ export const createTransaction = async (req, res) => {
       transactionType,
       amount: Math.round(parseFloat(amount)),
       paymentMethod,
-      subAdminId: subAdminName[0].userName,
-      subAdminName: subAdminName[0].firstName,
+      subAdminId: subAdminName.userName,
+      subAdminName: subAdminName.firstName,
       userName,
       accountNumber,
       bankName,
@@ -195,20 +203,28 @@ export const createTransaction = async (req, res) => {
       Transaction_Id,
     };
 
+    // Handle deposit transaction
     if (transactionType === 'Deposit') {
       newTransactionData = {
         ...newTransactionData,
         bonus,
       };
 
+      // Create transaction record in Transaction table
       await Transaction.create(newTransactionData);
 
+      // Ensure userId exists and matches an existing User record's id
+      if (!user.id) {
+        throw new CustomError('User ID not found or invalid', null, statusCode.badRequest);
+      }
+
+      // Create transaction detail record in UserTransactionDetail table
       await UserTransactionDetail.create({
-        userId: user.userId,
+        userId: user.id,
         transactionId: Transaction_Id,
         bankId,
         websiteId,
-        subAdminName: subAdminName[0].firstName,
+        subAdminName: subAdminName.firstName,
         transactionID,
         transactionType,
         amount: Math.round(parseFloat(amount)),
@@ -222,22 +238,31 @@ export const createTransaction = async (req, res) => {
         bankName,
         websiteName,
         createdAt: new Date(),
-        subAdminId: subAdminName[0].userName,
+        subAdminId: subAdminName.userName,
       });
-    } else if (transactionType === 'Withdraw') {
+    } 
+    // Handle withdraw transaction
+    else if (transactionType === 'Withdraw') {
       newTransactionData = {
         ...newTransactionData,
         bankCharges,
       };
 
+      // Create transaction record in Transaction table
       await Transaction.create(newTransactionData);
 
+      // Ensure userId exists and matches an existing User record's id
+      if (!user.id) {
+        throw new CustomError('User ID not found or invalid', null, statusCode.badRequest);
+      }
+
+      // Create transaction detail record in UserTransactionDetail table
       await UserTransactionDetail.create({
-        userId: user.userId,
+        userId: user.id,
         transactionId: Transaction_Id,
         bankId,
         websiteId,
-        subAdminName: subAdminName[0].firstName,
+        subAdminName: subAdminName.firstName,
         transactionID,
         transactionType,
         amount: Math.round(parseFloat(amount)),
@@ -251,12 +276,14 @@ export const createTransaction = async (req, res) => {
         bankName,
         websiteName,
         createdAt: new Date(),
-        subAdminId: subAdminName[0].userName,
+        subAdminId: subAdminName.userName,
       });
     }
 
+    // Respond with success message and data
     return apiResponseSuccess(newTransactionData, true, statusCode.create, 'Transaction created successfully', res);
   } catch (error) {
+    // Handle errors and respond with appropriate error message
     return apiResponseErr(
       null,
       false,
@@ -267,19 +294,25 @@ export const createTransaction = async (req, res) => {
   }
 };
 
+
+
 export const depositView = async (req, res) => {
   try {
-    // Fetch deposits using Sequelize
+    // Find all deposit transactions ordered by createdAt descending
     const deposits = await Transaction.findAll({
-      where: { transactionType: 'Deposit' },
-      order: [['createdAt', 'DESC']],
+      where: {
+        transactionType: 'Deposit' // Filter by transactionType
+      },
+      order: [['createdAt', 'DESC']] // Order by createdAt descending
     });
 
-    // Calculate the total amount of deposits
-    const sum = await Transaction.sum('amount', {
-      where: { transactionType: 'Deposit' },
+    // Calculate total amount of deposits
+    let sum = 0;
+    deposits.forEach(deposit => {
+      sum += parseFloat(deposit.amount);
     });
-    return apiResponseSuccess({ totalDeposits: sum, deposits: deposits }, true, statusCode.success, 'success', res);
+
+    return apiResponseSuccess({ totalDeposits: sum, deposits }, true, statusCode.success, 'success', res);
   } catch (error) {
     return apiResponseErr(
       null,
@@ -293,18 +326,21 @@ export const depositView = async (req, res) => {
 
 export const withdrawView = async (req, res) => {
   try {
-    // Fetch withdraws using Sequelize
+    // Find all withdraw transactions ordered by createdAt descending
     const withdraws = await Transaction.findAll({
-      where: { transactionType: 'Withdraw' },
-      order: [['createdAt', 'DESC']],
+      where: {
+        transactionType: 'Withdraw' // Filter by transactionType
+      },
+      order: [['createdAt', 'DESC']] // Order by createdAt descending
     });
 
-    // Calculate the total amount of withdraws
-    const sum = await Transaction.sum('amount', {
-      where: { transactionType: 'Withdraw' },
+    // Calculate total amount of withdraws
+    let sum = 0;
+    withdraws.forEach(withdraw => {
+      sum += parseFloat(withdraw.amount);
     });
 
-    return apiResponseSuccess({ totalDeposits: sum, deposits: deposits }, true, statusCode.success, 'success', res);
+    return apiResponseSuccess({ totalWithdraws: sum, withdraws }, true, statusCode.success, 'success', res);
   } catch (error) {
     return apiResponseErr(
       null,

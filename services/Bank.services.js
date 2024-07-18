@@ -779,17 +779,19 @@ const BankServices = {
   getBankBalance: async (bankId) => {
     // const pool = await connectToDB();
     try {
-      const bankTransactionsQuery = `SELECT * FROM BankTransaction WHERE bankId = ?`;
-      const [bankTransactions] = await database.execute(bankTransactionsQuery, [bankId]);
-
-      const transactionsQuery = `SELECT * FROM Transaction WHERE bankId = ?`;
-      const [transactions] = await database.execute(transactionsQuery, [bankId]);
-
-      // const editTransactionQuery = `SELECT * FROM EditRequest WHERE bankId = ?`;
-      // const [editTransaction] = await database.execute(editTransactionQuery, [bankId]);
-
+      // Find all bank transactions for the given bankId
+      const bankTransactions = await BankTransaction.findAll({
+        where: { bankId }
+      });
+  
+      // Find all transactions associated with the given bankId
+      const transactions = await Transaction.findAll({
+        where: { bankId }
+      });
+  
       let balance = 0;
-
+  
+      // Calculate balance based on bank transactions
       for (const transaction of bankTransactions) {
         if (transaction.depositAmount) {
           balance += parseFloat(transaction.depositAmount);
@@ -798,7 +800,8 @@ const BankServices = {
           balance -= parseFloat(transaction.withdrawAmount);
         }
       }
-
+  
+      // Calculate balance based on regular transactions
       for (const transaction of transactions) {
         if (transaction.transactionType === 'Deposit') {
           balance += parseFloat(transaction.amount);
@@ -806,26 +809,7 @@ const BankServices = {
           balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
         }
       }
-
-      // for (const data of editTransaction) {
-      //     switch (data.transactionType) {
-      //         case 'Manual-Bank-Deposit':
-      //             balance += parseFloat(data.depositAmount);
-      //             break;
-      //         case 'Manual-Bank-Withdraw':
-      //             balance -= parseFloat(data.withdrawAmount);
-      //             break;
-      //         case 'Deposit':
-      //             balance += parseFloat(data.amount);
-      //             break;
-      //         case 'Withdraw':
-      //             balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
-      //             break;
-      //         default:
-      //             break;
-      //     }
-      // }
-
+  
       return balance;
     } catch (e) {
       console.error(e);

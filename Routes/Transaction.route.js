@@ -6,10 +6,14 @@ import {
 } from '../services/Transaction.services.js';
 import { Authorize } from '../middleware/Authorize.js';
 import { string } from '../constructor/string.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
+import { validateCreateTransaction } from '../utils/commonSchema.js';
 
 const TransactionRoutes = (app) => {
   app.post(
     '/api/admin/create/transaction',
+    validateCreateTransaction,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,

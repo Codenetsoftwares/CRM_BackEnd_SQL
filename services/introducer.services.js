@@ -54,7 +54,7 @@ export const createIntroducerUser = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -82,7 +82,7 @@ export const updateIntroducerProfile = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -116,7 +116,7 @@ export const introducerPasswordResetCode = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -124,13 +124,13 @@ export const introducerPasswordResetCode = async (req, res) => {
 
 export const getIntroducerProfile = async (req, res) => {
   try {
-    const id = req.user[0].introId;
+    const id = req.user.introId;
     const introUser = await IntroducerUser.findOne({ where: { introId: id } });
     if (!introUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
     }
 
-    const TPDLT = await AccountServices.IntroducerBalance(id);
+    const TPDLT = await AccountServices.IntroducerBalance(id,res);
     const response = {
       introId: introUser.introId,
       firstName: introUser.firstName,
@@ -140,17 +140,18 @@ export const getIntroducerProfile = async (req, res) => {
       balance: Number(TPDLT),
     };
 
-    const liveBalance = await AccountServices.introducerLiveBalance(id);
+    const liveBalance = await AccountServices.introducerLiveBalance(id,res);
     const currentDue = liveBalance - response.balance;
     response.currentDue = currentDue;
 
     return apiResponseSuccess(response, true, statusCode.success, 'success', res);
   } catch (error) {
+    console.error(":err");
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -186,7 +187,7 @@ export const listIntroducerUsers = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -249,7 +250,7 @@ export const getIntroducerUserData = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -274,7 +275,7 @@ export const getIntroducerLiveBalance = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -294,7 +295,7 @@ export const introducerAccountSummary = async (req, res) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }
@@ -341,7 +342,7 @@ export const getIntroducerUserAccountSummary = async (introUserName) => {
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
+      error.message,
       res,
     );
   }

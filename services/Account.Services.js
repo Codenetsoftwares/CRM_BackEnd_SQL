@@ -9,7 +9,7 @@ import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
-import { Op, where } from 'sequelize';
+import { Op, Sequelize, where } from 'sequelize';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import BankTransaction from '../models/bankTransaction.model.js';
 import WebsiteTransaction from '../models/websiteTransaction.model.js';
@@ -614,87 +614,101 @@ export const viewSubAdminTransactions = async (req, res) => {
   }
 };
 const AccountServices = {
-  IntroducerBalance: async (introUserId) => {
+  IntroducerBalance: async (introUserId, res) => {
     try {
-      console.log('introUserId', introUserId);
-      const [intorTranasction] = await database.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
-        introUserId,
-      ]);
-      console.log('intorTranasction', intorTranasction);
+      // Find all transactions for the introducer user
+      const transactions = await IntroducerTransaction.findAll({
+        where: {
+          introUserId: introUserId,
+        },
+      });
+
+      // Calculate balance based on transaction type
       let balance = 0;
-      intorTranasction.forEach((transaction) => {
+      transactions.forEach((transaction) => {
         if (transaction.transactionType === 'Deposit') {
           balance += transaction.amount;
         } else {
           balance -= transaction.amount;
         }
       });
+
       return balance;
-    } catch (e) {
-      console.error(e);
-      throw { code: 500, message: 'Internal Server Error' };
+    } catch (error) {
+      console.error(error);
+      return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+
     }
   },
 
-  getIntroBalance: async (introUserId) => {
+  getIntroBalance: async (introUserId, res) => {
     console.log('introUserId', introUserId);
     try {
-      const [introTransaction] = await database.execute('SELECT * FROM IntroducerTransaction WHERE introUserId = ?', [
-        introUserId,
-      ]);
+      // Find all transactions for the introducer
+      const introTransactions = await IntroducerTransaction.findAll({
+        where: {
+          introUserId: introUserId,
+        },
+      });
+
       let balance = 0;
-      introTransaction.forEach((transaction) => {
+
+      // Calculate balance based on transaction type
+      introTransactions.forEach((transaction) => {
         if (transaction.transactionType === 'Deposit') {
           balance += transaction.amount;
         } else {
           balance -= transaction.amount;
         }
       });
-      const liveBalance = await AccountServices.introducerLiveBalance(introUserId);
+
+      // Calculate live balance using another service or function
+      const liveBalance = await introducerLiveBalance(introUserId);
       const currentDue = liveBalance - balance;
-      // console.log("currentDue", currentDue)
+
       return {
         balance: balance,
         currentDue: currentDue,
       };
-    } catch (err) {
-      console.error(err);
-      throw {
-        code: err.code || 500,
-        message: err.message || `Failed to update User Profile with id: ${userDetails}`,
-      };
+    } catch (error) {
+      console.error(error);
+      return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
     }
   },
 
-  introducerLiveBalance: async (id) => {
+  introducerLiveBalance: async (id, res) => {
     try {
-      const [introId] = await database.execute('SELECT * FROM IntroducerUser WHERE introId = ?', [id]);
+      // Find the introducer user by id
+      const introId = await IntroducerUser.findOne({
+        where: {
+          introId: id,
+        },
+      });
 
-      if (!introId.length) {
-        throw {
-          code: 404,
-          message: `Introducer with ID ${id} not found`,
-        };
+      if (!introId) {
+        return apiResponseErr(null, false, statusCode.badRequest, `Introducer with ID ${id} not found`, res);
       }
 
-      const IntroducerId = introId[0].userName;
+      const IntroducerId = introId.userName;
 
-      // Check if IntroducerId exists in any of the introducer user names
-      const [userIntroId] = await database.execute(
-        `SELECT *
-            FROM User
-            WHERE introducersUserName = ?
-            OR introducersUserName1 = ?
-            OR introducersUserName2 = ?`,
-        [IntroducerId, IntroducerId, IntroducerId],
-      );
+      // Find all users where IntroducerId matches any introducersUserName
+      const userIntroIds = await User.findAll({
+        where: {
+          [Sequelize.Op.or]: [
+            { introducersUserName: IntroducerId },
+            { introducersUserName1: IntroducerId },
+            { introducersUserName2: IntroducerId },
+          ],
+        },
+      });
 
-      if (!userIntroId.length) {
+      if (!userIntroIds.length) {
         return 0;
       }
 
       let liveBalance = 0;
-      for (const user of userIntroId) {
+
+      for (const user of userIntroIds) {
         let matchedIntroducersUserName, matchedIntroducerPercentage;
 
         if (user.introducersUserName === IntroducerId) {
@@ -708,9 +722,12 @@ const AccountServices = {
           matchedIntroducerPercentage = user.introducerPercentage2;
         }
 
-        const [transDetails] = await database.execute(`SELECT * FROM UserTransactionDetail WHERE userName = ?`, [
-          user.userName,
-        ]);
+        // Find transaction details for the current user
+        const transDetails = await UserTransactionDetail.findAll({
+          where: {
+            userName: user.userName,
+          },
+        });
 
         if (!transDetails.length) {
           continue;
@@ -735,8 +752,7 @@ const AccountServices = {
 
       return Math.round(liveBalance);
     } catch (error) {
-      console.error(error);
-      throw error;
+      return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
     }
   },
 };

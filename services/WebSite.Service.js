@@ -10,7 +10,7 @@ import CustomError from '../utils/extendError.js';
 import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import { v4 as uuidv4 } from 'uuid';
-import { Sequelize, where } from 'sequelize';
+import { QueryTypes, Sequelize, where } from 'sequelize';
 import Transaction from '../models/transaction.model.js';
 
 export const addWebsiteName = async (req, res) => {
@@ -130,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-          websiteName: {
-            [Op.like]: `%${search}%`,
-          },
-        }
+        websiteName: {
+          [Op.like]: `%${search}%`,
+        },
+      }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -455,18 +455,21 @@ export const websiteSubAdminView = async (req, res) => {
   try {
     const subAdminId = req.params.subAdminId;
 
-    // Use Sequelize to fetch website names associated with the sub-admin
-    const websiteData = await Website.findAll({
-      include: [
-        {
-          model: WebsiteSubAdmins,
-          where: { subAdminId },
-          attributes: ['websiteName'],
-        },
-      ],
+    // Define the raw SQL query to fetch website names associated with the sub-admin
+    const query = `
+      SELECT Websites.websiteName
+      FROM Websites
+      INNER JOIN WebsiteSubAdmins ON Websites.websiteId = WebsiteSubAdmins.websiteId
+      WHERE WebsiteSubAdmins.subAdminId = :subAdminId;
+    `;
+
+    // Execute the raw SQL query
+    const websiteData = await sequelize.query(query, {
+      replacements: { subAdminId },
+      type: QueryTypes.SELECT,
     });
 
-    if (!websiteData) {
+    if (websiteData.length === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Website not found for this sub-admin', res);
     }
 
@@ -481,8 +484,8 @@ export const updateWebsitePermissions = async (req, res) => {
     const { subAdmins } = req.body;
     const websiteId = req.params.websiteId;
 
-    const promises = subAdmins.map(async (subAdminData) => {
-      const [existingSubAdmin] = await WebsiteSubAdmins.findOne({
+    const results = await Promise.all(subAdmins.map(async (subAdminData) => {
+      const existingSubAdmin = await WebsiteSubAdmins.findOne({
         where: {
           websiteId: websiteId,
           subAdminId: subAdminData.subAdminId,
@@ -490,7 +493,7 @@ export const updateWebsitePermissions = async (req, res) => {
       });
 
       if (!existingSubAdmin) {
-        await WebsiteSubAdmins.create({
+        const newSubAdmin = await WebsiteSubAdmins.create({
           websiteId: websiteId,
           subAdminId: subAdminData.subAdminId,
           isDeposit: subAdminData.isDeposit || false,
@@ -499,6 +502,7 @@ export const updateWebsitePermissions = async (req, res) => {
           isRenew: subAdminData.isRenew || false,
           isDelete: subAdminData.isDelete || false,
         });
+        return newSubAdmin;
       } else {
         await existingSubAdmin.update({
           isDeposit: subAdminData.isDeposit || false,
@@ -507,16 +511,17 @@ export const updateWebsitePermissions = async (req, res) => {
           isRenew: subAdminData.isRenew || false,
           isDelete: subAdminData.isDelete || false,
         });
+        return existingSubAdmin;
       }
-    });
+    }));
 
-    await Promise.all(promises);
-
-    return apiResponseSuccess(null, true, statusCode.success, 'Website Permission Updated successfully', res);
+    return apiResponseSuccess(results, true, statusCode.success, 'Website Permission Updated successfully', res);
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
+
 
 export const updateWebsite = async (req, res) => {
   try {

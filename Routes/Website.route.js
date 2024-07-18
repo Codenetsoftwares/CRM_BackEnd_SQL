@@ -22,6 +22,7 @@ import WebsiteServices, {
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
 import {
+  updateWebsitePermissionsValidator,
   validateAddWebsiteBalance,
   validateApproval,
   validateDeleteSubAdminFromWebsite,
@@ -154,14 +155,16 @@ const WebsiteRoutes = (app) => {
     websiteActive,
   );
 
+  // done
   app.get(
     '/api/admin/website/view-subAdmin/:subAdminId',
     Authorize([string.superAdmin, string.requestAdmin]),
     websiteSubAdminView,
   );
 
-  app.put(
-    '/api/website/edit-request/:websiteId',
+  // done
+  app.put('/api/website/edit-request/:websiteId',
+    updateWebsitePermissionsValidator,
     Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
     updateWebsitePermissions,
   );
