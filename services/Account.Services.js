@@ -203,7 +203,7 @@ export const getSubAdminsWithBankView = async (req, res) => {
     const subAdmins = await Admin.findAll({
       where: {
         roles: {
-          [Op.like]: '%Bank-View%',
+          [Op.like]: ['Bank-View'], // Adjust this based on how roles are stored
         },
       },
       attributes: ['userName'],
@@ -230,7 +230,7 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
     const subAdmins = await Admin.findAll({
       where: {
         roles: {
-          [Op.like]: '%Website-View%',
+          [Op.like]: ['Website-View'],
         },
       },
       attributes: ['userName'],
