@@ -6,7 +6,7 @@ import Transaction from '../models/transaction.model.js';
 import bankTransaction from '../models/bankTransaction.model.js';
 import BankRequest from '../models/bankRequest.model.js';
 import BankSubAdmin from '../models/bankSubAdmins.model.js';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { database } from '../services/database.service.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
 import BankSubAdmins from '../models/bankSubAdmins.model.js';
@@ -206,7 +206,7 @@ export const deleteSubAdmin = async (req, res) => {
     if (result === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
     }
-    return apiResponseSuccess(newAdmin, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
+    return apiResponseSuccess(result, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -521,6 +521,7 @@ export const withdrawBankBalance = async (req, res) => {
 
     // Create bank transaction for withdrawal
     const newBankTransaction = await BankTransaction.create({
+      bankTransactionId: uuidv4(),
       bankId: bank.bankId,
       accountHolderName: bank.accountHolderName,
       bankName: bank.bankName,
@@ -613,19 +614,21 @@ export const viewSubAdminBanks = async (req, res) => {
   try {
     const { subAdminId } = req.params;
 
-    // Using Sequelize to fetch bank names associated with the subAdminId
-    const bankData = await Bank.findAll({
-      attributes: ['bankName'],
-      include: [
-        {
-          model: BankSubAdmins,
-          where: { subAdminId },
-          attributes: [], // Exclude BankSubAdmins attributes from result
-        },
-      ],
+    // Using raw SQL query or Sequelize query to fetch bank names associated with the subAdminId
+    const query = `
+      SELECT Banks.bankName
+      FROM Banks
+      INNER JOIN BankSubAdmins ON Banks.bankId = BankSubAdmins.bankId
+      WHERE BankSubAdmins.subAdminId = :subAdminId
+    `;
+    const [bankData] = await sequelize.query(query, {
+      replacements: { subAdminId },
+      type: QueryTypes.SELECT,
     });
-    return apiResponseSuccess(bankData, true, statusCode.success, res);
+
+    return apiResponseSuccess(bankData, true, statusCode.success,'Success', res);
   } catch (error) {
+    console.error('Error fetching sub-admin banks:', error); // Log the error for debugging
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
