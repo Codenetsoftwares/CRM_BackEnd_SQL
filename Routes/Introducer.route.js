@@ -13,12 +13,20 @@ import { AuthorizeRole } from '../middleware/auth.js';
 import { database } from '../services/database.service.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
+import { updateIntroducerValidationSchema, validateIntroId } from '../utils/commonSchema.js';
 
 export const IntroducerRoutes = (app) => {
-  app.get('/api/introducer/profile', customErrorHandler, AuthorizeRole([string.introducer]), getIntroducerProfile);
+  app.get('/api/introducer/profile',
+    customErrorHandler,
+    AuthorizeRole([
+      string.introducer
+    ]),
+    getIntroducerProfile
+  );
 
   app.put(
     '/api/introducer-profile-edit/:introId',
+    updateIntroducerValidationSchema,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     updateIntroducerProfile,
@@ -26,6 +34,7 @@ export const IntroducerRoutes = (app) => {
 
   app.get(
     '/api/list-introducer-user/:introId',
+    validateIntroId,
     customErrorHandler,
     AuthorizeRole([string.introducer]),
     listIntroducerUsers,

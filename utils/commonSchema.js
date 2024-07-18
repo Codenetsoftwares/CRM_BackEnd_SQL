@@ -631,3 +631,11 @@ export const validateCreateTransaction = [
   body('amount').trim().notEmpty().isNumeric().withMessage('Amount is required and must be a number'),
   body('paymentMethod').trim().notEmpty().withMessage('Payment Method is required'),
 ]
+
+export const validateIntroId = [
+  param('introId')
+    .notEmpty()
+    .withMessage('Introducer ID is required')
+    .isUUID()
+    .withMessage('Introducer ID must be a valid UUID'),
+]

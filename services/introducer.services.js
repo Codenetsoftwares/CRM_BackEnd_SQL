@@ -9,6 +9,7 @@ import CustomError from '../utils/extendError.js';
 import AccountServices from './Account.Services.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
+import { Sequelize } from 'sequelize';
 
 export const createIntroducerUser = async (req, res) => {
   try {
@@ -178,10 +179,20 @@ export const listIntroducerUsers = async (req, res) => {
           { introducersUserName2: introducerUserName },
         ],
       },
-      include: [{ model: UserTransactionDetail, as: 'UserTransactionDetail' }],
     });
 
-    return apiResponseSuccess(users, true, statusCode.success, 'success', res);
+    // Fetch user transaction details and include them in the response
+    const usersWithTransactionDetails = [];
+    for (const userData of users) {
+      const userTransactionDetail = await UserTransactionDetail.findAll({
+        where: { userName: userData.userName }
+      });
+      // Attach transaction details to user data
+      userData.UserTransactionDetail = userTransactionDetail;
+      usersWithTransactionDetails.push(userData);
+    }
+
+    return apiResponseSuccess(usersWithTransactionDetails, true, statusCode.success, 'success', res);
   } catch (error) {
     return apiResponseErr(
       null,
