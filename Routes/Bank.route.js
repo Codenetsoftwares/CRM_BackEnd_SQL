@@ -124,7 +124,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     updateBankStatus,
   );
-  // Testing Not Done
+  // Testing Done
   app.get(
     '/api/admin/bank/view-subAdmin/:subAdminId',
     viewSubAdminBanksValidate,
@@ -132,7 +132,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     viewSubAdminBanks,
   );
-  // Testing Not Done
+  // Testing Done
   app.put(
     '/api/bank/edit-request/:bankId',
     updateBankPermissionsValidator,
@@ -140,7 +140,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
     updateBankPermissions,
   );
-  // Testing Not Done
+  // Testing Done
   app.get(
     '/api/active-visible-bank',
     customErrorHandler,
