@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import BankTransaction from '../models/bankTransaction.model.js';
 import EditRequest from '../models/editBankRequest.model.js';
@@ -793,12 +793,58 @@ export const rejectWebsiteDetail = async (req, res) => {
 
 export const viewTrash = async (req, res) => {
   try {
-    const resultArray = await Trash.findAll();
-    return apiResponseSuccess(resultArray, true, statusCode.success, 'Data fetched successfully', res);
+    // Retrieve pagination and search parameters from query
+    const { page = 1, pageSize = 10, search = '' } = req.query;
+
+    // Convert pagination parameters to integers
+    const limit = parseInt(pageSize, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
+
+    // Build the search condition
+    const searchCondition = search
+      ? {
+        where: {
+          // Example: assuming `name` field should be searched; adjust as needed
+          name: {
+            [Op.iLike]: `%${search}%`,
+          },
+        },
+      }
+      : {};
+
+    // Fetch records with pagination and search
+    const { count, rows: resultArray } = await Trash.findAndCountAll({
+      ...searchCondition,
+      limit,
+      offset,
+    });
+
+    // Check if results exist
+    if (resultArray.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No records found', res);
+    }
+
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      resultArray,
+      true,
+      statusCode.success,
+      'Data fetched successfully',
+      {
+        page: parseInt(page),
+        limit,
+        totalItems: count,
+        totalPages,
+      },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const restoreBankData = async (req, res) => {
   try {
@@ -984,6 +1030,7 @@ export const deleteIntroducerEditRequest = async (req, res) => {
     const deletedRows = await IntroducerEditRequest.destroy({ where: { id } });
 
     if (deletedRows === 1) {
+      
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
@@ -995,10 +1042,39 @@ export const deleteIntroducerEditRequest = async (req, res) => {
 
 export const viewDeleteRequests = async (req, res) => {
   try {
-    // Fetch all records from EditRequest table
-    const resultArray = await EditRequest.findAll();
+    // Retrieve pagination parameters from query
+    const { page = 1, pageSize = 10 } = req.query;
 
-    return apiResponseSuccess(resultArray, true, statusCode.success, 'Data retrieved successfully', res);
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    // Fetch records with pagination
+    const { count, rows: resultArray } = await EditRequest.findAndCountAll({
+      limit,
+      offset,
+    });
+
+    // Check if results exist
+    if (resultArray.length === 0) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No records found', res);
+    }
+
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      resultArray,
+      true,
+      statusCode.success,
+      'Data retrieved successfully',
+      {
+        page: parseInt(page),
+        limit,
+        totalItems: count,
+        totalPages,
+      },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }

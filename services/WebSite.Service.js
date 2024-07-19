@@ -16,7 +16,7 @@ import Transaction from '../models/transaction.model.js';
 export const addWebsiteName = async (req, res) => {
   try {
     const userData = req.user;
-    let websiteName = req.body.websiteName;
+    let { websiteName } = req.body;
 
     // Remove spaces from the websiteName
     websiteName = websiteName.replace(/\s+/g, '');
@@ -130,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-          websiteName: {
-            [Op.like]: `%${search}%`,
-          },
-        }
+        websiteName: {
+          [Op.like]: `%${search}%`,
+        },
+      }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -229,14 +229,30 @@ export const deleteEditWebsiteRequest = async (req, res) => {
 
 export const getActiveWebsiteNames = async (req, res) => {
   try {
+    const { page = 1, pageSize = 10 } = req.query
+    const limit = parseInt(pageSize)
+    const offset = (parseInt(page) - 1) * limit
     const activeWebsites = await Website.findAll({
       attributes: ['websiteName', 'isActive'],
+      limit,
+      offset,
       where: {
         isActive: true,
       },
     });
 
-    return apiResponseSuccess(activeWebsites, true, statusCode.success, 'Active websites fetched successfully', res);
+    const totalItems = activeWebsites.count
+    const totalPages = Math.ceil(totalItems / limit);
+
+
+    return apiResponsePagination(activeWebsites, true, statusCode.success, 'Active websites fetched successfully', {
+      page: parseInt(page),
+      limit: limit,
+      totalPages,
+      totalItems: count,
+    },
+      res
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }

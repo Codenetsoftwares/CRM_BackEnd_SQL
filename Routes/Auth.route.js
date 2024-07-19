@@ -5,5 +5,5 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 export const AuthRoute = (app) => {
   app.post('/admin/login', validateLogin, customErrorHandler, loginAdmin);
   app.post('/api/introducer/user/login', validateLogin, customErrorHandler, generateIntroducerAccessToken);
-  app.post('/api/accounts/user/login', customErrorHandler, loginUser);
+  app.post('/api/accounts/user/login',validateLogin, customErrorHandler, loginUser);
 };

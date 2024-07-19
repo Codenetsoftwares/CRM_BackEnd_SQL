@@ -641,3 +641,7 @@ export const validateIntroUserId = [
 export const validateIntroducerUsername = [
   param('introducerUsername').notEmpty().withMessage('introducerUsername is required'),
 ];
+
+export const validateAdminId = [
+param('adminId').notEmpty().withMessage('Admin Id is required').isUUID().withMessage('Admin ID must be a valid UUID'),
+]

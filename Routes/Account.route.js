@@ -46,6 +46,9 @@ import {
   validateUserId,
   update,
   updateUserProfileValidators,
+  updateIntroducerValidationSchema,
+  validateIntroId,
+  validateAdminId,
 } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
@@ -145,6 +148,7 @@ const AccountRoute = (app) => {
   // done
   app.put(
     '/api/admin/introducer-profile-edit/:introId',
+    updateIntroducerValidationSchema,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     updateIntroducerProfile,
@@ -153,6 +157,7 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/introducer/client-data/:introId',
+    validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     getClientData,
@@ -161,6 +166,7 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/get-single-Introducer/:introId',
+    validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     getSingleIntroducer,
@@ -213,6 +219,7 @@ const AccountRoute = (app) => {
   // done
   app.post(
     '/api/admin/single-sub-admin/:adminId',
+    validateAdminId,
     customErrorHandler,
     Authorize([string.superAdmin]),
     getSingleSubAdmin,
@@ -230,6 +237,7 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/introducer-user-single-data/:introId',
+    validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     getIntroducerUserSingleData,

@@ -5,13 +5,14 @@ import IntroducerUser from '../models/introducerUser.model.js';
 import CustomError from '../utils/extendError.js';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import { statusCode } from '../utils/statusCodes.js';
-import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import Transaction from '../models/transaction.model.js';
 import Website from '../models/website.model.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 import { Sequelize } from 'sequelize';
 import Bank from '../models/bank.model.js';
+import IntroducerEditRequest from '../models/introducerEditRequest.model.js';
 
 export const createIntroducerDepositTransaction = async (req, res) => {
   const { amount, transactionType, remarks, introducerUserName } = req.body;
@@ -296,71 +297,137 @@ export const createTransaction = async (req, res) => {
 
 export const depositView = async (req, res) => {
   try {
-    // Find all deposit transactions ordered by createdAt descending
-    const deposits = await Transaction.findAll({
+    // Extract pagination parameters from the request query
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    // Fetch deposit transactions with pagination
+    const { count, rows: deposits } = await Transaction.findAndCountAll({
       where: {
         transactionType: 'Deposit', // Filter by transactionType
       },
       order: [['createdAt', 'DESC']], // Order by createdAt descending
+      limit,
+      offset,
     });
 
     // Calculate total amount of deposits
-    let sum = 0;
-    deposits.forEach((deposit) => {
-      sum += parseFloat(deposit.amount);
-    });
+    const totalDeposits = deposits.reduce((sum, deposit) => sum + parseFloat(deposit.amount), 0);
 
-    return apiResponseSuccess({ totalDeposits: sum, deposits }, true, statusCode.success, 'success', res);
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      {
+        deposits,
+        totalDeposits,
+      },
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        pageSize: limit,
+        totalItems: count,
+        totalPages,
+      },
+      res
+    );
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
+      error.message,
+      res
     );
   }
 };
 
+
 export const withdrawView = async (req, res) => {
   try {
-    // Find all withdraw transactions ordered by createdAt descending
-    const withdraws = await Transaction.findAll({
+    // Extract pagination parameters from the request query
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    // Fetch withdraw transactions with pagination
+    const { count, rows: withdraws } = await Transaction.findAndCountAll({
       where: {
         transactionType: 'Withdraw', // Filter by transactionType
       },
       order: [['createdAt', 'DESC']], // Order by createdAt descending
+      limit,
+      offset,
     });
 
-    // Calculate total amount of withdraws
-    let sum = 0;
-    withdraws.forEach((withdraw) => {
-      sum += parseFloat(withdraw.amount);
-    });
+    // Calculate total amount of withdrawals
+    const totalWithdraws = withdraws.reduce((sum, withdraw) => sum + parseFloat(withdraw.amount), 0);
 
-    return apiResponseSuccess({ totalWithdraws: sum, withdraws }, true, statusCode.success, 'success', res);
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
+
+
+    return apiResponsePagination({
+      withdraws,
+      totalWithdraws,
+    }, true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalItems: count,
+        totalPages,
+      }, res
+    );
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
+      error.message,
+      res
     );
   }
 };
+
 
 export const viewEditIntroducerTransactionRequests = async (req, res) => {
   try {
-    const introEdit = await IntroducerEditRequest.findAll();
-    return apiResponseSuccess(introEdit, true, statusCode.success, 'success', res);
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    // Fetch total count of records
+    const { count: totalCount } = await IntroducerEditRequest.findAndCountAll();
+
+    // Fetch records with pagination
+    const editRequests = await IntroducerEditRequest.findAll({
+      order: [['createdAt', 'DESC']], // Order by createdAt descending
+      limit, 
+      offset, 
+    });
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return apiResponsePagination(editRequests, true, statusCode.success, {
+      page: parseInt(page),
+      pageSize: limit,
+      totalItems: totalCount,
+      totalPages,
+    }, 'Data retrieved successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
       false,
       error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
+      error.message,
+      res
     );
   }
 };
+

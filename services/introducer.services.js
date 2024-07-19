@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { database } from '../services/database.service.js';
 import { v4 as uuidv4 } from 'uuid';
 import IntroducerUser from '../models/introducerUser.model.js';
-import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
 import AccountServices from './Account.Services.js';
@@ -140,6 +140,11 @@ export const getIntroducerProfile = async (req, res) => {
 export const listIntroducerUsers = async (req, res) => {
   try {
     const introId = req.params.introId;
+    const { page = 1, pageSize = 10 } = req.query; // Get pagination parameters from query
+
+    // Convert pagination parameters to integers
+    const limit = parseInt(pageSize, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
 
     // Fetch the introducer user
     const introducerUser = await IntroducerUser.findOne({ where: { introId } });
@@ -149,8 +154,8 @@ export const listIntroducerUsers = async (req, res) => {
 
     const introducerUserName = introducerUser.userName;
 
-    // Fetch users associated with the introducer user
-    const users = await User.findAll({
+    // Fetch users associated with the introducer user with pagination
+    const { count, rows: users } = await User.findAndCountAll({
       where: {
         [Sequelize.Op.or]: [
           { introducersUserName: introducerUserName },
@@ -158,6 +163,8 @@ export const listIntroducerUsers = async (req, res) => {
           { introducersUserName2: introducerUserName },
         ],
       },
+      limit,
+      offset,
     });
 
     // Fetch user transaction details and include them in the response
@@ -171,11 +178,26 @@ export const listIntroducerUsers = async (req, res) => {
       usersWithTransactionDetails.push(userData);
     }
 
-    return apiResponseSuccess(usersWithTransactionDetails, true, statusCode.success, 'success', res);
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      usersWithTransactionDetails,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems: count,
+      },
+      res
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const getIntroducerUserData = async (req, res) => {
   try {
@@ -270,12 +292,36 @@ export const getIntroducerLiveBalance = async (req, res) => {
 export const introducerAccountSummary = async (req, res) => {
   try {
     const introUserId = req.params.introId;
+    const { page = 1, pageSize = 10 } = req.query; // Get pagination parameters from query
 
-    const introSummary = await IntroducerTransaction.findAll({
+    // Convert pagination parameters to integers
+    const limit = parseInt(pageSize, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
+
+    // Fetch records with pagination
+    const { count, rows: introSummary } = await IntroducerTransaction.findAndCountAll({
       where: { introUserId },
       order: [['createdAt', 'ASC']],
+      limit,
+      offset,
     });
-    return apiResponseSuccess(introSummary, true, statusCode.success, 'success', res);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      introSummary,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems: count,
+      },
+      res
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -284,6 +330,11 @@ export const introducerAccountSummary = async (req, res) => {
 export const getIntroducerUserAccountSummary = async (req, res) => {
   try {
     const introUserName = req.params.introducerUsername;
+    const { page = 1, pageSize = 10 } = req.query; // Get pagination parameters from query
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+
+    // Fetch users associated with the introducer user
     const users = await User.findAll({
       where: {
         [Sequelize.Op.or]: [
@@ -294,34 +345,53 @@ export const getIntroducerUserAccountSummary = async (req, res) => {
       },
     });
 
-    const transactions = [];
-    for (const userData of users) {
-      const userTransactions = await UserTransactionDetail.findAll({
-        where: { userName: userData.userName },
-      });
-
-      userTransactions.forEach((transaction) => {
-        transactions.push({
-          AccountNumber: transaction.accountNumber,
-          BankName: transaction.bankName,
-          WebsiteName: transaction.websiteName,
-          Amount: transaction.amount,
-          PaymentMethod: transaction.paymentMethod,
-          TransactionID: transaction.transactionID,
-          TransactionType: transaction.transactionType,
-          Introducer: transaction.introducerUserName,
-          SubAdminName: transaction.subAdminName,
-          UserName: transaction.userName,
-          Remarks: transaction.remarks,
-          createdAt: transaction.createdAt,
-        });
-      });
+    if (!users.length) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'No users found for the given introducer', res);
     }
-    return apiResponseSuccess(transactions, true, statusCode.success, 'success', res);
+
+    // Fetch and paginate user transactions
+    const userNames = users.map(user => user.userName);
+    const { count, rows: transactions } = await UserTransactionDetail.findAndCountAll({
+      where: { userName: { [Sequelize.Op.in]: userNames } },
+      limit,
+      offset,
+    });
+
+    const formattedTransactions = transactions.map(transaction => ({
+      AccountNumber: transaction.accountNumber,
+      BankName: transaction.bankName,
+      WebsiteName: transaction.websiteName,
+      Amount: transaction.amount,
+      PaymentMethod: transaction.paymentMethod,
+      TransactionID: transaction.transactionID,
+      TransactionType: transaction.transactionType,
+      Introducer: transaction.introducerUserName,
+      SubAdminName: transaction.subAdminName,
+      UserName: transaction.userName,
+      Remarks: transaction.remarks,
+      createdAt: transaction.createdAt,
+    }));
+
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      formattedTransactions,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalItems: count,
+        totalPages,
+      },
+      res
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const introducerUser = {
   // introducerLiveBalance: async (id) => {

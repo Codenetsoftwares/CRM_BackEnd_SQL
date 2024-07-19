@@ -10,9 +10,6 @@ import jwt from 'jsonwebtoken';
 export const loginAdmin = async (req, res) => {
   try {
     const { userName, password } = req.body;
-    // if (!userName || !password) {
-    //     return apiResponseErr(null, false, statusCode.badRequest, 'User Name and Password are required', res);
-    // }
 
     const admin = await Admin.findOne({ where: { userName } });
 
@@ -47,10 +44,6 @@ export const loginAdmin = async (req, res) => {
 
 export const generateIntroducerAccessToken = async (req, res) => {
   const { userName, password, persist } = req.body;
-
-  if (!userName || !password) {
-    return apiResponseErr(null, false, statusCode.badRequest, 'User Name and Password are required', res);
-  }
 
   try {
     const existingUser = await IntroducerUser.findOne({ where: { userName } });
@@ -104,14 +97,6 @@ export const loginUser = async (req, res) => {
   try {
     const { userName, password } = req.body;
 
-    // if (!userName) {
-    //   return apiResponseErr(null, false, statusCode.badRequest, 'User Name is required', res);
-    // }
-
-    // if (!password) {
-    //   return apiResponseErr(null, false, statusCode.badRequest, 'Password is required', res);
-    // }
-
     const accessToken = await generateAccessToken(userName, password, false, res);
 
     if (!accessToken) {
@@ -137,13 +122,6 @@ export const loginUser = async (req, res) => {
 
 export const generateAccessToken = async (userName, password, persist, res) => {
   try {
-    // if (!userName) {
-    //   return apiResponseErr(null, false, statusCode.badRequest, 'User Name is required', res);
-    // }
-
-    // if (!password) {
-    //   return apiResponseErr(null, false, statusCode.badRequest, 'Password is required', res);
-    // }
     const user = await User.findOne({ where: { userName } });
 
     if (!user) {

@@ -200,7 +200,7 @@ export const getUserProfile = async (req, res) => {
 
 export const getSubAdminsWithBankView = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
+    const { page = 1, pageSize = 10, search = '' } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * pageSize;
 
@@ -208,6 +208,9 @@ export const getSubAdminsWithBankView = async (req, res) => {
       where: {
         roles: {
           [Op.like]: ['%Bank-View%'], // Adjust this based on how roles are stored
+        },
+        userName: {
+          [Op.like]: `%${search}%`, 
         },
       },
       attributes: ['userName'],
@@ -231,11 +234,14 @@ export const getSubAdminsWithBankView = async (req, res) => {
 
 export const getAllSubAdmins = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
+    const { page = 1, pageSize = 10, search = '' } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
     const subAdmins = await Admin.findAndCountAll({
+      userName: {
+        [Op.like]: `%${search}%`, 
+      },
       attributes: ['userName'],
       offset,
       limit,
@@ -257,7 +263,7 @@ export const getAllSubAdmins = async (req, res) => {
 
 export const getSubAdminsWithWebsiteView = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
+    const { page = 1, pageSize = 10, search = '' } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
@@ -265,6 +271,9 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
       where: {
         roles: {
           [Op.like]: ['%Website-View%'],
+        },
+        userName: {
+          [Op.like]: `%${search}%`, 
         },
       },
       attributes: ['userName'],
@@ -322,11 +331,14 @@ export const getSingleIntroducer = async (req, res) => {
 
 export const getUserById = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
+    const { page = 1, pageSize = 10, search = '' } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
     const { count: totalItems, rows: users } = await User.findAndCountAll({
+      userName: {
+        [Op.like]: `%${search}%`, 
+      },
       attributes: ['userName'],
       offset,
       limit,
@@ -360,11 +372,14 @@ export const getUserById = async (req, res) => {
 
 export const getIntroducerById = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
+    const { page = 1, pageSize = 10, search = '' } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
     const { count: totalItems, rows: introducers } = await IntroducerUser.findAndCountAll({
+      userName: {
+        [Op.like]: `%${search}%`,
+      },
       attributes: ['userName', 'introId'],
       offset,
       limit,
@@ -440,6 +455,9 @@ export const editSubAdminRoles = async (req, res) => {
 
 export const getIntroducerUserSingleData = async (req, res) => {
   try {
+    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
     const id = req.params.introId;
 
     // Find the introducer user by introId
@@ -454,24 +472,35 @@ export const getIntroducerUserSingleData = async (req, res) => {
 
     const introducerUserName = introducerUserResult.userName;
 
-    // Find users with introducersUserName matching introducerUser.userName
-    const usersResult = await User.findAll({
+    // Find users with introducersUserName matching introducerUser.userName and apply search
+    const usersResult = await User.findAndCountAll({
       where: {
-        [Op.or]: [
-          { introducersUserName: introducerUserName },
-          { introducersUserName1: introducerUserName },
-          { introducersUserName2: introducerUserName },
+        [Op.and]: [
+          {
+            [Op.or]: [
+              { introducersUserName: introducerUserName },
+              { introducersUserName1: introducerUserName },
+              { introducersUserName2: introducerUserName },
+            ],
+          },
+          {
+            userName: {
+              [Op.like]: `%${search}%`,
+            },
+          },
         ],
       },
+      limit,
+      offset,
     });
 
-    if (usersResult.length === 0) {
+    if (usersResult.rows.length === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'No matching users found', res);
     }
 
     let filteredIntroducerUsers = [];
 
-    for (const matchedUser of usersResult) {
+    for (const matchedUser of usersResult.rows) {
       let filteredIntroducerUser = {
         userId: matchedUser.userId,
         firstName: matchedUser.firstName,
@@ -511,7 +540,18 @@ export const getIntroducerUserSingleData = async (req, res) => {
         filteredIntroducerUsers.push(filteredIntroducerUser);
       }
     }
-    return apiResponseSuccess(filteredIntroducerUsers, true, statusCode.success, `success`, res);
+
+    const totalItems = usersResult.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return apiResponsePagination(
+      filteredIntroducerUsers,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -626,6 +666,9 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
 export const getSingleUserProfile = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
 
     // Find user profile by userId
     const userProfile = await User.findOne({ where: { userId } });
@@ -635,11 +678,35 @@ export const getSingleUserProfile = async (req, res) => {
 
     const userName = userProfile.userName;
 
-    // Fetch UserTransactionDetail for the user
-    const userTransactionDetail = await UserTransactionDetail.findAll({ where: { userName } });
-    userProfile.dataValues.UserTransactionDetail = userTransactionDetail;
+    // Fetch UserTransactionDetail for the user with pagination and search
+    const userTransactionDetailResult = await UserTransactionDetail.findAndCountAll({
+      where: {
+        userName,
+        userName: {
+          [Op.like]: `%${search}%`,
+        },
+      },
+      limit,
+      offset,
+    });
 
-    return apiResponseSuccess(userProfile, true, statusCode.success, 'User profile fetched successfully', res);
+    const userTransactionDetail = userTransactionDetailResult.rows;
+    const totalItems = userTransactionDetailResult.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const userProfileWithTransactionDetail = {
+      ...userProfile.dataValues,
+      UserTransactionDetail: userTransactionDetail,
+    };
+
+    return apiResponsePagination(
+      userProfileWithTransactionDetail,
+      true,
+      statusCode.success,
+      'User profile fetched successfully',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -701,6 +768,7 @@ export const viewSubAdminTransactions = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 const AccountServices = {
   IntroducerBalance: async (introUserId, res) => {
     try {

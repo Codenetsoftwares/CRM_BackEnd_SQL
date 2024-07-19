@@ -151,15 +151,20 @@ export const addWebsiteDetails = async (req, res) => {
     const websites = req.body.website_name;
     const user = req.user;
 
+    // Validate that websites is an array
+    if (!Array.isArray(websites) || websites.some(site => typeof site !== 'string')) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for website names', res);
+    }
+
     const existingUser = await User.findOne({ where: { userId: user.userId } });
 
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    let websitesArray = existingUser.Websites_Details ? JSON.parse(existingUser.Websites_Details) : [];
-    if (!Array.isArray(websites)) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for website names', res);
+    let websitesArray = existingUser.Websites_Details ? existingUser.Websites_Details : [];
+    if (!Array.isArray(websitesArray)) {
+      websitesArray = [];
     }
 
     for (const website of websites) {
@@ -169,7 +174,7 @@ export const addWebsiteDetails = async (req, res) => {
       websitesArray.push(website);
     }
 
-    existingUser.Websites_Details = JSON.stringify(websitesArray);
+    existingUser.Websites_Details = websitesArray;
     await existingUser.save();
 
     return apiResponseSuccess(websitesArray, true, statusCode.create, 'User website details added successfully', res);
@@ -183,23 +188,22 @@ export const addUpiDetails = async (req, res) => {
     const upiDetailsArray = req.body.upi_details;
     const user = req.user;
 
-    // Check if req.user is defined and has userId property
     if (!user || !user.userId) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not authenticated', res);
     }
 
-    // Find existing user based on userId
     const existingUser = await User.findOne({ where: { userId: user.userId } });
 
-    // If user not found, return error
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    // Parse existing UPI details or initialize as empty array
     let upiDetails = existingUser.Upi_Details ? JSON.parse(existingUser.Upi_Details) : [];
 
-    // Check for duplicates and add new UPI details
+    if (!Array.isArray(upiDetailsArray)) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for UPI details', res);
+    }
+
     for (const upiDetail of upiDetailsArray) {
       if (upiDetails.some((existingUpiDetail) => existingUpiDetail.upi_id === upiDetail.upi_id)) {
         return apiResponseErr(
@@ -217,17 +221,18 @@ export const addUpiDetails = async (req, res) => {
       });
     }
 
-    // Update and stringify UPI details in existingUser
     existingUser.Upi_Details = JSON.stringify(upiDetails);
     await existingUser.save();
 
-    // Return success response
+    console.log("Saved UPI details:", existingUser.Upi_Details);
+
     return apiResponseSuccess(upiDetails, true, statusCode.create, 'User UPI details added successfully', res);
   } catch (error) {
-    // Handle errors and return appropriate error response
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
+
 
 export const updateUserProfile = async (req, res) => {
   try {
@@ -253,6 +258,9 @@ export const updateUserProfile = async (req, res) => {
 export const getUserProfileData = async (req, res) => {
   try {
     const userId = req.params.userId;
+    const { page = 1, pageSize = 10 } = req.query
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
 
     const userDetails = await User.findOne({ where: { userId } });
 
@@ -260,12 +268,36 @@ export const getUserProfileData = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    const userTransactionDetails = await UserTransactionDetail.findAll({ where: { userName: userDetails.userName } });
-    userDetails.dataValues.UserTransactionDetail = userTransactionDetails;
+    const userTransactionDetailResult = await UserTransactionDetail.findAndCountAll({
+      where: {
+        userName,
+        userName: {
+          [Op.like]: `%${search}%`,
+        },
+      },
+      limit,
+      offset,
+    });
 
-    return apiResponseSuccess(userDetails, true, statusCode.success, 'User profile data retrieved successfully', res);
+    const userTransactionDetail = userTransactionDetailResult.rows;
+    const totalItems = userTransactionDetailResult.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const userProfileWithTransactionDetail = {
+      ...userDetails.dataValues,
+      UserTransactionDetail: userTransactionDetail,
+    };
+
+    return apiResponsePagination(
+      userProfileWithTransactionDetail,
+      true,
+      statusCode.success,
+      'User profile fetched successfully',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
 
