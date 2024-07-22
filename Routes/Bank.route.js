@@ -96,7 +96,6 @@ const BankRoutes = (app) => {
   // Testing Done
   app.get(
     '/api/admin/bank-name',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -112,7 +111,6 @@ const BankRoutes = (app) => {
   // Testing Done
   app.get(
     '/api/super-admin/view-bank-edit-requests',
-    customErrorHandler,
     Authorize([string.superAdmin]),
     viewBankEditRequests,
   );
@@ -143,14 +141,12 @@ const BankRoutes = (app) => {
   // Testing Done
   app.get(
     '/api/active-visible-bank',
-    customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
     getActiveVisibleBankAndWebsite,
   );
   // Testing Done
   app.get(
     '/api/get-activeBank-name',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.bankView,

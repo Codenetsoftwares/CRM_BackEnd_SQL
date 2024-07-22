@@ -82,7 +82,6 @@ export const UserRoutes = (app) => {
   // DONE
   app.get(
     '/api/super-admin/user-profile/:page',
-    customErrorHandler,
     Authorize([string.superAdmin]),
     getSuperAdminUserProfile,
   );

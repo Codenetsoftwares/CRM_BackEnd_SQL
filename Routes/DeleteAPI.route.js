@@ -213,7 +213,7 @@ const DeleteAPIRoute = (app) => {
     '/api/restore/Introducer/data/:introTransactionId',
     validateIntroTransactionId,
     customErrorHandler,
-    [Authorize([string.superAdmin, string.requestAdmin])],
+    Authorize([string.superAdmin, string.requestAdmin]),
     restoreIntroducerData,
   );
 
@@ -221,7 +221,7 @@ const DeleteAPIRoute = (app) => {
     '/api/reject/introducer-detail/:IntroEditID',
     validateIntroEditID,
     customErrorHandler,
-    [Authorize([string.superAdmin, string.requestAdmin])],
+    Authorize([string.superAdmin, string.requestAdmin]),
     deleteIntroducerEditRequest,
   );
   app.get(

@@ -116,7 +116,7 @@ export const deleteBankTransaction = async (req, res) => {
 export const approveBankTransactionRequest = async (req, res) => {
   try {
     const id = req.params.editId;
-    const editRequest = await EditRequest.findOne({ where: { editId: id } });
+    const editRequest = await EditRequest.findOne({ where: { bankId: id } }); //wrong id
 
     if (!editRequest) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank Request not found', res);
@@ -1027,10 +1027,10 @@ export const deleteIntroducerEditRequest = async (req, res) => {
     const id = req.params.IntroEditID;
 
     // Delete the record from IntroducerEditRequest table
-    const deletedRows = await IntroducerEditRequest.destroy({ where: { id } });
+    const deletedRows = await IntroducerEditRequest.destroy({ where: { introTransactionId: id } }); //id correction
 
     if (deletedRows === 1) {
-      
+
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
@@ -1085,8 +1085,8 @@ export const rejectDeleteRequest = async (req, res) => {
     const id = req.params.editId;
 
     // Delete record from EditRequest table
-    const deletedRows = await EditRequest.destroy({
-      where: { editId: id },
+    const deletedRows = await EditRequest.destroy({ // id correction
+      where: { bankId: id },
     });
 
     if (deletedRows === 1) {

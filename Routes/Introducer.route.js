@@ -23,7 +23,7 @@ import {
 
 export const IntroducerRoutes = (app) => {
   // done
-  app.get('/api/introducer/profile', customErrorHandler, AuthorizeRole([string.introducer]), getIntroducerProfile);
+  app.get('/api/introducer/profile', AuthorizeRole([string.introducer]), getIntroducerProfile);
 
   // done
   app.put(

@@ -145,12 +145,13 @@ const WebsiteRoutes = (app) => {
   );
 
   // done
-  app.get('/api/superAdmin/view-website-edit-requests', Authorize([string.superAdmin]), getEditWebsiteRequests);
+  app.get('/api/superAdmin/view-website-edit-requests',customErrorHandler, Authorize([string.superAdmin]), getEditWebsiteRequests);
 
   // done
   app.post(
     '/api/admin/website/isActive/:websiteId',
     validateWebsiteActive,
+    customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
     websiteActive,
   );
@@ -158,6 +159,7 @@ const WebsiteRoutes = (app) => {
   // done
   app.get(
     '/api/admin/website/view-subAdmin/:subAdminId',
+    customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
     websiteSubAdminView,
   );

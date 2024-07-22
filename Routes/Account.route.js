@@ -86,7 +86,6 @@ const AccountRoute = (app) => {
   // modify this as before
   app.get(
     '/api/user-profile/:page',
-    customErrorHandler,
     Authorize([string.superAdmin, string.userProfileView, string.profileView]),
     getUserProfile,
   );
@@ -94,7 +93,6 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/admin/sub-admin-name/bank-view',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -112,7 +110,6 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/admin/sub-admin-name',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -130,7 +127,6 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/admin/sub-admin-name/website-view',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -175,7 +171,6 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/superAdmin/user-id',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -189,7 +184,6 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/superAdmin/Introducer-id',
-    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -297,7 +291,6 @@ const AccountRoute = (app) => {
   // done
   app.get(
     '/api/admin/introducer-account-summary/:id', // in id actually we are getting user name
-    customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     getIntroducerAccountSummary,
   );

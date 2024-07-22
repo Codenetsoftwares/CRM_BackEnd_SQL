@@ -6,7 +6,7 @@ import Transaction from '../models/transaction.model.js';
 import bankTransaction from '../models/bankTransaction.model.js';
 import BankRequest from '../models/bankRequest.model.js';
 import BankSubAdmin from '../models/bankSubAdmins.model.js';
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, where } from 'sequelize';
 import { database } from '../services/database.service.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
 import BankSubAdmins from '../models/bankSubAdmins.model.js';
@@ -17,9 +17,10 @@ import Website from '../models/website.model.js';
 export const updateBank = async (req, res) => {
   try {
     const bankId = req.params.bank_id;
-    // Retrieve existing bank details from the database
-    const existingBank = await Bank.findByPk(bankId); 
+    const { accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber } = req.body // send every thing in req.body 
 
+    // Retrieve existing bank details from the database
+    const existingBank = await Bank.findOne({ where: { bankId } });
     // Check if bank details exist
     if (!existingBank) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
@@ -28,31 +29,31 @@ export const updateBank = async (req, res) => {
     // Update logic
     let changedFields = {};
     // Compare each field in the data object with the existingBank
-    if (req.body.accountHolderName !== existingBank.accountHolderName) {
-      changedFields.accountHolderName = req.body.accountHolderName;
+    if (accountHolderName !== existingBank.accountHolderName) {
+      changedFields.accountHolderName = accountHolderName;
     }
-    if (req.body.bankName !== existingBank.bankName) {
-      changedFields.bankName = req.body.bankName;
+    if (bankName !== existingBank.bankName) {
+      changedFields.bankName = bankName;
     }
-    if (req.body.accountNumber !== existingBank.accountNumber) {
-      changedFields.accountNumber = req.body.accountNumber;
+    if (accountNumber !== existingBank.accountNumber) {
+      changedFields.accountNumber = accountNumber;
     }
-    if (req.body.ifscCode !== existingBank.ifscCode) {
-      changedFields.ifscCode = req.body.ifscCode;
+    if (ifscCode !== existingBank.ifscCode) {
+      changedFields.ifscCode = ifscCode;
     }
-    if (req.body.upiId !== existingBank.upiId) {
-      changedFields.upiId = req.body.upiId;
+    if (upiId !== existingBank.upiId) {
+      changedFields.upiId = upiId;
     }
-    if (req.body.upiAppName !== existingBank.upiAppName) {
-      changedFields.upiAppName = req.body.upiAppName;
+    if (upiAppName !== existingBank.upiAppName) {
+      changedFields.upiAppName = upiAppName;
     }
-    if (req.body.upiNumber !== existingBank.upiNumber) {
-      changedFields.upiNumber = req.body.upiNumber;
+    if (upiNumber !== existingBank.upiNumber) {
+      changedFields.upiNumber = upiNumber;
     }
 
     // Check for duplicate bank name
     const duplicateBank = await Bank.findOne({
-      where: { bankName: req.body.bankName },
+      where: { bankName: bankName },
     });
 
     if (duplicateBank) {
@@ -61,17 +62,17 @@ export const updateBank = async (req, res) => {
 
     // Update existingBank attributes
     existingBank.accountHolderName =
-      req.body.accountHolderName !== undefined ? req.body.accountHolderName : existingBank.accountHolderName;
+      accountHolderName !== undefined ? accountHolderName : existingBank.accountHolderName;
     existingBank.bankName =
-      req.body.bankName !== undefined
-        ? req.body.bankName.replace(/\s+/g, '')
+      bankName !== undefined
+        ? bankName.replace(/\s+/g, '')
         : existingBank.bankName.replace(/\s+/g, '');
     existingBank.accountNumber =
-      req.body.accountNumber !== undefined ? req.body.accountNumber : existingBank.accountNumber;
-    existingBank.ifscCode = req.body.ifscCode !== undefined ? req.body.ifscCode : existingBank.ifscCode;
-    existingBank.upiId = req.body.upiId !== undefined ? req.body.upiId : existingBank.upiId;
-    existingBank.upiAppName = req.body.upiAppName !== undefined ? req.body.upiAppName : existingBank.upiAppName;
-    existingBank.upiNumber = req.body.upiNumber !== undefined ? req.body.upiNumber : existingBank.upiNumber;
+      accountNumber !== undefined ? accountNumber : existingBank.accountNumber;
+    existingBank.ifscCode = ifscCode !== undefined ? ifscCode : existingBank.ifscCode;
+    existingBank.upiId = upiId !== undefined ? upiId : existingBank.upiId;
+    existingBank.upiAppName = upiAppName !== undefined ? upiAppName : existingBank.upiAppName;
+    existingBank.upiNumber = upiNumber !== undefined ? upiNumber : existingBank.upiNumber;
 
     // Save updated bank details
     await existingBank.save();
@@ -109,7 +110,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
   try {
     const requestId = req.params.requestId;
 
-    const editRequest = await EditBankRequest.findByPk(requestId);
+    const editRequest = await EditBankRequest.findOne({ where: { bankId: requestId } });  // findByPk not working
 
     if (!editRequest) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Edit request not found', res);
@@ -123,7 +124,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
     if (!editRequest.isApproved) {
       if (isApproved) {
         const bankExists = await Bank.findOne({
-          where: { bankName: editRequest.bankName, id: { [Op.ne]: editRequest.bankId } },
+          where: { bankName: editRequest.bankName, bankId: { [Op.ne]: editRequest.bankId } },  // id correction
         });
 
         if (bankExists) {
@@ -140,12 +141,12 @@ export const approveBankDetailEditRequest = async (req, res) => {
             upiAppName: editRequest.upiAppName,
             upiNumber: editRequest.upiNumber,
           },
-          { where: { id: editRequest.bankId } },
+          { where: { bankId: editRequest.bankId } }, // id correction
         );
 
         editRequest.isApproved = true;
         await editRequest.save();
-        await EditBankRequest.destroy({ where: { id: requestId } });
+        await EditBankRequest.destroy({ where: { bankId: requestId } });// id correction
 
         return apiResponseSuccess(null, true, statusCode.success, 'Edit request approved and data updated', res);
       } else {
@@ -164,7 +165,7 @@ export const deleteBankRequest = async (req, res) => {
     const id = req.params.bankId;
 
     // Use Sequelize to delete the record
-    const result = await Bank.destroy({  // wrong db fetch
+    const result = await BankRequest.destroy({  // db correction
       where: {
         bankId: id,
       },
