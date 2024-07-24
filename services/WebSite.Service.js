@@ -1,4 +1,6 @@
 import { database } from '../services/database.service.js';
+import { apiResponseErr, apiResponsePagination } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
 
 const WebsiteServices = {
   approveWebsiteAndAssignSubadmin: async (approvedWebsiteRequest, subAdmins) => {
@@ -156,6 +158,101 @@ const WebsiteServices = {
 
     return true;
   },
+
+ getWebsiteName : async (req, res) => {
+    try {
+      const { page = 1, pageSize = 10, search = '' } = req.query;
+      const limit = parseInt(pageSize);
+      const offset = (page - 1) * limit;
+
+      // Sanitize the search term to prevent SQL injection
+      const searchTerm = `%${search.trim().replace(/[%_]/g, '\\$&')}%`;
+
+      const [totalCountResult] = await database.execute(
+        `SELECT COUNT(*) AS totalCount FROM Website WHERE websiteName LIKE ?`,
+        [searchTerm]
+      );
+      const totalItems = totalCountResult[0].totalCount;
+      const totalPages = Math.ceil(totalItems / limit);
+
+      const websiteQuery = `
+      SELECT * FROM Website
+      WHERE websiteName LIKE ?
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+      let [websiteData] = await database.execute(websiteQuery, [searchTerm]);
+
+      const userRole = req.user[0]?.roles;
+      if (userRole.includes('superAdmin')) {
+        const balancePromises = websiteData.map(async (website) => {
+          website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
+          const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
+            website.website_id,
+          ]);
+          if (subAdmins && subAdmins.length > 0) {
+            website.subAdmins = subAdmins;
+          } else {
+            website.subAdmins = [];
+          }
+          return website;
+        });
+
+        websiteData = await Promise.all(balancePromises);
+      } else {
+        const userSubAdminId = req.user[0]?.userName;
+        console.log('userSubAdminId', userSubAdminId);
+        if (userSubAdminId) {
+          const filteredWebsitesPromises = websiteData.map(async (website) => {
+            const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
+              website.website_id,
+            ]);
+            if (subAdmins && subAdmins.length > 0) {
+              website.subAdmins = subAdmins;
+              const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
+              if (userSubAdmin) {
+                website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
+                website.isDeposit = userSubAdmin.isDeposit;
+                website.isWithdraw = userSubAdmin.isWithdraw;
+                website.isRenew = userSubAdmin.isRenew;
+                website.isEdit = userSubAdmin.isEdit;
+                website.isDelete = userSubAdmin.isDelete;
+              } else {
+                return null;
+              }
+            } else {
+              website.subAdmins = [];
+              return null;
+            }
+            return website;
+          });
+
+          const filteredWebsite = await Promise.all(filteredWebsitesPromises);
+
+          websiteData = filteredWebsite.filter((website) => website !== null);
+        } else {
+          console.error('SubAdminId not found in req.user');
+        }
+      }
+
+      websiteData.sort((a, b) => b.created_at - a.created_at);
+
+      return apiResponsePagination(
+        websiteData,
+        true,
+        statusCode.success,
+        'success',
+        {
+          page: parseInt(page),
+          limit: limit,
+          totalPages,
+          totalItems
+        },
+        res
+      );
+    } catch (error) {
+      return apiResponseErr(null, false, error.responseCode , error.message, res);
+    }
+  }
 };
 
 export default WebsiteServices;

@@ -2,6 +2,8 @@ import { database } from '../services/database.service.js';
 import { Authorize } from '../middleware/Authorize.js';
 import WebsiteServices from '../services/WebSite.Service.js';
 import { v4 as uuidv4 } from 'uuid';
+import { string } from '../constructor/string.js';
+
 
 const WebisteRoutes = (app) => {
   app.post('/api/add-website-name', Authorize(['superAdmin', 'Transaction-View', 'Website-View']), async (req, res) => {
@@ -165,79 +167,15 @@ const WebisteRoutes = (app) => {
   app.get(
     '/api/get-website-name',
     Authorize([
-      'superAdmin',
-      'Bank-View',
-      'Transaction-View',
-      'Create-Transaction',
-      'Create-Deposit-Transaction',
-      'Create-Withdraw-Transaction',
+      string.superAdmin,
+      string.bankView,
+      string.transactionView,
+      string.createTransaction,
+      string.createDepositTransaction,
+      string.createWithdrawTransaction,
     ]),
-    async (req, res) => {
-      try {
-        const websiteQuery = `SELECT * FROM Website`;
-        let [websiteData] = await database.execute(websiteQuery);
-
-        const userRole = req.user[0]?.roles;
-        if (userRole.includes('superAdmin')) {
-          const balancePromises = websiteData.map(async (website) => {
-            website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
-            const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
-              website.website_id,
-            ]);
-            if (subAdmins && subAdmins.length > 0) {
-              website.subAdmins = subAdmins;
-            } else {
-              website.subAdmins = [];
-            }
-            return website;
-          });
-
-          websiteData = await Promise.all(balancePromises);
-        } else {
-          const userSubAdminId = req.user[0]?.userName;
-          console.log('userSubAdminId', userSubAdminId);
-          if (userSubAdminId) {
-            const filteredBanksPromises = websiteData.map(async (website) => {
-              const [subAdmins] = await database.execute(`SELECT * FROM WebsiteSubAdmins WHERE websiteId = (?)`, [
-                website.website_id,
-              ]);
-              if (subAdmins && subAdmins.length > 0) {
-                website.subAdmins = subAdmins;
-                const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
-                if (userSubAdmin) {
-                  website.balance = await WebsiteServices.getWebsiteBalance(website.website_id);
-                  website.isDeposit = userSubAdmin.isDeposit;
-                  website.isWithdraw = userSubAdmin.isWithdraw;
-                  website.isRenew = userSubAdmin.isRenew;
-                  website.isEdit = userSubAdmin.isEdit;
-                  website.isDelete = userSubAdmin.isDelete;
-                } else {
-                  return null;
-                }
-              } else {
-                website.subAdmins = [];
-                return null;
-              }
-              return website;
-            });
-
-            const filteredBanks = await Promise.all(filteredBanksPromises);
-
-            websiteData = filteredBanks.filter((website) => website !== null);
-          } else {
-            console.error('SubAdminId not found in req.user');
-          }
-        }
-
-        websiteData.sort((a, b) => b.created_at - a.created_at);
-
-        return res.status(200).send(websiteData);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-      }
-    },
-  );
+    WebsiteServices.getWebsiteName
+  )
 
   app.delete(
     '/api/website/delete-subadmin/:websiteId/:subAdminId',
