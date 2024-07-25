@@ -821,6 +821,104 @@ export const getActiveBanks = async (req, res) => {
   }
 };
 
+export const getBankDetails = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (page - 1) * limit;
+
+    // Fetch total count of banks for pagination
+    const { count: totalItems, rows: bankData } = await Bank.findAndCountAll({
+      where: {
+        bankName: {
+          [Op.like]: `%${search}%`,
+        },
+      },
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (bankData.length === 0) {
+      return apiResponsePagination(
+        [],
+        true,
+        statusCode.success,
+        'No bank details found',
+        {
+        },
+        res,
+      );
+    }
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const userRole = req.user.roles; // Accessing roles property
+    if (userRole.includes(string.superAdmin)) {
+      // For superAdmin, fetch balances for all banks
+      const balancePromises = bankData.map(async (bank) => {
+        bank.dataValues.balance = await BankServices.getBankBalance(bank.id);
+        const subAdmins = await BankSubAdmins.findAll({
+          where: { bankId: bank.bankId },
+        });
+        bank.dataValues.subAdmins = subAdmins.length ? subAdmins : [];
+        return bank;
+      });
+
+      // Await all promises to complete
+      await Promise.all(balancePromises);
+    } else {
+      // For subAdmins, filter banks based on user permissions
+      const userSubAdminId = req.user.userName; // Accessing userName property
+      console.log('userSubAdminId', userSubAdminId);
+      if (userSubAdminId) {
+        const filteredBanksPromises = bankData.map(async (bank) => {
+          const subAdmins = await BankSubAdmins.findAll({
+            where: { bankId: bank.bankId },
+          });
+          bank.dataValues.subAdmins = subAdmins.length ? subAdmins : [];
+          const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
+          if (userSubAdmin) {
+            bank.dataValues.balance = await BankServices.getBankBalance(bank.id);
+            bank.dataValues.isDeposit = userSubAdmin.isDeposit;
+            bank.dataValues.isWithdraw = userSubAdmin.isWithdraw;
+            bank.dataValues.isRenew = userSubAdmin.isRenew;
+            bank.dataValues.isEdit = userSubAdmin.isEdit;
+            bank.dataValues.isDelete = userSubAdmin.isDelete;
+            return bank;
+          } else {
+            return null;
+          }
+        });
+
+        // Wait for all promises to complete
+        const filteredBanks = await Promise.all(filteredBanksPromises);
+
+        // Filter out null values (banks not authorized for the subAdmin)
+        bankData = filteredBanks.filter((bank) => bank !== null);
+      } else {
+        console.error('SubAdminId not found in req.user');
+        // Handle the case where subAdminId is not found in req.user
+      }
+    }
+    return apiResponsePagination(
+      bankData,
+      true,
+      statusCode.success,
+      'Bank details fetched successfully',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems,
+      },
+      res,
+    );
+  } catch (error) {
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+  }
+}
+
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
     try {
