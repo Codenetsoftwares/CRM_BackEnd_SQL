@@ -326,14 +326,15 @@ export const validateIdParam = [
 ];
 
 export const validateBankUpdate = [
-  body('accountHolderName').notEmpty().withMessage('Account Holder Name is required'),
-  body('bankName').notEmpty().withMessage('Bank Name is required'),
+  body('accountHolderName').notEmpty().withMessage('Account Holder Name is required').isString().withMessage('Account Holder Name must be a string'),
+  body('bankName').notEmpty().withMessage('Bank Name is required').isString().withMessage('Bank Name Name must be a string'),
   body('accountNumber').isNumeric().withMessage('Account Number must be a number'),
-  body('ifscCode').notEmpty().withMessage('IFSC Code is required'),
+  body('ifscCode').notEmpty().withMessage('IFSC Code is required').isString().withMessage('IFSC Code must be a string'),
   body('upiId').optional().isString().withMessage('UPI ID must be a string'),
   body('upiAppName').optional().isString().withMessage('UPI App Name must be a string'),
   body('upiNumber').optional().isString().withMessage('UPI Number must be a string'),
 ];
+
 
 export const approveBankDetailEditRequestValidator = [
   body('isApproved').isBoolean().withMessage('isApproved field must be a boolean value'),
