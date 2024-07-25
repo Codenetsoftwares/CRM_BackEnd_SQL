@@ -6,6 +6,7 @@ import BankServices, {
   deleteSubAdmin,
   getActiveBanks,
   getActiveVisibleBankAndWebsite,
+  getBankDetails,
   getBankNames,
   getSingleBankDetails,
   updateBankPermissions,
@@ -33,6 +34,9 @@ import {
   withdrawBankBalanceValidate,
 } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
+import BankSubAdmins from '../models/bankSubAdmins.model.js';
+import Bank from '../models/bank.model.js';
+import { Op } from 'sequelize';
 
 const BankRoutes = (app) => {
   // Testing Done
@@ -163,92 +167,17 @@ const BankRoutes = (app) => {
   app.get(
     '/api/get-bank-name',
     Authorize([
-      'superAdmin',
-      'Bank-View',
-      'Transaction-View',
-      'Create-Transaction',
-      'Create-Deposit-Transaction',
-      'Create-Withdraw-Transaction',
+      string.superAdmin,
+      string.bankView,
+      string.transactionView,
+      string.createTransaction,
+      string.createDepositTransaction,
+      string.createWithdrawTransaction,
     ]),
-    async (req, res) => {
-      try {
-        // Fetch bank data
-        const banksQuery = `SELECT * FROM Bank`;
-        let [bankData] = await database.execute(banksQuery);
-
-        const userRole = req.user[0]?.roles; // Accessing roles property
-        if (userRole.includes('superAdmin')) {
-          // For superAdmin, fetch balances for all banks
-          const balancePromises = bankData.map(async (bank) => {
-            bank.balance = await BankServices.getBankBalance(bank.bank_id);
-            // Fetch BankSubAdmins for each bank
-            const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [
-              bank.bank_id,
-            ]);
-            if (subAdmins && subAdmins.length > 0) {
-              bank.subAdmins = subAdmins;
-            } else {
-              bank.subAdmins = [];
-            }
-            return bank;
-          });
-
-          // Await all promises to complete
-          bankData = await Promise.all(balancePromises);
-        } else {
-          // For subAdmins, filter banks based on user permissions
-          const userSubAdminId = req.user[0]?.userName; // Accessing userName property
-          console.log('userSubAdminId', userSubAdminId);
-          if (userSubAdminId) {
-            const filteredBanksPromises = bankData.map(async (bank) => {
-              const [subAdmins] = await database.execute(`SELECT * FROM BankSubAdmins WHERE bankId = (?)`, [
-                bank.bank_id,
-              ]);
-              if (subAdmins && subAdmins.length > 0) {
-                bank.subAdmins = subAdmins;
-                const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
-                if (userSubAdmin) {
-                  // Update balance for the specific bank
-                  bank.balance = await BankServices.getBankBalance(bank.bank_id);
-
-                  // Set permissions for the specific bank
-                  bank.isDeposit = userSubAdmin.isDeposit;
-                  bank.isWithdraw = userSubAdmin.isWithdraw;
-                  bank.isRenew = userSubAdmin.isRenew;
-                  bank.isEdit = userSubAdmin.isEdit;
-                  bank.isDelete = userSubAdmin.isDelete;
-                } else {
-                  // Exclude this bank from the result
-                  return null;
-                }
-              } else {
-                bank.subAdmins = [];
-                return null;
-              }
-              return bank; // Include this bank in the result
-            });
-
-            // Wait for all promises to complete
-            const filteredBanks = await Promise.all(filteredBanksPromises);
-
-            // Filter out null values (banks not authorized for the subAdmin)
-            bankData = filteredBanks.filter((bank) => bank !== null);
-          } else {
-            console.error('SubAdminId not found in req.user');
-            // Handle the case where subAdminId is not found in req.user
-          }
-        }
-
-        // Sort bankData by created_at
-        bankData.sort((a, b) => b.created_at - a.created_at);
-
-        return res.status(200).send(bankData);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message || 'Internal Server Error' });
-      }
-    },
+    getBankDetails
   );
+
+
 
   // no need to refactor this
   app.get(
