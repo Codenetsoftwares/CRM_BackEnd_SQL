@@ -1092,7 +1092,7 @@ export const rejectDeleteRequest = async (req, res) => {
     if (deletedRows === 1) {
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -1111,7 +1111,7 @@ export const deleteTrashTransaction = async (req, res) => {
     if (deletedRows > 0) {
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
