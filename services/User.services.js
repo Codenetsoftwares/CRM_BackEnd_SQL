@@ -53,6 +53,7 @@ export const createUser = async (req, res) => {
         contactNumber,
         userName,
         password: hashedPassword,
+        role:string.user,
         introducersUserName,
         introducerPercentage,
         introducersUserName1,

@@ -60,7 +60,7 @@ const AccountRoute = (app) => {
     validateAdminCreate,
     customErrorHandler,
     Authorize([string.superAdmin, string.createSubAdmin]),
-    createAdmin,
+    createAdmin,     // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -69,7 +69,7 @@ const AccountRoute = (app) => {
     validateIntroducerCreate,
     customErrorHandler,
     Authorize([string.superAdmin, string.createIntroducer, string.createAdmin]),
-    createIntroducerUser,
+    createIntroducerUser,    // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -79,7 +79,7 @@ const AccountRoute = (app) => {
     updateUserProfileValidators,
     customErrorHandler,
     Authorize([string.superAdmin, string.userProfileView, string.profileView]),
-    updateUserProfile,
+    updateUserProfile,      // tested by anuwesh- 23/07/24
   );
 
   // API To View User Profile
@@ -87,7 +87,7 @@ const AccountRoute = (app) => {
   app.get(
     '/api/user-profile/:page',
     Authorize([string.superAdmin, string.userProfileView, string.profileView]),
-    getUserProfile,
+    getUserProfile,         // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -104,7 +104,7 @@ const AccountRoute = (app) => {
       string.profileView,
       string.introducerProfileView,
     ]),
-    getSubAdminsWithBankView,
+    getSubAdminsWithBankView,            // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -121,7 +121,7 @@ const AccountRoute = (app) => {
       string.profileView,
       string.introducerProfileView,
     ]),
-    getAllSubAdmins,
+    getAllSubAdmins,               // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -138,7 +138,7 @@ const AccountRoute = (app) => {
       string.profileView,
       string.introducerProfileView,
     ]),
-    getSubAdminsWithWebsiteView,
+    getSubAdminsWithWebsiteView,    // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -147,7 +147,7 @@ const AccountRoute = (app) => {
     updateIntroducerValidationSchema,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
-    updateIntroducerProfile,
+    updateIntroducerProfile,       // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -156,7 +156,7 @@ const AccountRoute = (app) => {
     validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
-    getClientData,
+    getClientData,                    // tested by anuwesh- 23/07/24
   );
 
   // done
@@ -165,7 +165,7 @@ const AccountRoute = (app) => {
     validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
-    getSingleIntroducer,
+    getSingleIntroducer,             //tested by anuwesh -23/07/24    
   );
 
   // done
@@ -178,7 +178,7 @@ const AccountRoute = (app) => {
       string.createWithdrawTransaction,
       string.createTransaction,
     ]),
-    getUserById,
+    getUserById,              //tested by anuwesh -23/07/24( doubt cleared).
   );
 
   // done
@@ -198,7 +198,7 @@ const AccountRoute = (app) => {
       string.transactionEditRequest,
       string.transactionDeleteRequest,
     ]),
-    getIntroducerById,
+    getIntroducerById,          //tested by anuwesh -23/07/24
   );
 
   // done
@@ -207,7 +207,7 @@ const AccountRoute = (app) => {
     validateCreateUser,
     customErrorHandler,
     Authorize([string.superAdmin, string.createAdmin, string.createUser]),
-    createUser,
+    createUser,                // tested by anuwesh- 24/07/24           
   );
 
   // done
@@ -216,7 +216,7 @@ const AccountRoute = (app) => {
     validateAdminId,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    getSingleSubAdmin,
+    getSingleSubAdmin,           // tested by anuwesh- 24/07/24
   );
 
   // done
@@ -225,7 +225,7 @@ const AccountRoute = (app) => {
     validateEditSubAdminRoles,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    editSubAdminRoles,
+    editSubAdminRoles,         // tested by anuwesh- 24/07/24
   );
 
   // done
