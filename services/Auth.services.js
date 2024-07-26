@@ -3,7 +3,6 @@ import IntroducerUser from '../models/introducerUser.model.js';
 import User from '../models/user.model.js';
 import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
-import { generateAdminAccessToken } from './Account.Services.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -42,20 +41,54 @@ export const loginAdmin = async (req, res) => {
   }
 };
 
+export const generateAdminAccessToken = async (userName, password, persist, res) => {
+  try {
+    const admin = await Admin.findOne({ where: { userName } });
+
+    if (!admin) {
+      throw new CustomError('Invalid User Name ', null, statusCode.badRequest);
+    }
+
+    const passwordValid = await bcrypt.compare(password, admin.password);
+
+    if (!passwordValid) {
+      throw new CustomError('Invalid Password', null, statusCode.badRequest);
+    }
+
+    const accessTokenPayload = {
+      adminId: admin.adminId,
+      userName: admin.userName,
+      roles: admin.roles,
+    };
+
+    const accessToken = jwt.sign(accessTokenPayload, process.env.JWT_SECRET_KEY, {
+      expiresIn: persist ? '1y' : '8h',
+    });
+
+    return {
+      accessToken,
+      adminId: admin.adminId,
+      userName: admin.userName,
+      roles: admin.roles,
+    };
+  } catch (error) {
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+  }
+};
+
 export const generateIntroducerAccessToken = async (req, res) => {
   const { userName, password, persist } = req.body;
-
   try {
     const existingUser = await IntroducerUser.findOne({ where: { userName } });
 
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid User Name or Password', res);
+      return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid Username ', res);
     }
 
     const passwordValid = await bcrypt.compare(password, existingUser.password);
 
     if (!passwordValid) {
-      return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid User Name or Password', res);
+      return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid  Password', res);
     }
 
     const accessTokenResponse = {

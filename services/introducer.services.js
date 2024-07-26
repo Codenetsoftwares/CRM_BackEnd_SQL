@@ -6,7 +6,7 @@ import IntroducerUser from '../models/introducerUser.model.js';
 import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
-import AccountServices from './Account.Services.js';
+import  { IntroducerBalance, introducerLiveBalance } from './Account.Services.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 import { Sequelize } from 'sequelize';
@@ -116,7 +116,7 @@ export const getIntroducerProfile = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
     }
 
-    const TPDLT = await AccountServices.IntroducerBalance(id, res);
+    const TPDLT = await IntroducerBalance(id, res);
     const response = {
       introId: introUser.introId,
       firstName: introUser.firstName,
@@ -126,7 +126,7 @@ export const getIntroducerProfile = async (req, res) => {
       balance: Number(TPDLT),
     };
 
-    const liveBalance = await AccountServices.introducerLiveBalance(id, res);
+    const liveBalance = await introducerLiveBalance(id, res);
     const currentDue = liveBalance - response.balance;
     response.currentDue = currentDue;
 
@@ -281,7 +281,7 @@ export const getIntroducerLiveBalance = async (req, res) => {
       return apiResponseSuccess(null, true, statusCode.badRequest, 'IntroducerUser not found', res);
     }
 
-    const data = await AccountServices.introducerLiveBalance(introId);
+    const data = await introducerLiveBalance(introId);
     console.log('data', data);
     return apiResponseSuccess({ LiveBalance: data }, true, statusCode.success, 'success', res);
   } catch (error) {

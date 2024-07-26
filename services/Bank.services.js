@@ -390,7 +390,7 @@ export const getSingleBankDetails = async (req, res) => {
     console.log('bankdata', dbBankData);
 
     if (!dbBankData) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+      return apiResponsePagination([], true, statusCode.success, 'Bank not found', {}, res);
     }
 
     let balance = 0;
@@ -434,14 +434,19 @@ export const getSingleBankDetails = async (req, res) => {
       balance: balance,
       bankTransactions: bankTransactions,
       transactions: transactions,
-      totalBankTransactions: bankTransactionsResult.count,
-      totalTransactions: transactionsResult.count,
-      currentPage: parseInt(page),
-      pageSize: limit,
-      totalPages: Math.ceil((bankTransactionsResult.count + transactionsResult.count) / limit)
     };
 
-    return apiResponseSuccess(response, true, statusCode.success, 'Bank Details retrieved successfully', res);
+    const totalItems = bankTransactionsResult.count + transactionsResult.count
+    const totalPages = Math.ceil(totalItems / limit)
+
+    return apiResponsePagination(response, true, statusCode.success, 'Bank Details retrieved successfully', {
+      page: parseInt(page),
+      limit,
+      totalPages,
+      totalItems
+    },
+      res
+    );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -628,7 +633,7 @@ export const viewBankEditRequests = async (req, res) => {
     });
 
     if (!editRequests || editRequests.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No edit requests found', {},res);
+      return apiResponsePagination([], true, statusCode.success, 'No edit requests found', {}, res);
     }
 
     const totalPages = Math.ceil(count / limit);
@@ -676,7 +681,7 @@ export const viewSubAdminBanks = async (req, res) => {
     const { subAdminId } = req.params;
 
     // Using raw SQL query or Sequelize query to fetch bank names associated with the subAdminId
-   const query = `
+    const query = `
       SELECT Banks.bankName
       FROM Banks
       INNER JOIN BankSubAdmins ON Banks.bankId = BankSubAdmins.bankId
@@ -918,6 +923,86 @@ export const getBankDetails = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 }
+
+export const manualUserBankSummary = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (page - 1) * limit;
+    const bankId = req.params.bankId;
+    let balances = 0;
+
+    // Fetch bank transactions with pagination
+    const bankSummary = await BankTransaction.findAndCountAll({
+      where: { bankId },
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+
+    // Fetch account transactions with pagination
+    const accountSummary = await Transaction.findAndCountAll({
+      where: { bankId },
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+    // Combine bank and account transactions
+    const allTransactions = [...accountSummary.rows, ...bankSummary.rows];
+
+    // Sort all transactions by createdAt in descending order
+    allTransactions.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    // Calculate balances
+    let allData = JSON.parse(JSON.stringify(allTransactions));
+    allData
+      .slice(0)
+      .reverse()
+      .map((data) => {
+        if (data.transactionType === 'Manual-Bank-Deposit') {
+          balances += parseFloat(data.depositAmount);
+          data.balance = balances;
+        }
+        if (data.transactionType === 'Manual-Bank-Withdraw') {
+          balances -= parseFloat(data.withdrawAmount);
+          data.balance = balances;
+        }
+        if (data.transactionType === 'Deposit') {
+          let totalAmount = 0;
+          totalAmount += parseFloat(data.amount);
+          balances += totalAmount;
+          data.balance = balances;
+        }
+        if (data.transactionType === 'Withdraw') {
+          const netAmount = balances - parseFloat(data.bankCharges) - parseFloat(data.amount);
+          balances = netAmount;
+          data.balance = balances;
+        }
+      });
+
+    const totalItems = bankSummary.count + accountSummary.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return apiResponsePagination(
+      allData,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems,
+      },
+      res,
+    );
+  } catch (error) {
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+  }
+}
+
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {

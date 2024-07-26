@@ -646,3 +646,11 @@ export const validateIntroducerUsername = [
 export const validateAdminId = [
 param('adminId').notEmpty().withMessage('Admin Id is required').isUUID().withMessage('Admin ID must be a valid UUID'),
 ]
+
+export const validatedBankId = [
+  param('bankId')
+    .notEmpty()
+    .withMessage('Bank ID is required')
+    .isUUID(4)
+    .withMessage('Bank ID must be a valid UUID v4'),
+];

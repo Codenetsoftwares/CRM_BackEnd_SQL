@@ -1,18 +1,19 @@
 import jwt from 'jsonwebtoken';
 import Admin from '../models/admin.model.js';
 import { statusCode } from '../utils/statusCodes.js';
+import { apiResponseErr } from '../utils/response.js';
 
 export const Authorize = (roles) => {
   return async (req, res, next) => {
     try {
       const authToken = req.headers.authorization;
       if (!authToken) {
-        return res.status(statusCode.unauthorize).send({ code: 401, message: 'Invalid login attempt (1)' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token missing from headers.', res);
       }
 
       const tokenParts = authToken.split(' ');
       if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer' || !tokenParts[1]) {
-        return res.status(statusCode.unauthorize).send({ code: 401, message: 'Invalid login attempt (2)' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token format is invalid. Expected format: Bearer <token>', res);
       }
 
       let user;
@@ -21,17 +22,17 @@ export const Authorize = (roles) => {
         console.log('Decoded user:', user); // Log decoded user for debugging
       } catch (err) {
         console.error('JWT Verification Error:', err.message);
-        return res.status(statusCode.unauthorize).send({ code: 401, message: 'Invalid login attempt (3)' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token is invalid or has expired.', res);
       }
 
       if (!user || !user.userName) {
-        return res.status(statusCode.unauthorize).send({ code: 401, message: 'Invalid login attempt (4)' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid token or user information missing', res);
       }
 
       const existingUser = await Admin.findOne({ where: { userName: user.userName } });
 
       if (!existingUser) {
-        return res.status(statusCode.unauthorize).send({ code: 401, message: 'Invalid login attempt (5)' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'User not found in the database.', res);
       }
 
       // Convert roles from JSON string to array if necessary
@@ -43,15 +44,15 @@ export const Authorize = (roles) => {
       if (roles && roles.length > 0) {
         const userHasRequiredRole = roles.some((role) => rolesArray.includes(role));
         if (!userHasRequiredRole) {
-          return res.status(statusCode.unauthorize).send({ code: 401, message: 'unauthorize access' });
+          return apiResponseErr(null, false, statusCode.unauthorize, 'User does not have permission to access this resource', res);
         }
       }
 
       req.user = existingUser; // Attach the user object to the request
       next();
-    } catch (err) {
-      console.error('Authorization Error:', err.message);
-      return res.status(statusCode.unauthorize).send({ code: 401, message: 'unauthorize access' });
+    } catch (error) {
+      console.error('Authorization Error:', error.message);
+      return apiResponseErr(null, false, statusCode.internalServerError, 'An error occurred during the authorization process.', res);
     }
   };
 };

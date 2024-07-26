@@ -1,6 +1,7 @@
 import { database } from '../services/database.service.js';
 import bcrypt from 'bcrypt';
-import AccountServices, {
+import {
+  accountSummary,
   createAdmin,
   editSubAdminRoles,
   getAllSubAdmins,
@@ -15,10 +16,13 @@ import AccountServices, {
   getSubAdminsWithWebsiteView,
   getUserById,
   getUserProfile,
+  introducerLiveBalance,
+  introducerProfile,
   subAdminPasswordResetCode,
   SuperAdminPasswordResetCode,
   updateSubAdminProfile,
   updateUserProfile,
+  viewSubAdmins,
   viewSubAdminTransactions,
 } from '../services/Account.Services.js';
 import {
@@ -52,6 +56,8 @@ import {
 } from '../utils/commonSchema.js';
 import customErrorHandler from '../utils/customErrorHandler.js';
 import { string } from '../constructor/string.js';
+import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
 
 const AccountRoute = (app) => {
   // done
@@ -60,7 +66,7 @@ const AccountRoute = (app) => {
     validateAdminCreate,
     customErrorHandler,
     Authorize([string.superAdmin, string.createSubAdmin]),
-    createAdmin,     // tested by anuwesh- 23/07/24
+    createAdmin,     
   );
 
   // done
@@ -69,7 +75,7 @@ const AccountRoute = (app) => {
     validateIntroducerCreate,
     customErrorHandler,
     Authorize([string.superAdmin, string.createIntroducer, string.createAdmin]),
-    createIntroducerUser,    // tested by anuwesh- 23/07/24
+    createIntroducerUser,   
   );
 
   // done
@@ -79,7 +85,7 @@ const AccountRoute = (app) => {
     updateUserProfileValidators,
     customErrorHandler,
     Authorize([string.superAdmin, string.userProfileView, string.profileView]),
-    updateUserProfile,      // tested by anuwesh- 23/07/24
+    updateUserProfile,    
   );
 
   // API To View User Profile
@@ -87,7 +93,7 @@ const AccountRoute = (app) => {
   app.get(
     '/api/user-profile/:page',
     Authorize([string.superAdmin, string.userProfileView, string.profileView]),
-    getUserProfile,         // tested by anuwesh- 23/07/24
+    getUserProfile,         
   );
 
   // done
@@ -104,7 +110,7 @@ const AccountRoute = (app) => {
       string.profileView,
       string.introducerProfileView,
     ]),
-    getSubAdminsWithBankView,            // tested by anuwesh- 23/07/24
+    getSubAdminsWithBankView,            
   );
 
   // done
@@ -121,7 +127,7 @@ const AccountRoute = (app) => {
       string.profileView,
       string.introducerProfileView,
     ]),
-    getAllSubAdmins,               // tested by anuwesh- 23/07/24
+    getAllSubAdmins,               
   );
 
   // done
@@ -138,7 +144,7 @@ const AccountRoute = (app) => {
       string.profileView,
       string.introducerProfileView,
     ]),
-    getSubAdminsWithWebsiteView,    // tested by anuwesh- 23/07/24
+    getSubAdminsWithWebsiteView,   
   );
 
   // done
@@ -147,7 +153,7 @@ const AccountRoute = (app) => {
     updateIntroducerValidationSchema,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
-    updateIntroducerProfile,       // tested by anuwesh- 23/07/24
+    updateIntroducerProfile,      
   );
 
   // done
@@ -156,7 +162,7 @@ const AccountRoute = (app) => {
     validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
-    getClientData,                    // tested by anuwesh- 23/07/24
+    getClientData,                
   );
 
   // done
@@ -165,7 +171,7 @@ const AccountRoute = (app) => {
     validateIntroId,
     customErrorHandler,
     Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
-    getSingleIntroducer,             //tested by anuwesh -23/07/24    
+    getSingleIntroducer,             
   );
 
   // done
@@ -178,7 +184,7 @@ const AccountRoute = (app) => {
       string.createWithdrawTransaction,
       string.createTransaction,
     ]),
-    getUserById,              //tested by anuwesh -23/07/24( doubt cleared).
+    getUserById,           
   );
 
   // done
@@ -198,7 +204,7 @@ const AccountRoute = (app) => {
       string.transactionEditRequest,
       string.transactionDeleteRequest,
     ]),
-    getIntroducerById,          //tested by anuwesh -23/07/24
+    getIntroducerById,     
   );
 
   // done
@@ -207,7 +213,7 @@ const AccountRoute = (app) => {
     validateCreateUser,
     customErrorHandler,
     Authorize([string.superAdmin, string.createAdmin, string.createUser]),
-    createUser,                // tested by anuwesh- 24/07/24           
+    createUser,                 
   );
 
   // done
@@ -216,7 +222,7 @@ const AccountRoute = (app) => {
     validateAdminId,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    getSingleSubAdmin,           // tested by anuwesh- 24/07/24
+    getSingleSubAdmin,          
   );
 
   // done
@@ -225,7 +231,7 @@ const AccountRoute = (app) => {
     validateEditSubAdminRoles,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    editSubAdminRoles,         // tested by anuwesh- 24/07/24
+    editSubAdminRoles,        
   );
 
   // done
@@ -233,7 +239,11 @@ const AccountRoute = (app) => {
     '/introducer-user-single-data/:introId',
     validateIntroId,
     customErrorHandler,
-    Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.introducerProfileView
+    ]),
     getIntroducerUserSingleData,
   );
 
@@ -251,7 +261,13 @@ const AccountRoute = (app) => {
     '/api/admin/user/reset-password',
     validateResetPassword,
     customErrorHandler,
-    Authorize([string.superAdmin, string.createAdmin, string.createUser, string.profileView, string.userProfileView]),
+    Authorize([
+      string.superAdmin,
+      string.createAdmin,
+      string.createUser,
+      string.profileView,
+      string.userProfileView
+    ]),
     userPasswordResetCode,
   );
 
@@ -275,7 +291,11 @@ const AccountRoute = (app) => {
     '/api/admin/create/introducer/deposit-transaction',
     createIntroducerDepositTransactionValidator,
     customErrorHandler,
-    Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.introducerProfileView
+    ]),
     createIntroducerDepositTransaction,
   );
 
@@ -284,7 +304,11 @@ const AccountRoute = (app) => {
     '/api/admin/create/introducer/withdraw-transaction',
     createIntroducerWithdrawalTransactionValidator,
     customErrorHandler,
-    Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.introducerProfileView
+    ]),
     createIntroducerWithdrawTransaction,
   );
 
@@ -350,43 +374,15 @@ const AccountRoute = (app) => {
   app.get(
     '/api/admin/account-summary',
     Authorize([
-      'superAdmin',
-      'Dashboard-View',
-      'Transaction-View',
-      'Transaction-Edit-Request',
-      'Transaction-Delete-Request',
-      'Website-View',
-      'Bank-View',
+      string.superAdmin,
+      string.dashboardView,
+      string.transactionView,
+      string.transactionEditRequest,
+      string.transactionDeleteRequest,
+      string.websiteView,
+      string.bankView,
     ]),
-    async (req, res) => {
-      try {
-        const [transactions] = await database.execute(`SELECT * FROM Transaction ORDER BY createdAt DESC`);
-
-        const [websiteTransactions] = await database.execute(
-          `SELECT * FROM WebsiteTransaction ORDER BY createdAt DESC`,
-        );
-
-        const [bankTransactions] = await database.execute(`SELECT * FROM BankTransaction ORDER BY createdAt DESC`);
-
-        const allTransactions = [...transactions, ...websiteTransactions, ...bankTransactions];
-        allTransactions.sort((a, b) => {
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
-          if (dateA < dateB) {
-            return 1;
-          } else if (dateA > dateB) {
-            return -1;
-          } else {
-            // If the dates are equal, sort by time in descending order
-            return b.createdAt - a.createdAt;
-          }
-        });
-        res.status(200).send(allTransactions);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code).send({ message: e.message });
-      }
-    },
+    accountSummary
   );
 
   // app.post('/api/admin/introducer/introducerCut/:id', Authorize(['superAdmin']), async (req, res) => {
@@ -406,107 +402,48 @@ const AccountRoute = (app) => {
 
   app.get(
     '/api/admin/introducer-live-balance/:introId',
-    Authorize(['superAdmin', 'Profile-View', 'Introducer-Profile-View']),
+    validateIntroId,
+    customErrorHandler,
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.introducerProfileView
+    ]),
     async (req, res) => {
       try {
-        const [introLiveData] = await database.execute(`SELECT * FROM IntroducerUser WHERE introId = (?)`, [
-          req.params.introId,
-        ]);
-        if (introLiveData.length === 0) {
-          throw { code: 404, message: 'Introducer not found' };
-        }
-        const id = introLiveData[0].introId;
-        console.log('id', id);
-        const data = await AccountServices.introducerLiveBalance(id);
-        console.log('data', data);
-        res.send({ LiveBalance: data });
+        const data = await introducerLiveBalance(req.params.introId);
+        return apiResponseSuccess(
+          { LiveBalance: data },
+          true,
+          statusCode.success,
+          'success',
+          res,
+        );
       } catch (e) {
-        console.error(e);
-        const statusCode = e.code || 500; // Default to 500 if code is not provided
-        res.status(statusCode).send({ message: e.message });
+        return apiResponseErr(
+          null,
+          false,
+          error.responseCode ?? statusCode.internalServerError,
+          error.message,
+          res,
+        );
       }
     },
   );
 
   // not need to refactor this
-  app.get(
-    '/api/introducer-profile/:page',
-    Authorize(['superAdmin', 'Introducer-Profile-View', 'Profile-View', 'Create-Introducer']),
-    async (req, res) => {
-      const page = req.params.page;
-      const userName = req.query.search;
-      try {
-        let [introducerUser] = await database.execute(`SELECT * FROM IntroducerUser`);
-
-        // let introducerUser = await queryExecutor(query);
-
-        let introData = introducerUser;
-
-        // Filter introducer user data based on the search query
-        if (userName) {
-          introData = introData.filter((user) => user[0].userName.includes(userName));
-          console.log('uuuu0', user.userName);
-        }
-
-        // Calculate balance for each introducer user
-        for (let index = 0; index < introData.length; index++) {
-          introData[index].balance = await AccountServices.getIntroBalance(introData[index].introId);
-        }
-
-        const allIntroDataLength = introData.length;
-        let pageNumber = Math.floor(allIntroDataLength / 10) + 1;
-        let SecondArray = [];
-        const Limit = page * 10;
-
-        for (let j = Limit - 10; j < Limit; j++) {
-          if (introData[j] !== undefined) {
-            SecondArray.push(introData[j]);
-          }
-        }
-
-        if (SecondArray.length === 0) {
-          return res.status(404).json({ message: 'No data' });
-        }
-
-        res.status(200).json({ SecondArray, pageNumber, allIntroDataLength });
-      } catch (e) {
-        console.error(e);
-        res.status(500).send({ message: 'Internal Server Error' });
-      }
-    },
+  app.get('/api/introducer-profile/:page',
+    Authorize([
+      string.superAdmin,
+      string.profileView,
+      string.introducerProfileView,
+      string.createIntroducer
+    ]),
+    introducerProfile
   );
 
   // no need to refactor this
-  app.get('/api/admin/view-sub-admins/:page', Authorize(['superAdmin']), async (req, res) => {
-    const page = req.params.page;
-    const searchQuery = req.query.search;
-    try {
-      let allIntroDataLength;
-      if (searchQuery) {
-        const [users] = await database.execute(`SELECT * FROM Admin WHERE userName LIKE '%${searchQuery}%';`);
-        allIntroDataLength = users.length;
-        const pageNumber = Math.ceil(allIntroDataLength / 10);
-        res.status(200).json({ users, pageNumber, allIntroDataLength });
-      } else {
-        const [introducerUser] = await database.execute(
-          `SELECT * FROM Admin WHERE NOT JSON_CONTAINS(roles, '"superAdmin"');`,
-        );
-        const introData = introducerUser.slice((page - 1) * 10, page * 10);
-
-        allIntroDataLength = introducerUser.length;
-
-        if (introData.length === 0) {
-          return res.status(404).json({ message: 'No data found for the selected criteria.' });
-        }
-
-        const pageNumber = Math.ceil(allIntroDataLength / 10);
-        res.status(200).json({ introData, pageNumber, allIntroDataLength });
-      }
-    } catch (e) {
-      console.error('Error occurred:', e);
-      res.status(500).send({ message: 'Internal Server Error' });
-    }
-  });
+  app.get('/api/admin/view-sub-admins/:page', Authorize([string.superAdmin]), viewSubAdmins);
 
   // app.post(
   //   '/api/admin/filter-data',

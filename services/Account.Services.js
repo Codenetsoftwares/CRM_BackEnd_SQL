@@ -43,52 +43,10 @@ export const createAdmin = async (req, res) => {
     if (newAdmin) {
       return apiResponseSuccess(newAdmin, true, statusCode.create, 'Admin create successfully', res);
     } else {
-      throw new CustomError('Failed to create new admin', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Failed to create new admin', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
-  }
-};
-
-export const generateAdminAccessToken = async (userName, password, persist, res) => {
-  if (!userName) {
-    throw new CustomError('Invalid value for: User Name', null, statusCode.badRequest);
-  }
-  if (!password) {
-    throw new CustomError('Invalid value for: Password', null, statusCode.badRequest);
-  }
-
-  try {
-    const admin = await Admin.findOne({ where: { userName } });
-
-    if (!admin) {
-      throw new CustomError('Invalid User Name ', null, statusCode.badRequest);
-    }
-
-    const passwordValid = await bcrypt.compare(password, admin.password);
-
-    if (!passwordValid) {
-      throw new CustomError('Invalid Password', null, statusCode.badRequest);
-    }
-
-    const accessTokenPayload = {
-      adminId: admin.adminId,
-      userName: admin.userName,
-      roles: admin.roles,
-    };
-
-    const accessToken = jwt.sign(accessTokenPayload, process.env.JWT_SECRET_KEY, {
-      expiresIn: persist ? '1y' : '8h',
-    });
-
-    return {
-      accessToken,
-      adminId: admin.adminId,
-      userName: admin.userName,
-      roles: admin.roles,
-    };
-  } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -109,7 +67,7 @@ export const updateUserProfile = async (req, res) => {
     const existingUser = await User.findOne({ where: { userId } });
 
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${userId}`, res);
+      return apiResponseSuccess(null, true, statusCode.success, `User not found with id: ${userId}`, res);
     }
 
     const validatePercentage = (percentage) => {
@@ -149,10 +107,10 @@ export const updateUserProfile = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   const page = parseInt(req.params.page);
   const searchQuery = req.query.search;
+  const pageSize = 10;
 
   try {
     let users;
-    let allIntroDataLength;
 
     if (searchQuery) {
       users = await User.findAll({
@@ -166,7 +124,6 @@ export const getUserProfile = async (req, res) => {
       users = await User.findAll();
     }
 
-    const pageSize = 10;
     const offset = (page - 1) * pageSize;
     const paginatedUsers = users.slice(offset, offset + pageSize);
 
@@ -179,18 +136,24 @@ export const getUserProfile = async (req, res) => {
       SecondArray.push(userWithTransaction);
     }
 
-    allIntroDataLength = users.length;
-    const pageNumber = Math.ceil(allIntroDataLength / pageSize);
+    const totalItems = users.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
 
     if (SecondArray.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No data found for the selected criteria.', res);
+      return apiResponsePagination([], true, statusCode.success, 'No data found for the selected criteria.', {}, res);
     }
 
-    return apiResponseSuccess(
-      { SecondArray, pageNumber, allIntroDataLength },
+    return apiResponsePagination(
+      SecondArray,
       true,
       statusCode.success,
       'Profile retrieved successfully',
+      {
+        page: parseInt(page),
+        limit: parseInt(pageSize),
+        totalItems,
+        totalPages
+      },
       res,
     );
   } catch (error) {
@@ -207,10 +170,10 @@ export const getSubAdminsWithBankView = async (req, res) => {
     const subAdmins = await Admin.findAndCountAll({
       where: {
         roles: {
-          [Op.like]: ['%Bank-View%'], // Adjust this based on how roles are stored
+          [Op.like]: ['%Bank-View%'],
         },
         userName: {
-          [Op.like]: `%${search}%`, 
+          [Op.like]: `%${search}%`,
         },
       },
       attributes: ['userName'],
@@ -240,7 +203,7 @@ export const getAllSubAdmins = async (req, res) => {
 
     const subAdmins = await Admin.findAndCountAll({
       userName: {
-        [Op.like]: `%${search}%`, 
+        [Op.like]: `%${search}%`,
       },
       attributes: ['userName'],
       offset,
@@ -273,7 +236,7 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
           [Op.like]: ['%Website-View%'],
         },
         userName: {
-          [Op.like]: `%${search}%`, 
+          [Op.like]: `%${search}%`,
         },
       },
       attributes: ['userName'],
@@ -320,7 +283,7 @@ export const getSingleIntroducer = async (req, res) => {
     const introducer = await IntroducerUser.findOne({ where: { introId } });
 
     if (!introducer) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, `Introducer not found with id: ${introId}`, res);
     }
 
     return apiResponseSuccess(introducer, true, statusCode.success, 'success', res);
@@ -337,7 +300,7 @@ export const getUserById = async (req, res) => {
 
     const { count: totalItems, rows: users } = await User.findAndCountAll({
       userName: {
-        [Op.like]: `%${search}%`, 
+        [Op.like]: `%${search}%`,
       },
       attributes: ['userName'],
       offset,
@@ -345,26 +308,21 @@ export const getUserById = async (req, res) => {
     });
 
     if (!users || users.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No users found', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'No users found', res);
     }
 
     const userNames = users.map((user) => user.userName);
     const totalPages = Math.ceil(totalItems / limit);
 
-    const responseData = {
-      data: userNames,
-      success: true,
-      successCode: statusCode.success,
-      message: 'success',
-      pagination: {
+    return apiResponsePagination(userNames, true, statusCode.success, 'success',
+      {
         page: parseInt(page),
         limit,
         totalPages,
         totalItems,
       },
-    };
+      res);
 
-    return res.status(statusCode.success).json(responseData);
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
@@ -769,147 +727,327 @@ export const viewSubAdminTransactions = async (req, res) => {
   }
 };
 
-const AccountServices = {
-  IntroducerBalance: async (introUserId, res) => {
-    try {
-      // Find all transactions for the introducer user
-      const transactions = await IntroducerTransaction.findAll({
-        where: {
-          introUserId: introUserId,
-        },
-      });
+export const accountSummary = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (page - 1) * limit;
 
-      // Calculate balance based on transaction type
-      let balance = 0;
-      transactions.forEach((transaction) => {
-        if (transaction.transactionType === 'Deposit') {
-          balance += transaction.amount;
-        } else {
-          balance -= transaction.amount;
-        }
-      });
+    // Fetch all transactions without pagination
+    const transactions = await Transaction.findAll({
+      order: [['createdAt', 'DESC']],
+    });
 
-      return balance;
-    } catch (error) {
-      console.error(error);
-      return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
-    }
-  },
+    const websiteTransactions = await WebsiteTransaction.findAll({
+      order: [['createdAt', 'DESC']],
+    });
 
-  getIntroBalance: async (introUserId, res) => {
-    console.log('introUserId', introUserId);
-    try {
-      // Find all transactions for the introducer
-      const introTransactions = await IntroducerTransaction.findAll({
-        where: {
-          introUserId: introUserId,
-        },
-      });
+    const bankTransactions = await BankTransaction.findAll({
+      order: [['createdAt', 'DESC']],
+    });
 
-      let balance = 0;
+    // Combine all transaction rows into one array
+    const allTransactions = [
+      ...transactions,
+      ...websiteTransactions,
+      ...bankTransactions,
+    ];
 
-      // Calculate balance based on transaction type
-      introTransactions.forEach((transaction) => {
-        if (transaction.transactionType === 'Deposit') {
-          balance += transaction.amount;
-        } else {
-          balance -= transaction.amount;
-        }
-      });
+    // Sort all transactions by createdAt in descending order
+    allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      // Calculate live balance using another service or function
-      const liveBalance = await introducerLiveBalance(introUserId);
-      const currentDue = liveBalance - balance;
+    // Apply pagination on the combined sorted array
+    const paginatedTransactions = allTransactions.slice(offset, offset + limit);
+    const totalItems = allTransactions.length;
+    const totalPages = Math.ceil(totalItems / limit);
 
-      return {
-        balance: balance,
-        currentDue: currentDue,
-      };
-    } catch (error) {
-      console.error(error);
-      return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
-    }
-  },
-
-  introducerLiveBalance: async (id, res) => {
-    try {
-      // Find the introducer user by id
-      const introId = await IntroducerUser.findOne({
-        where: {
-          introId: id,
-        },
-      });
-
-      if (!introId) {
-        return apiResponseErr(null, false, statusCode.badRequest, `Introducer with ID ${id} not found`, res);
-      }
-
-      const IntroducerId = introId.userName;
-
-      // Find all users where IntroducerId matches any introducersUserName
-      const userIntroIds = await User.findAll({
-        where: {
-          [Sequelize.Op.or]: [
-            { introducersUserName: IntroducerId },
-            { introducersUserName1: IntroducerId },
-            { introducersUserName2: IntroducerId },
-          ],
-        },
-      });
-
-      if (!userIntroIds.length) {
-        return 0;
-      }
-
-      let liveBalance = 0;
-
-      for (const user of userIntroIds) {
-        let matchedIntroducersUserName, matchedIntroducerPercentage;
-
-        if (user.introducersUserName === IntroducerId) {
-          matchedIntroducersUserName = user.introducersUserName;
-          matchedIntroducerPercentage = user.introducerPercentage;
-        } else if (user.introducersUserName1 === IntroducerId) {
-          matchedIntroducersUserName = user.introducersUserName1;
-          matchedIntroducerPercentage = user.introducerPercentage1;
-        } else if (user.introducersUserName2 === IntroducerId) {
-          matchedIntroducersUserName = user.introducersUserName2;
-          matchedIntroducerPercentage = user.introducerPercentage2;
-        }
-
-        // Find transaction details for the current user
-        const transDetails = await UserTransactionDetail.findAll({
-          where: {
-            userName: user.userName,
-          },
-        });
-
-        if (!transDetails.length) {
-          continue;
-        }
-
-        let totalDep = 0;
-        let totalWith = 0;
-
-        transDetails.forEach((res) => {
-          if (res.transactionType === 'Deposit') {
-            totalDep += Number(res.amount);
-          }
-          if (res.transactionType === 'Withdraw') {
-            totalWith += Number(res.amount);
-          }
-        });
-
-        let diff = totalDep - totalWith;
-        let amount = (matchedIntroducerPercentage / 100) * diff;
-        liveBalance += amount;
-      }
-
-      return Math.round(liveBalance);
-    } catch (error) {
-      return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
-    }
-  },
+    return apiResponsePagination(
+      paginatedTransactions,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems,
+      },
+      res,
+    );
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res,
+    );
+  }
 };
 
-export default AccountServices;
+export const introducerLiveBalance = async (introUserId) => {
+  try {
+    // Find the introducer user by id
+    const intro = await IntroducerUser.findOne({
+      where: {
+        introId: introUserId,
+      },
+    });
+
+    if (!intro) {
+      throw new Error(`Introducer with ID ${introUserId} not found`);
+    }
+
+    const IntroducerId = intro.userName;
+
+    // Find all users where IntroducerId matches any introducersUserName
+    const userIntroIds = await User.findAll({
+      where: {
+        [Sequelize.Op.or]: [
+          { introducersUserName: IntroducerId },
+          { introducersUserName1: IntroducerId },
+          { introducersUserName2: IntroducerId },
+        ],
+      },
+    });
+
+    if (!userIntroIds.length) {
+      return 0;
+    }
+
+    let liveBalance = 0;
+
+    for (const user of userIntroIds) {
+      let matchedIntroducersUserName, matchedIntroducerPercentage;
+
+      if (user.introducersUserName === IntroducerId) {
+        matchedIntroducersUserName = user.introducersUserName;
+        matchedIntroducerPercentage = user.introducerPercentage;
+      } else if (user.introducersUserName1 === IntroducerId) {
+        matchedIntroducersUserName = user.introducersUserName1;
+        matchedIntroducerPercentage = user.introducerPercentage1;
+      } else if (user.introducersUserName2 === IntroducerId) {
+        matchedIntroducersUserName = user.introducersUserName2;
+        matchedIntroducerPercentage = user.introducerPercentage2;
+      }
+
+      // Find transaction details for the current user
+      const transDetails = await UserTransactionDetail.findAll({
+        where: {
+          userName: user.userName,
+        },
+      });
+
+      if (!transDetails.length) {
+        continue;
+      }
+
+      let totalDep = 0;
+      let totalWith = 0;
+
+      transDetails.forEach((res) => {
+        if (res.transactionType === 'Deposit') {
+          totalDep += Number(res.amount);
+        }
+        if (res.transactionType === 'Withdraw') {
+          totalWith += Number(res.amount);
+        }
+      });
+
+      let diff = totalDep - totalWith;
+      let amount = (matchedIntroducerPercentage / 100) * diff;
+      liveBalance += amount;
+    }
+
+    return Math.round(liveBalance)
+
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res,
+    );
+  }
+};
+
+export const introducerProfile = async (req, res) => {
+  const { page = 1 } = req.params
+  const { pageSize = 10 } = req.query;
+
+  const userName = req.query.search;
+
+  try {
+    // Fetch all introducer users
+    const introducerUsers = await IntroducerUser.findAll();
+
+    // Filter introducer user data based on the search query
+    let introData = introducerUsers;
+    if (userName) {
+      introData = introData.filter((user) => user.userName.includes(userName));
+    }
+
+    // Calculate balance for each introducer user
+    for (let index = 0; index < introData.length; index++) {
+      introData[index].dataValues.balance = await getIntroBalance(introData[index].introId);
+    }
+
+    const totalItems = introData.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    const SecondArray = introData.slice(startIndex, endIndex);
+
+    if (SecondArray.length === 0) {
+      return apiResponsePagination([], true, statusCode.success, 'No data', {}, res);
+    }
+
+    return apiResponsePagination(
+      SecondArray,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit: parseInt(pageSize), totalPages, totalItems },
+      res
+    );
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
+  }
+};
+
+export const getIntroBalance = async (introUserId,) => {
+  console.log('introUserId', introUserId);
+
+  try {
+    // Find all transactions for the introducer
+    const introTransactions = await IntroducerTransaction.findAll({
+      where: {
+        introUserId: introUserId,
+      },
+    });
+
+    let balance = 0;
+
+    // Calculate balance based on transaction type
+    introTransactions.forEach((transaction) => {
+      if (transaction.transactionType === 'Deposit') {
+        balance += transaction.amount;
+      } else {
+        balance -= transaction.amount;
+      }
+    });
+
+    // Calculate live balance using another service or function
+    const liveBalance = await introducerLiveBalance(introUserId);
+    const currentDue = liveBalance - balance;
+
+    return {
+      balance: balance,
+      currentDue: currentDue,
+    };
+  } catch (error) {
+    throw new Error(error.message); // Adjust error handling
+  }
+};
+
+export const IntroducerBalance = async (introUserId, res) => {
+  try {
+    // Find all transactions for the introducer user
+    const transactions = await IntroducerTransaction.findAll({
+      where: {
+        introUserId: introUserId,
+      },
+    });
+
+    // Calculate balance based on transaction type
+    let balance = 0;
+    transactions.forEach((transaction) => {
+      if (transaction.transactionType === 'Deposit') {
+        balance += transaction.amount;
+      } else {
+        balance -= transaction.amount;
+      }
+    });
+
+    return balance;
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res,
+    );
+  }
+};
+
+export const viewSubAdmins = async (req, res) => {
+  try {
+    const { page = 1 } = req.params
+    const searchQuery = req.query.search;
+    const { pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize)
+    const offset = (parseInt(page) - 1) * limit
+
+    let whereCondition = {
+      roles: {
+        [Op.not]: '["superAdmin"]'
+      }
+    };
+
+    if (searchQuery) {
+      whereCondition = {
+        ...whereCondition,
+        userName: {
+          [Op.like]: `%${searchQuery}%`
+        }
+      };
+    }
+
+    const { count, rows } = await Admin.findAndCountAll({
+      where: whereCondition,
+      limit,
+      offset
+    });
+
+    if (rows.length === 0) {
+      return apiResponsePagination(
+        [],
+        true,
+        statusCode.success,
+        'No data found for the selected criteria.',
+        {},
+        res,
+      );
+    }
+
+    const totalPages = Math.ceil(count / limit);
+
+    return apiResponsePagination(
+      rows,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit, totalPages, totalItems: count },
+      res
+    );
+  } catch (error) {
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res,
+    );
+  }
+}
+
+

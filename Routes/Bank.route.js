@@ -9,6 +9,7 @@ import BankServices, {
   getBankDetails,
   getBankNames,
   getSingleBankDetails,
+  manualUserBankSummary,
   updateBankPermissions,
   updateBankStatus,
   viewBankEditRequests,
@@ -17,9 +18,6 @@ import BankServices, {
   withdrawBankBalance,
 } from '../services/Bank.services.js';
 import { deleteBankRequest } from '../services/Bank.services.js';
-import AccountServices from '../services/Account.Services.js';
-import { database } from '../services/database.service.js';
-import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
 import {
   addBankBalanceValidate,
@@ -28,6 +26,7 @@ import {
   validateAddBankName,
   validateApproveBank,
   validateBankId,
+  validatedBankId,
   validateDeleteBankRequest,
   validateDeleteSubAdmin,
   viewSubAdminBanksValidate,
@@ -178,64 +177,14 @@ const BankRoutes = (app) => {
   // no need to refactor this
   app.get(
     '/api/admin/manual-user-bank-account-summary/:bankId',
-    Authorize(['superAdmin', 'Bank-View', 'Transaction-View']),
-    async (req, res) => {
-      try {
-        let balances = 0;
-        const bankId = req.params.bankId;
-
-        // Fetch bank transactions from the database for the specified bankId
-        const bankSummaryQuery = `SELECT * FROM BankTransaction WHERE bankId = ? ORDER BY createdAt DESC`;
-        const [bankSummaryRows] = await database.execute(bankSummaryQuery, [bankId]);
-        const bankSummary = bankSummaryRows;
-
-        // Fetch account transactions from the database for the specified bankId
-        const accountSummaryQuery = `SELECT * FROM Transaction WHERE bankId = ? ORDER BY createdAt DESC`;
-        const [accountSummaryRows] = await database.execute(accountSummaryQuery, [bankId]);
-        const accountSummary = accountSummaryRows;
-
-        // Combine bank and account transactions
-        const allTransactions = [...accountSummary, ...bankSummary];
-
-        // Sort all transactions by createdAt in descending order
-        allTransactions.sort((a, b) => {
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
-          return dateB - dateA;
-        });
-
-        // Calculate balances
-        let allData = JSON.parse(JSON.stringify(allTransactions));
-        allData
-          .slice(0)
-          .reverse()
-          .map((data) => {
-            if (data.transactionType === 'Manual-Bank-Deposit') {
-              balances += parseFloat(data.depositAmount);
-              data.balance = balances;
-            }
-            if (data.transactionType === 'Manual-Bank-Withdraw') {
-              balances -= parseFloat(data.withdrawAmount);
-              data.balance = balances;
-            }
-            if (data.transactionType === 'Deposit') {
-              let totalAmount = 0;
-              totalAmount += parseFloat(data.amount);
-              balances += totalAmount;
-              data.balance = balances;
-            }
-            if (data.transactionType === 'Withdraw') {
-              const netAmount = balances - parseFloat(data.bankCharges) - parseFloat(data.amount);
-              balances = netAmount;
-              data.balance = balances;
-            }
-          });
-        return res.status(200).send(allData);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message });
-      }
-    },
+    validatedBankId,
+    customErrorHandler,
+    Authorize([
+      string.superAdmin,
+      string.bankView,
+      string.transactionView
+    ]),
+    manualUserBankSummary
   );
 };
 

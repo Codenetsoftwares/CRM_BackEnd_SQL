@@ -1,23 +1,25 @@
 import jwt from 'jsonwebtoken';
 import IntroducerUser from '../models/introducerUser.model.js';
 import User from '../models/user.model.js';
+import { apiResponseErr } from '../utils/response.js';
+import { statusCode } from '../utils/statusCodes.js';
 
 export const AuthorizeRole = (roles) => {
   return async (req, res, next) => {
     try {
       const authToken = req.headers.authorization;
       if (!authToken) {
-        return res.status(401).json({ message: 'Authorization token is missing' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token is missing', res);
       }
 
       const tokenParts = authToken.split(' ');
       if (!(tokenParts.length === 2 && tokenParts[0] === 'Bearer' && tokenParts[1])) {
-        return res.status(401).json({ message: 'Invalid token format' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token format is invalid. Expected format: Bearer <token>', res);
       }
 
       const decodedToken = jwt.verify(tokenParts[1], process.env.JWT_SECRET_KEY);
       if (!decodedToken || !decodedToken.userName) {
-        return res.status(401).json({ message: 'Invalid token or user information missing' });
+        return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid token or user information missing', res);
       }
 
       // Fetch introducer user from database using username
@@ -31,7 +33,7 @@ export const AuthorizeRole = (roles) => {
           where: { userId: decodedToken.userId },
         });
         if (!otherUser) {
-          return res.status(401).json({ message: 'User not found' });
+          return apiResponseErr(null, false, statusCode.unauthorize, 'User not found', res);
         }
         req.user = otherUser;
       } else {
@@ -41,18 +43,14 @@ export const AuthorizeRole = (roles) => {
       // Check if user's role is authorized
       if (roles && roles.length > 0) {
         if (!req.user.role || !roles.includes(req.user.role)) {
-          return res
-            .status(403)
-            .json({ error: 'Forbidden', message: 'User does not have permission to access this resource' });
+          return apiResponseErr(null, false, statusCode.unauthorize, 'User does not have permission to access this resource', res);
         }
       }
 
       next();
-    } catch (err) {
-      console.error('Authorization Error:', err.message);
-      return res
-        .status(500)
-        .json({ error: 'Internal Server Error', message: 'Something went wrong during authorization' });
+    } catch (error) {
+      console.error('Authorization Error:', error.message);
+      return apiResponseErr(null, false, statusCode.internalServerError, 'An error occurred during the authorization process.', res);
     }
   };
 };
