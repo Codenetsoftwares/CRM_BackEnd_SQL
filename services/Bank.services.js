@@ -395,20 +395,20 @@ export const getSingleBankDetails = async (req, res) => {
 
     let balance = 0;
 
-    const bankTransactions = await BankTransaction.findAndCountAll({
+    const bankTransactionsResult = await BankTransaction.findAndCountAll({
       where: { bankId: dbBankData.bankId },
       limit,
       offset
     });
 
-    const transactions = await Transaction.findAndCountAll({
+    const transactionsResult = await Transaction.findAndCountAll({
       where: { bankId: dbBankData.bankId },
       limit,
       offset
     });
 
-    // Uncomment if needed
-    // const editTransactions = await EditRequest.findAll({ where: { bankId: dbBankData.bankId } });
+    const bankTransactions = bankTransactionsResult.rows;
+    const transactions = transactionsResult.rows;
 
     bankTransactions.forEach((transaction) => {
       if (transaction.depositAmount) {
@@ -427,38 +427,18 @@ export const getSingleBankDetails = async (req, res) => {
       }
     });
 
-    // Uncomment and adjust if needed
-    // editTransactions.forEach(data => {
-    //   switch (data.transactionType) {
-    //     case 'Manual-Bank-Deposit':
-    //       balance += parseFloat(data.depositAmount);
-    //       break;
-    //     case 'Manual-Bank-Withdraw':
-    //       balance -= parseFloat(data.withdrawAmount);
-    //       break;
-    //     case 'Deposit':
-    //       balance += parseFloat(data.amount);
-    //       break;
-    //     case 'Withdraw':
-    //       balance -= parseFloat(data.bankCharges) + parseFloat(data.amount);
-    //       break;
-    //     default:
-    //       break;
-    //   }
-    // });
-
     const response = {
       bank_id: dbBankData.bankId,
       bankName: dbBankData.bankName,
       subAdminName: dbBankData.subAdminName,
       balance: balance,
-      bankTransactions: bankTransactions.rows,
-      transactions: transactions.rows,
-      totalBankTransactions: bankTransactions.count,
-      totalTransactions: transactions.count,
+      bankTransactions: bankTransactions,
+      transactions: transactions,
+      totalBankTransactions: bankTransactionsResult.count,
+      totalTransactions: transactionsResult.count,
       currentPage: parseInt(page),
       pageSize: limit,
-      totalPages: Math.ceil((bankTransactions.count + transactions.count) / limit)
+      totalPages: Math.ceil((bankTransactionsResult.count + transactionsResult.count) / limit)
     };
 
     return apiResponseSuccess(response, true, statusCode.success, 'Bank Details retrieved successfully', res);
@@ -601,11 +581,11 @@ export const getBankNames = async (req, res) => {
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
+    const whereCondition = search ? { bankName: { [Op.like]: `%${search}%` } } : {};
+
     const { count, rows: banks } = await Bank.findAndCountAll({
       attributes: ['bankName', 'bankId'], // Selecting specific attributes
-      bankName: {
-        [Op.like]: `${search}`,
-      },
+      where: whereCondition,
       limit,
       offset
     });
@@ -635,6 +615,7 @@ export const getBankNames = async (req, res) => {
   }
 };
 
+
 export const viewBankEditRequests = async (req, res) => {
   try {
     const { page = 1, pageSize = 10 } = req.query;
@@ -647,12 +628,12 @@ export const viewBankEditRequests = async (req, res) => {
     });
 
     if (!editRequests || editRequests.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No edit requests found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No edit requests found', {},res);
     }
 
     const totalPages = Math.ceil(count / limit);
 
-    return apiResponseSuccess(
+    return apiResponsePagination(
       editRequests,
       true,
       statusCode.success,
@@ -695,13 +676,15 @@ export const viewSubAdminBanks = async (req, res) => {
     const { subAdminId } = req.params;
 
     // Using raw SQL query or Sequelize query to fetch bank names associated with the subAdminId
-    const query = `
+   const query = `
       SELECT Banks.bankName
       FROM Banks
       INNER JOIN BankSubAdmins ON Banks.bankId = BankSubAdmins.bankId
-      WHERE BankSubAdmins.subAdminId = :subAdminId
+      WHERE BankSubAdmins.subAdminId = :subAdminId;
     `;
-    const [bankData] = await sequelize.query(query, {
+
+    // Execute the raw SQL query
+    const bankData = await sequelize.query(query, {
       replacements: { subAdminId },
       type: QueryTypes.SELECT,
     });
@@ -837,6 +820,104 @@ export const getActiveBanks = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
+export const getBankDetails = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (page - 1) * limit;
+
+    // Fetch total count of banks for pagination
+    const { count: totalItems, rows: bankData } = await Bank.findAndCountAll({
+      where: {
+        bankName: {
+          [Op.like]: `%${search}%`,
+        },
+      },
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (bankData.length === 0) {
+      return apiResponsePagination(
+        [],
+        true,
+        statusCode.success,
+        'No bank details found',
+        {
+        },
+        res,
+      );
+    }
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const userRole = req.user.roles; // Accessing roles property
+    if (userRole.includes(string.superAdmin)) {
+      // For superAdmin, fetch balances for all banks
+      const balancePromises = bankData.map(async (bank) => {
+        bank.dataValues.balance = await BankServices.getBankBalance(bank.id);
+        const subAdmins = await BankSubAdmins.findAll({
+          where: { bankId: bank.bankId },
+        });
+        bank.dataValues.subAdmins = subAdmins.length ? subAdmins : [];
+        return bank;
+      });
+
+      // Await all promises to complete
+      await Promise.all(balancePromises);
+    } else {
+      // For subAdmins, filter banks based on user permissions
+      const userSubAdminId = req.user.userName; // Accessing userName property
+      console.log('userSubAdminId', userSubAdminId);
+      if (userSubAdminId) {
+        const filteredBanksPromises = bankData.map(async (bank) => {
+          const subAdmins = await BankSubAdmins.findAll({
+            where: { bankId: bank.bankId },
+          });
+          bank.dataValues.subAdmins = subAdmins.length ? subAdmins : [];
+          const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
+          if (userSubAdmin) {
+            bank.dataValues.balance = await BankServices.getBankBalance(bank.id);
+            bank.dataValues.isDeposit = userSubAdmin.isDeposit;
+            bank.dataValues.isWithdraw = userSubAdmin.isWithdraw;
+            bank.dataValues.isRenew = userSubAdmin.isRenew;
+            bank.dataValues.isEdit = userSubAdmin.isEdit;
+            bank.dataValues.isDelete = userSubAdmin.isDelete;
+            return bank;
+          } else {
+            return null;
+          }
+        });
+
+        // Wait for all promises to complete
+        const filteredBanks = await Promise.all(filteredBanksPromises);
+
+        // Filter out null values (banks not authorized for the subAdmin)
+        bankData = filteredBanks.filter((bank) => bank !== null);
+      } else {
+        console.error('SubAdminId not found in req.user');
+        // Handle the case where subAdminId is not found in req.user
+      }
+    }
+    return apiResponsePagination(
+      bankData,
+      true,
+      statusCode.success,
+      'Bank details fetched successfully',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems,
+      },
+      res,
+    );
+  } catch (error) {
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+  }
+}
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {

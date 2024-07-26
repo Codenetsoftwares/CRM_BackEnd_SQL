@@ -18,6 +18,18 @@ const EditBankRequest = sequelize.define('EditBankRequest', {
   changedFields: { type: DataTypes.JSON },
   isApproved: { type: DataTypes.BOOLEAN },
   subAdminName: { type: DataTypes.STRING },
-});
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+},
+{
+  timestamps: true,
+},
+);
 
 export default EditBankRequest;
