@@ -547,13 +547,13 @@ export const updateWebsite = async (req, res) => {
     // Retrieve existing website details from the database
     const editWebsite = await Website.findOne({ where: { websiteId: id } });
     if (!editWebsite) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found for Editing', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Website not found for Editing', res);
     }
 
     // Check if the website has already been edited
     const editHistory = await EditWebsiteRequest.findAll({ where: { websiteId: id } });
     if (editHistory.length > 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Website with id ${id} has already been edited.`, res);
+      return apiResponseSuccess([], true, statusCode.success, `Website with id ${id} has already been edited.`, res);
     }
 
     let changedFields = {};
@@ -571,7 +571,7 @@ export const updateWebsite = async (req, res) => {
     });
 
     if (duplicateWebsite) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website name already exists in Website', res);
+      return apiResponseErr(null, false, statusCode.exist, 'Website name already exists in Website', res);
     }
 
     const duplicateEditWebsite = await EditWebsiteRequest.findOne({
@@ -581,7 +581,7 @@ export const updateWebsite = async (req, res) => {
     });
 
     if (duplicateEditWebsite) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website name already exists in Edit Request', res);
+      return apiResponseErr(null, false, statusCode.exist, 'Website name already exists in Edit Request', res);
     }
 
     // Create updatedTransactionData using a ternary operator
@@ -619,7 +619,7 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
     const editRequest = await EditWebsiteRequest.findOne({ where: { websiteId: requestId } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Edit request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Edit request not found', res);
     }
 
     if (!editRequest.isApproved) {
@@ -632,7 +632,7 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
         });
 
         if (websiteExists) {
-          return apiResponseErr(null, false, statusCode.badRequest, 'Website with the same name already exists', res);
+          return apiResponseErr(null, false, statusCode.exist, 'Website with the same name already exists', res);
         }
 
         await Website.update(

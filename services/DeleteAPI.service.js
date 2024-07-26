@@ -22,7 +22,7 @@ export const deleteBankTransaction = async (req, res) => {
     const transaction = await BankTransaction.findOne({ where: { bankTransactionId: requestId } });
 
     if (!transaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank Transaction not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank Transaction not found', res);
     }
 
     const deleteTransaction = async (transaction, user) => {
@@ -31,9 +31,9 @@ export const deleteBankTransaction = async (req, res) => {
       });
 
       if (!existingTransaction) {
-        return apiResponseErr(
-          null,
-          false,
+        return apiResponseSuccess(
+          [],
+          true,
           statusCode.badRequest,
           `Transaction not found with id: ${transaction.bankTransactionId}`,
           res,
@@ -119,7 +119,7 @@ export const approveBankTransactionRequest = async (req, res) => {
     const editRequest = await EditRequest.findOne({ where: { bankId: id } }); //wrong id
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank Request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank Request not found', res);
     }
 
     const isApproved = true;
@@ -173,7 +173,7 @@ export const deleteWebsiteTransaction = async (req, res) => {
     const transaction = await WebsiteTransaction.findOne({ where: { websiteTransactionId: requestId } });
 
     if (!transaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website Transaction not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Website Transaction not found', res);
     }
 
     const existingTransaction = await WebsiteTransaction.findOne({
@@ -181,10 +181,10 @@ export const deleteWebsiteTransaction = async (req, res) => {
     });
 
     if (!existingTransaction) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.badRequest,
+      return apiResponseSuccess(
+        [],
+        true,
+        statusCode.success,
         `Website Transaction not found with id: ${transaction.websiteTransactionId}`,
         res,
       );
@@ -256,7 +256,7 @@ export const moveWebsiteTransactionToTrash = async (req, res) => {
     const editRequest = await EditRequest.findOne({ where: { editId: id } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Edit Website Request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Edit Website Request not found', res);
     }
 
     const isApproved = true;
@@ -304,16 +304,16 @@ export const deleteTransaction = async (req, res) => {
     // Fetch transaction using Sequelize
     const transaction = await Transaction.findOne({ where: { Transaction_Id: requestId } });
     if (!transaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Transaction not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Transaction not found', res);
     }
 
     // Check for existing transaction and edit request
     const existingTransaction = await Transaction.findOne({ where: { Transaction_Id: transaction.Transaction_Id } });
     if (!existingTransaction) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.notFound,
+      return apiResponseSuccess(
+        [],
+        true,
+        statusCode.success,
         `Transaction not found with id: ${transaction.Transaction_Id}`,
         res,
       );
@@ -388,7 +388,7 @@ export const deleteIntroducerTransaction = async (req, res) => {
     // Fetch introducer transaction using Sequelize
     const transaction = await IntroducerTransaction.findOne({ where: { introTransactionId: requestId } });
     if (!transaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer Transaction not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Introducer Transaction not found', res);
     }
 
     // Check for existing introducer transaction and edit request
@@ -396,10 +396,10 @@ export const deleteIntroducerTransaction = async (req, res) => {
       where: { introTransactionId: transaction.introTransactionId },
     });
     if (!existingTransaction) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.badRequest,
+      return apiResponseSuccess(
+        [],
+        true,
+        statusCode.success,
         `Introducer Transaction not found with id: ${transaction.introTransactionId}`,
         res,
       );
@@ -462,7 +462,7 @@ export const deleteTransactionWithId = async (req, res) => {
     const editRequest = await EditRequest.findOne({ where: { editId: id } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Edit Website Request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Edit Website Request not found', res);
     }
 
     const isApproved = true;
@@ -518,7 +518,7 @@ export const deleteIntroducerTransactionWithId = async (req, res) => {
     const editRequest = await IntroducerEditRequest.findOne({ where: { IntroEditId: id } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Edit Request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Edit Request not found', res);
     }
 
     const isApproved = true;
@@ -572,14 +572,14 @@ export const deleteBankRequest = async (req, res) => {
     const transaction = await Bank.findOne({ where: { bankId: requestId } });
 
     if (!transaction) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Bank not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
     // Find the existing bank transaction
     const existingTransaction = await Bank.findOne({ where: { bankId: transaction.bankId } });
 
     if (!existingTransaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Bank not found with id: ${transaction.bankId}`, res);
+      return apiResponseSuccess([], true, statusCode.success, `Bank not found with id: ${transaction.bankId}`, res);
     }
 
     // Check if a delete request already exists
@@ -646,7 +646,7 @@ export const deleteBank = async (req, res) => {
     const editRequest = await EditBankRequest.findOne({ where: { bankId: bankId } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank Request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank Request not found', res);
     }
 
     const isApproved = true; // Replace with actual approval logic
@@ -675,14 +675,14 @@ export const saveWebsiteRequest = async (req, res) => {
     const website = await Website.findOne({ where: { websiteId: requestId } });
 
     if (!website) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Website not found', res);
     }
 
     // Find existing website transaction
     const existingTransaction = await Website.findOne({ where: { websiteId: website.websiteId } });
 
     if (!existingTransaction) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Website not found with id: ${website.websiteId}`, res);
+      return apiResponseSuccess([], true, statusCode.success, `Website not found with id: ${website.websiteId}`, res);
     }
 
     // Check if a delete request already exists
@@ -737,7 +737,7 @@ export const deleteWebsite = async (req, res) => {
     const editRequest = await EditWebsiteRequest.findOne({ where: { websiteId } });
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website Request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Website Request not found', res);
     }
 
     const isApproved = true; // Replace with actual approval logic
@@ -767,7 +767,7 @@ export const rejectBankDetail = async (req, res) => {
     if (result === 1) {
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -784,7 +784,7 @@ export const rejectWebsiteDetail = async (req, res) => {
     if (result === 1) {
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -821,7 +821,7 @@ export const viewTrash = async (req, res) => {
 
     // Check if results exist
     if (resultArray.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No records found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No records found',{}, res);
     }
 
     // Calculate total pages
@@ -854,7 +854,7 @@ export const restoreBankData = async (req, res) => {
     const deletedData = await Trash.findOne({ where: { bankId } });
 
     if (!deletedData) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found in Trash', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found in Trash', res);
     }
 
     // Extract data to restore from the retrieved deleted data
@@ -898,7 +898,7 @@ export const restoreWebsiteData = async (req, res) => {
     const deletedData = await Trash.findOne({ where: { websiteId } });
 
     if (!deletedData) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found in Trash', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found in Trash', res);
     }
 
     // Extract data to restore from the retrieved deleted data
@@ -935,7 +935,7 @@ export const restoreTransactionData = async (req, res) => {
     const deletedData = await Trash.findOne({ where: { Transaction_Id: transactionID } });
 
     if (!deletedData) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found in Trash', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found in Trash', res);
     }
 
     // Extract data to restore from the retrieved deleted data
@@ -989,7 +989,7 @@ export const restoreIntroducerData = async (req, res) => {
     const deletedData = await Trash.findOne({ where: { introTransactionId } });
 
     if (!deletedData) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found in Trash', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found in Trash', res);
     }
 
     // Extract data to restore from the retrieved deleted data
@@ -1033,7 +1033,7 @@ export const deleteIntroducerEditRequest = async (req, res) => {
 
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -1056,7 +1056,7 @@ export const viewDeleteRequests = async (req, res) => {
 
     // Check if results exist
     if (resultArray.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No records found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No records found',{}, res);
     }
 
     // Calculate total pages

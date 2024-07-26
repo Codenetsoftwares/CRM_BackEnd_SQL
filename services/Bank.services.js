@@ -23,7 +23,7 @@ export const updateBank = async (req, res) => {
     const existingBank = await Bank.findOne({ where: { bankId } });
     // Check if bank details exist
     if (!existingBank) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
     // Update logic
@@ -57,7 +57,7 @@ export const updateBank = async (req, res) => {
     });
 
     if (duplicateBank) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank name already exists!', res);
+      return apiResponseErr(null, false, statusCode.exist, 'Bank name already exists!', res);
     }
 
     // Update existingBank attributes
@@ -113,7 +113,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
     const editRequest = await EditBankRequest.findOne({ where: { bankId: requestId } });  // findByPk not working
 
     if (!editRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Edit request not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Edit request not found', res);
     }
 
     const { isApproved } = req.body;
@@ -128,7 +128,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
         });
 
         if (bankExists) {
-          return apiResponseErr(null, false, statusCode.badRequest, 'Bank with the same name already exists', res);
+          return apiResponseErr(null, false, statusCode.exist, 'Bank with the same name already exists', res);
         }
 
         await Bank.update(
@@ -172,9 +172,9 @@ export const deleteBankRequest = async (req, res) => {
     });
 
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(result, true, statusCode.success, 'Data deleted successfully', res);
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -193,7 +193,7 @@ export const deleteSubAdmin = async (req, res) => {
     });
 
     if (!bank) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Bank not found!', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found!', res);
     }
 
     // Remove the subAdmin with the specified subAdminId
@@ -205,7 +205,7 @@ export const deleteSubAdmin = async (req, res) => {
     });
 
     if (result === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
+      return apiResponseSuccess([], true, statusCode.success, 'SubAdmin not found!', res);
     }
     return apiResponseSuccess(result, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
@@ -282,7 +282,7 @@ export const approveBank = async (req, res) => {
 
     // Throw error if bank request not found
     if (!approvedBankRequest) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found in the approval requests!', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found in the approval requests!', res);
     }
 
     // If approval is granted, insert bank details and assign subAdmins
@@ -353,7 +353,7 @@ export const viewBankRequests = async (req, res) => {
     });
 
     if (bankRequests.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No bank requests found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No bank requests found',{}, res);
     }
 
     const totalPages = Math.ceil(count / limit);
@@ -469,7 +469,7 @@ export const addBankBalance = async (req, res) => {
     const bank = await Bank.findOne({ where: { bankId: bank_id } });
 
     if (!bank) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
     // Create bank transaction
@@ -523,7 +523,7 @@ export const withdrawBankBalance = async (req, res) => {
     const bank = await Bank.findOne({ where: { bankId: bank_id } });
 
     if (!bank) {
-      return apiResponseErr(null, false, statusCode.notFound, 'Bank account not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank account not found', res);
     }
 
     // Calculate current bank balance
@@ -591,7 +591,7 @@ export const getBankNames = async (req, res) => {
     });
 
     if (!banks || banks.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No banks found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No banks found',{}, res);
     }
 
     // Extracting required data to send in response
@@ -660,7 +660,7 @@ export const updateBankStatus = async (req, res) => {
     const bank = await Bank.findOne({ where: { bankId } });
 
     if (!bank) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Bank not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
     // Update isActive status
@@ -753,10 +753,10 @@ export const getActiveVisibleBankAndWebsite = async (req, res) => {
 
     // Check if active banks and websites exist
     if (activeBanks.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No bank found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'No bank found', res);
     }
     if (activeWebsites.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No Website found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'No Website found', res);
     }
 
     return apiResponseSuccess(
@@ -771,7 +771,7 @@ export const getActiveVisibleBankAndWebsite = async (req, res) => {
   }
 };
 
-export const getActiveBanks = async (req, res) => {
+export const getActiveBanks = async (req, res) => {    
   try {
     const { page = 1, pageSize = 10, search = '' } = req.query;
 
@@ -797,7 +797,7 @@ export const getActiveBanks = async (req, res) => {
 
     // Check if active banks exist
     if (activeBanks.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No active banks found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No active banks found',{}, res);
     }
 
     // Calculate total pages
