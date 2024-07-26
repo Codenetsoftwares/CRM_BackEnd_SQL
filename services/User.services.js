@@ -104,31 +104,33 @@ export const userPasswordResetCode = async (req, res) => {
 
 export const addBankDetails = async (req, res) => {
   try {
-    console.log('user');
     const bankDetailsArray = req.body.bank_details;
     const user = req.user;
 
+    // Validate that user is authenticated
     if (!user || !user.userId) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not authenticated', res);
+    }
+
+    // Validate that bankDetailsArray is an array
+    if (!Array.isArray(bankDetailsArray) || bankDetailsArray.some(bankDetail => typeof bankDetail !== 'object')) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for bank details', res);
     }
 
     const existingUser = await User.findOne({ where: { userId: user.userId } });
 
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'User not found', res);
     }
 
     let bankDetails = existingUser.Bank_Details ? JSON.parse(existingUser.Bank_Details) : [];
+    if (!Array.isArray(bankDetails)) {
+      bankDetails = [];
+    }
 
     for (const bankDetail of bankDetailsArray) {
-      if (bankDetails.some((existingBankDetail) => existingBankDetail.bank_name === bankDetail.bank_name)) {
-        return apiResponseErr(
-          null,
-          false,
-          statusCode.badRequest,
-          `Bank details already exist for account number ${bankDetail.bank_name}`,
-          res,
-        );
+      if (bankDetails.some(existingBankDetail => existingBankDetail.bank_name === bankDetail.bank_name)) {
+        return apiResponseErr(null, false, statusCode.exist, `Bank details already exist for bank name ${bankDetail.bank_name}`, res);
       }
       bankDetails.push({
         account_holder_name: bankDetail.account_holder_name,
@@ -138,7 +140,7 @@ export const addBankDetails = async (req, res) => {
       });
     }
 
-    existingUser.Bank_Details = JSON.stringify(bankDetails);
+    existingUser.Bank_Details = bankDetails;
     await existingUser.save();
 
     return apiResponseSuccess(bankDetails, true, statusCode.success, 'User bank details added successfully', res);
