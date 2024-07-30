@@ -232,7 +232,7 @@ export const getActiveWebsiteNames = async (req, res) => {
     const { page = 1, pageSize = 10 } = req.query
     const limit = parseInt(pageSize)
     const offset = (parseInt(page) - 1) * limit
-    const activeWebsites = await Website.findAll({
+    const activeWebsites = await Website.findAndCountAll({
       attributes: ['websiteName', 'isActive'],
       limit,
       offset,
@@ -245,11 +245,11 @@ export const getActiveWebsiteNames = async (req, res) => {
     const totalPages = Math.ceil(totalItems / limit);
 
 
-    return apiResponsePagination(activeWebsites, true, statusCode.success, 'Active websites fetched successfully', {
+    return apiResponsePagination(activeWebsites.rows, true, statusCode.success, 'Active websites fetched successfully', {
       page: parseInt(page),
       limit: limit,
       totalPages,
-      totalItems: count,
+      totalItems,
     },
       res
     );
