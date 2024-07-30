@@ -6,7 +6,7 @@ import IntroducerUser from '../models/introducerUser.model.js';
 import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import CustomError from '../utils/extendError.js';
-import  { IntroducerBalance, introducerLiveBalance } from './Account.Services.js';
+import { IntroducerBalance, introducerLiveBalance } from './Account.Services.js';
 import User from '../models/user.model.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
 import { Sequelize } from 'sequelize';
@@ -17,10 +17,6 @@ export const createIntroducerUser = async (req, res) => {
   try {
     const { firstName, lastName, userName, password } = req.body;
     const user = req.user;
-
-    if (!firstName || !lastName || !userName || !password) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'All fields are required', res);
-    }
 
     const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
 
@@ -83,23 +79,25 @@ export const updateIntroducerProfile = async (req, res) => {
 export const introducerPasswordResetCode = async (req, res) => {
   try {
     const { userName, password } = req.body;
-    // Fetch user from the database
     const existingUser = await IntroducerUser.findOne({ where: { userName } });
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    // Compare new password with old password
     const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (newPasswordIsDuplicate) {
-      throw new CustomError('New Password cannot be the same as existing password', 409);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        'New Password cannot be the same as existing password',
+        res,
+      );
     }
 
-    // Hash the new password
     const passwordSalt = await bcrypt.genSalt();
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
 
-    // Update user's password in the database
     const resetIntroducer = await IntroducerUser.update({ password: encryptedPassword }, { where: { userName } });
 
     return apiResponseSuccess(resetIntroducer, true, statusCode.success, 'Password reset successfully', res);
@@ -191,13 +189,12 @@ export const listIntroducerUsers = async (req, res) => {
         totalPages,
         totalItems: count,
       },
-      res
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const getIntroducerUserData = async (req, res) => {
   try {
@@ -320,7 +317,7 @@ export const introducerAccountSummary = async (req, res) => {
         totalPages,
         totalItems: count,
       },
-      res
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -350,14 +347,14 @@ export const getIntroducerUserAccountSummary = async (req, res) => {
     }
 
     // Fetch and paginate user transactions
-    const userNames = users.map(user => user.userName);
+    const userNames = users.map((user) => user.userName);
     const { count, rows: transactions } = await UserTransactionDetail.findAndCountAll({
       where: { userName: { [Sequelize.Op.in]: userNames } },
       limit,
       offset,
     });
 
-    const formattedTransactions = transactions.map(transaction => ({
+    const formattedTransactions = transactions.map((transaction) => ({
       AccountNumber: transaction.accountNumber,
       BankName: transaction.bankName,
       WebsiteName: transaction.websiteName,
@@ -385,13 +382,12 @@ export const getIntroducerUserAccountSummary = async (req, res) => {
         totalItems: count,
         totalPages,
       },
-      res
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const introducerUser = {
   // introducerLiveBalance: async (id) => {

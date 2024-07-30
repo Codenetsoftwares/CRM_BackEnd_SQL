@@ -53,7 +53,7 @@ export const createUser = async (req, res) => {
         contactNumber,
         userName,
         password: hashedPassword,
-        role:string.user,
+        role: string.user,
         introducersUserName,
         introducerPercentage,
         introducersUserName1,
@@ -77,28 +77,30 @@ export const userPasswordResetCode = async (req, res) => {
   const { userName, password } = req.body;
 
   try {
-    // Check if the user exists
     const existingUser = await User.findOne({ where: { userName } });
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    // Compare new password with the existing password
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      throw new CustomError('New Password cannot be the same as existing password', 409);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        'New Password cannot be the same as existing password',
+        res,
+      );
     }
 
-    // Hash the new password
     const passwordSalt = await bcrypt.genSalt();
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
 
-    // Update the password in the database
     const resetUser = await User.update({ password: encryptedPassword }, { where: { userName } });
 
     return apiResponseSuccess(resetUser, true, statusCode.success, 'Password reset successful!', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -113,7 +115,7 @@ export const addBankDetails = async (req, res) => {
     }
 
     // Validate that bankDetailsArray is an array
-    if (!Array.isArray(bankDetailsArray) || bankDetailsArray.some(bankDetail => typeof bankDetail !== 'object')) {
+    if (!Array.isArray(bankDetailsArray) || bankDetailsArray.some((bankDetail) => typeof bankDetail !== 'object')) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for bank details', res);
     }
 
@@ -129,8 +131,14 @@ export const addBankDetails = async (req, res) => {
     }
 
     for (const bankDetail of bankDetailsArray) {
-      if (bankDetails.some(existingBankDetail => existingBankDetail.bank_name === bankDetail.bank_name)) {
-        return apiResponseErr(null, false, statusCode.exist, `Bank details already exist for bank name ${bankDetail.bank_name}`, res);
+      if (bankDetails.some((existingBankDetail) => existingBankDetail.bank_name === bankDetail.bank_name)) {
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.exist,
+          `Bank details already exist for bank name ${bankDetail.bank_name}`,
+          res,
+        );
       }
       bankDetails.push({
         account_holder_name: bankDetail.account_holder_name,
@@ -145,47 +153,37 @@ export const addBankDetails = async (req, res) => {
 
     return apiResponseSuccess(bankDetails, true, statusCode.success, 'User bank details added successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const addWebsiteDetails = async (req, res) => {
   try {
-    const websites = req.body.website_name;
-    const user = req.user;
+    const { website_name } = req.body;
+    const { userId } = req.user;
 
-    // Validate that websites is an array
-    if (!Array.isArray(websites) || websites.some(site => typeof site !== 'string')) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid format for website names', res);
+    if (!website_name) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Website name is required', res);
     }
 
-    const existingUser = await User.findOne({ where: { userId: user.userId } });
+    const existingUser = await User.findOne({ where: { userId } });
 
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
-    //  const result=await existingUser.Websites_Details.json()
-    console.log(typeof  existingUser.Websites_Details)
-    // let websitesArray = existingUser.Websites_Details ? existingUser.Websites_Details : [];
-    if (!Array.isArray(websitesArray)) {
-      websitesArray = [];
-    }
-  
 
-    for (const website of websites) {
-      if (websitesArray.includes(website)) {
-        return apiResponseErr(null, false, statusCode.badRequest, `Website details already exist for ${website}`, res);
-      }
-      websitesArray.push(website);
-    }
+    const websitesArray = existingUser.Websites_Details || [];
+    websitesArray.push(website_name);
 
     existingUser.Websites_Details = websitesArray;
+
     await existingUser.save();
 
     return apiResponseSuccess(websitesArray, true, statusCode.create, 'User website details added successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
+
 };
 
 export const addUpiDetails = async (req, res) => {
@@ -229,15 +227,13 @@ export const addUpiDetails = async (req, res) => {
     existingUser.Upi_Details = JSON.stringify(upiDetails);
     await existingUser.save();
 
-    console.log("Saved UPI details:", existingUser.Upi_Details);
+    console.log('Saved UPI details:', existingUser.Upi_Details);
 
     return apiResponseSuccess(upiDetails, true, statusCode.create, 'User UPI details added successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
-
-
 
 export const updateUserProfile = async (req, res) => {
   try {
@@ -256,14 +252,14 @@ export const updateUserProfile = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to update profile', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const getUserProfileData = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const { page = 1, pageSize = 10 } = req.query
+    const { page = 1, pageSize = 10 } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
@@ -302,7 +298,7 @@ export const getUserProfileData = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -357,7 +353,7 @@ export const getSuperAdminUserProfile = async (req, res) => {
       );
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 

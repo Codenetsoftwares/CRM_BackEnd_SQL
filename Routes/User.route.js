@@ -80,11 +80,7 @@ export const UserRoutes = (app) => {
   );
 
   // DONE
-  app.get(
-    '/api/super-admin/user-profile/:page',
-    Authorize([string.superAdmin]),
-    getSuperAdminUserProfile,
-  );
+  app.get('/api/super-admin/user-profile/:page', Authorize([string.superAdmin]), getSuperAdminUserProfile);
 
   // app.post("/api/super-admin/login", async (req, res) => {
   //   try {

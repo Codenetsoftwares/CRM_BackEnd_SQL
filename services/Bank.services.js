@@ -19,11 +19,11 @@ import { string } from '../constructor/string.js';
 export const updateBank = async (req, res) => {
   try {
     const bankId = req.params.bank_id;
-    const { accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber } = req.body; // send everything in req.body 
+    const { accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber } = req.body; // send everything in req.body
 
     // Retrieve existing bank details from the database
     const existingBank = await Bank.findOne({ where: { bankId } });
-    
+
     // Check if bank details exist
     if (!existingBank) {
       return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
@@ -31,7 +31,7 @@ export const updateBank = async (req, res) => {
 
     // Update logic
     let changedFields = [];
-    
+
     // Compare each field in the data object with the existingBank
     if (accountHolderName !== existingBank.accountHolderName) {
       changedFields.push({ field: 'accountHolderName', value: accountHolderName });
@@ -65,8 +65,10 @@ export const updateBank = async (req, res) => {
     }
 
     // Update existingBank attributes
-    existingBank.accountHolderName = accountHolderName !== undefined ? accountHolderName : existingBank.accountHolderName;
-    existingBank.bankName = bankName !== undefined ? bankName.replace(/\s+/g, '') : existingBank.bankName.replace(/\s+/g, '');
+    existingBank.accountHolderName =
+      accountHolderName !== undefined ? accountHolderName : existingBank.accountHolderName;
+    existingBank.bankName =
+      bankName !== undefined ? bankName.replace(/\s+/g, '') : existingBank.bankName.replace(/\s+/g, '');
     existingBank.accountNumber = accountNumber !== undefined ? accountNumber : existingBank.accountNumber;
     existingBank.ifscCode = ifscCode !== undefined ? ifscCode : existingBank.ifscCode;
     existingBank.upiId = upiId !== undefined ? upiId : existingBank.upiId;
@@ -105,13 +107,11 @@ export const updateBank = async (req, res) => {
   }
 };
 
-
-
 export const approveBankDetailEditRequest = async (req, res) => {
   try {
     const requestId = req.params.requestId;
 
-    const editRequest = await EditBankRequest.findOne({ where: { bankId: requestId } });  // findByPk not working
+    const editRequest = await EditBankRequest.findOne({ where: { bankId: requestId } }); // findByPk not working
 
     if (!editRequest) {
       return apiResponseSuccess([], true, statusCode.success, 'Edit request not found', res);
@@ -125,7 +125,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
     if (!editRequest.isApproved) {
       if (isApproved) {
         const bankExists = await Bank.findOne({
-          where: { bankName: editRequest.bankName, bankId: { [Op.ne]: editRequest.bankId } },  // id correction
+          where: { bankName: editRequest.bankName, bankId: { [Op.ne]: editRequest.bankId } }, // id correction
         });
 
         if (bankExists) {
@@ -147,7 +147,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
 
         editRequest.isApproved = true;
         await editRequest.save();
-        await EditBankRequest.destroy({ where: { bankId: requestId } });// id correction
+        await EditBankRequest.destroy({ where: { bankId: requestId } }); // id correction
 
         return apiResponseSuccess(null, true, statusCode.success, 'Edit request approved and data updated', res);
       } else {
@@ -166,7 +166,8 @@ export const rejectBankRequest = async (req, res) => {
     const id = req.params.bankId;
 
     // Use Sequelize to delete the record
-    const result = await BankRequest.destroy({  // db correction
+    const result = await BankRequest.destroy({
+      // db correction
       where: {
         bankId: id,
       },
@@ -278,31 +279,39 @@ export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmin
   try {
     console.log('approvedBankRequest.bankId:', approvedBankRequest.bankId); // Debug logging
 
-    await Bank.create({
-      bankId: approvedBankRequest.bankId,
-      bankName: approvedBankRequest.bankName,
-      accountHolderName: approvedBankRequest.accountHolderName,
-      accountNumber: approvedBankRequest.accountNumber,
-      ifscCode: approvedBankRequest.ifscCode,
-      upiId: approvedBankRequest.upiId,
-      upiAppName: approvedBankRequest.upiAppName,
-      upiNumber: approvedBankRequest.upiNumber,
-      subAdminName: approvedBankRequest.subAdminName,
-      isActive: true,
-    }, { transaction });
-
-    await Promise.all(subAdmins.map(async (subAdmin) => {
-      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
-      await BankSubAdmins.create({
+    await Bank.create(
+      {
         bankId: approvedBankRequest.bankId,
-        subAdminId,
-        isDeposit,
-        isWithdraw,
-        isEdit,
-        isRenew,
-        isDelete,
-      }, { transaction });
-    }));
+        bankName: approvedBankRequest.bankName,
+        accountHolderName: approvedBankRequest.accountHolderName,
+        accountNumber: approvedBankRequest.accountNumber,
+        ifscCode: approvedBankRequest.ifscCode,
+        upiId: approvedBankRequest.upiId,
+        upiAppName: approvedBankRequest.upiAppName,
+        upiNumber: approvedBankRequest.upiNumber,
+        subAdminName: approvedBankRequest.subAdminName,
+        isActive: true,
+      },
+      { transaction },
+    );
+
+    await Promise.all(
+      subAdmins.map(async (subAdmin) => {
+        const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+        await BankSubAdmins.create(
+          {
+            bankId: approvedBankRequest.bankId,
+            subAdminId,
+            isDeposit,
+            isWithdraw,
+            isEdit,
+            isRenew,
+            isDelete,
+          },
+          { transaction },
+        );
+      }),
+    );
 
     await transaction.commit();
     return subAdmins.length; // Return the number of subadmins processed for further verification
@@ -340,13 +349,12 @@ export const handleApproveBank = async (req, res) => {
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank approval was not granted.', res);
     }
-    return apiResponseSuccess(null, true, statusCode.success,  'Bank approved successfully & SubAdmin Assigned', res);
+    return apiResponseSuccess(null, true, statusCode.success, 'Bank approved successfully & SubAdmin Assigned', res);
   } catch (error) {
     console.error(error); // Debug logging
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const viewBankRequests = async (req, res) => {
   try {
@@ -361,7 +369,7 @@ export const viewBankRequests = async (req, res) => {
     });
 
     if (bankRequests.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No bank requests found',{}, res);
+      return apiResponsePagination([], true, statusCode.success, 'No bank requests found', {}, res);
     }
 
     const totalPages = Math.ceil(count / limit);
@@ -406,13 +414,13 @@ export const getSingleBankDetails = async (req, res) => {
     const bankTransactionsResult = await BankTransaction.findAndCountAll({
       where: { bankId: dbBankData.bankId },
       limit,
-      offset
+      offset,
     });
 
     const transactionsResult = await Transaction.findAndCountAll({
       where: { bankId: dbBankData.bankId },
       limit,
-      offset
+      offset,
     });
 
     const bankTransactions = bankTransactionsResult.rows;
@@ -444,22 +452,26 @@ export const getSingleBankDetails = async (req, res) => {
       transactions: transactions,
     };
 
-    const totalItems = bankTransactionsResult.count + transactionsResult.count
-    const totalPages = Math.ceil(totalItems / limit)
+    const totalItems = bankTransactionsResult.count + transactionsResult.count;
+    const totalPages = Math.ceil(totalItems / limit);
 
-    return apiResponsePagination(response, true, statusCode.success, 'Bank Details retrieved successfully', {
-      page: parseInt(page),
-      limit,
-      totalPages,
-      totalItems
-    },
-      res
+    return apiResponsePagination(
+      response,
+      true,
+      statusCode.success,
+      'Bank Details retrieved successfully',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems,
+      },
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const addBankBalance = async (req, res) => {
   try {
@@ -600,11 +612,11 @@ export const getBankNames = async (req, res) => {
       attributes: ['bankName', 'bankId'], // Selecting specific attributes
       where: whereCondition,
       limit,
-      offset
+      offset,
     });
 
     if (!banks || banks.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No banks found',{}, res);
+      return apiResponsePagination([], true, statusCode.success, 'No banks found', {}, res);
     }
 
     // Extracting required data to send in response
@@ -621,13 +633,12 @@ export const getBankNames = async (req, res) => {
       statusCode.success,
       'Bank names retrieved successfully',
       { page: parseInt(page), limit, totalPages, totalItems: count },
-      res
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const viewBankEditRequests = async (req, res) => {
   try {
@@ -637,7 +648,7 @@ export const viewBankEditRequests = async (req, res) => {
 
     const { count, rows: editRequests } = await EditBankRequest.findAndCountAll({
       limit,
-      offset
+      offset,
     });
 
     if (!editRequests || editRequests.length === 0) {
@@ -651,8 +662,8 @@ export const viewBankEditRequests = async (req, res) => {
       true,
       statusCode.success,
       'Edit requests retrieved successfully',
-      { page: parseInt(page), limit, totalPages, totalItems: count, },
-      res
+      { page: parseInt(page), limit, totalPages, totalItems: count },
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -784,7 +795,7 @@ export const getActiveVisibleBankAndWebsite = async (req, res) => {
   }
 };
 
-export const getActiveBanks = async (req, res) => {    
+export const getActiveBanks = async (req, res) => {
   try {
     const { page = 1, pageSize = 10, search = '' } = req.query;
 
@@ -810,7 +821,7 @@ export const getActiveBanks = async (req, res) => {
 
     // Check if active banks exist
     if (activeBanks.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No active banks found',{}, res);
+      return apiResponsePagination([], true, statusCode.success, 'No active banks found', {}, res);
     }
 
     // Calculate total pages
@@ -853,15 +864,7 @@ export const getBankDetails = async (req, res) => {
     });
 
     if (bankData.length === 0) {
-      return apiResponsePagination(
-        [],
-        true,
-        statusCode.success,
-        'No bank details found',
-        {
-        },
-        res,
-      );
+      return apiResponsePagination([], true, statusCode.success, 'No bank details found', {}, res);
     }
 
     const totalPages = Math.ceil(totalItems / limit);
@@ -930,7 +933,7 @@ export const getBankDetails = async (req, res) => {
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
-}
+};
 
 export const manualUserBankSummary = async (req, res) => {
   try {
@@ -1009,8 +1012,7 @@ export const manualUserBankSummary = async (req, res) => {
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
-}
-
+};
 
 const BankServices = {
   approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {

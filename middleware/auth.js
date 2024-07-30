@@ -14,7 +14,13 @@ export const AuthorizeRole = (roles) => {
 
       const tokenParts = authToken.split(' ');
       if (!(tokenParts.length === 2 && tokenParts[0] === 'Bearer' && tokenParts[1])) {
-        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token format is invalid. Expected format: Bearer <token>', res);
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.unauthorize,
+          'Authorization token format is invalid. Expected format: Bearer <token>',
+          res,
+        );
       }
 
       const decodedToken = jwt.verify(tokenParts[1], process.env.JWT_SECRET_KEY);
@@ -43,7 +49,13 @@ export const AuthorizeRole = (roles) => {
       // Check if user's role is authorized
       if (roles && roles.length > 0) {
         if (!req.user.role || !roles.includes(req.user.role)) {
-          return apiResponseErr(null, false, statusCode.unauthorize, 'User does not have permission to access this resource', res);
+          return apiResponseErr(
+            null,
+            false,
+            statusCode.unauthorize,
+            'User does not have permission to access this resource',
+            res,
+          );
         }
       }
 

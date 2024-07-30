@@ -19,16 +19,13 @@ export const createIntroducerDepositTransaction = async (req, res) => {
   const subAdminDetail = req.user;
 
   try {
-    // Find introducer user by userName
     const introducerUser = await IntroducerUser.findOne({ where: { userName: introducerUserName } });
     if (!introducerUser) {
-      throw new CustomError('Introducer user not found', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
     }
 
-    // Generate transaction ID
     const introTransactionId = uuidv4();
 
-    // Create introducer transaction
     let newTransaction;
     if (transactionType === 'Deposit') {
       newTransaction = await IntroducerTransaction.create({
@@ -61,16 +58,13 @@ export const createIntroducerWithdrawTransaction = async (req, res) => {
   const subAdminDetail = req.user;
 
   try {
-    // Find introducer user by userName
     const introducerUser = await IntroducerUser.findOne({ where: { userName: introducerUserName } });
     if (!introducerUser) {
-      throw new CustomError('Introducer user not found', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
     }
 
-    // Generate transaction ID
     const introTransactionId = uuidv4();
 
-    // Create introducer transaction
     let newTransaction;
     if (transactionType === 'Withdraw') {
       newTransaction = await IntroducerTransaction.create({
@@ -332,19 +326,12 @@ export const depositView = async (req, res) => {
         totalItems: count,
         totalPages,
       },
-      res
+      res,
     );
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const withdrawView = async (req, res) => {
   try {
@@ -369,11 +356,12 @@ export const withdrawView = async (req, res) => {
     // Calculate total pages
     const totalPages = Math.ceil(count / limit);
 
-
-    return apiResponsePagination({
-      withdraws,
-      totalWithdraws,
-    }, true,
+    return apiResponsePagination(
+      {
+        withdraws,
+        totalWithdraws,
+      },
+      true,
       statusCode.success,
       'success',
       {
@@ -381,19 +369,13 @@ export const withdrawView = async (req, res) => {
         limit,
         totalItems: count,
         totalPages,
-      }, res
+      },
+      res,
     );
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res
-    );
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const viewEditIntroducerTransactionRequests = async (req, res) => {
   try {
@@ -407,27 +389,27 @@ export const viewEditIntroducerTransactionRequests = async (req, res) => {
     // Fetch records with pagination
     const editRequests = await IntroducerEditRequest.findAll({
       order: [['createdAt', 'DESC']], // Order by createdAt descending
-      limit, 
-      offset, 
+      limit,
+      offset,
     });
 
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit);
 
-    return apiResponsePagination(editRequests, true, statusCode.success, {
-      page: parseInt(page),
-      pageSize: limit,
-      totalItems: totalCount,
-      totalPages,
-    }, 'Data retrieved successfully', res);
-  } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res
+    return apiResponsePagination(
+      editRequests,
+      true,
+      statusCode.success,
+      {
+        page: parseInt(page),
+        pageSize: limit,
+        totalItems: totalCount,
+        totalPages,
+      },
+      'Data retrieved successfully',
+      res,
     );
+  } catch (error) {
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-

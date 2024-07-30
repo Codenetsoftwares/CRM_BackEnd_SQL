@@ -67,7 +67,7 @@ export const updateUserProfile = async (req, res) => {
     const existingUser = await User.findOne({ where: { userId } });
 
     if (!existingUser) {
-      return apiResponseSuccess(null, true, statusCode.success, `User not found with id: ${userId}`, res);
+      return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${userId}`, res);
     }
 
     const validatePercentage = (percentage) => {
@@ -100,14 +100,14 @@ export const updateUserProfile = async (req, res) => {
     await existingUser.save();
     return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const getUserProfile = async (req, res) => {
   const page = parseInt(req.params.page);
   const searchQuery = req.query.search;
-  const pageSize = 10;
+  const { pageSize = 10 } = req.query;
 
   try {
     let users;
@@ -152,12 +152,12 @@ export const getUserProfile = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(pageSize),
         totalItems,
-        totalPages
+        totalPages,
       },
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -191,7 +191,7 @@ export const getSubAdminsWithBankView = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -220,7 +220,7 @@ export const getAllSubAdmins = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -254,7 +254,7 @@ export const getSubAdminsWithWebsiteView = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -272,7 +272,7 @@ export const getClientData = async (req, res) => {
 
     return apiResponseSuccess(introducerUsers, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -288,7 +288,7 @@ export const getSingleIntroducer = async (req, res) => {
 
     return apiResponseSuccess(introducer, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -299,8 +299,10 @@ export const getUserById = async (req, res) => {
     const offset = (parseInt(page) - 1) * limit;
 
     const { count: totalItems, rows: users } = await User.findAndCountAll({
-      userName: {
-        [Op.like]: `%${search}%`,
+      where: {
+        userName: {
+          [Op.like]: `%${search}%`,
+        },
       },
       attributes: ['userName'],
       offset,
@@ -314,17 +316,21 @@ export const getUserById = async (req, res) => {
     const userNames = users.map((user) => user.userName);
     const totalPages = Math.ceil(totalItems / limit);
 
-    return apiResponsePagination(userNames, true, statusCode.success, 'success',
+    return apiResponsePagination(
+      userNames,
+      true,
+      statusCode.success,
+      'success',
       {
         page: parseInt(page),
         limit,
         totalPages,
         totalItems,
       },
-      res);
-
+      res,
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -335,8 +341,10 @@ export const getIntroducerById = async (req, res) => {
     const offset = (parseInt(page) - 1) * limit;
 
     const { count: totalItems, rows: introducers } = await IntroducerUser.findAndCountAll({
-      userName: {
-        [Op.like]: `%${search}%`,
+      where: {
+        userName: {
+          [Op.like]: `%${search}%`,
+        },
       },
       attributes: ['userName', 'introId'],
       offset,
@@ -344,7 +352,7 @@ export const getIntroducerById = async (req, res) => {
     });
 
     if (!introducers || introducers.length === 0) {
-      return apiResponseSuccess([], true, statusCode.success, 'No introducers found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No introducers found', {}, res);
     }
 
     return apiResponsePagination(
@@ -361,27 +369,23 @@ export const getIntroducerById = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const getSingleSubAdmin = async (req, res) => {
   try {
     const id = req.params.adminId;
-    console.log('iddd', id);
-
-    if (!id) {
-      return apiResponseErr(null, false, statusCode.badRequest, "Sub Admin's Id not present", res);
-    }
 
     const subAdmin = await Admin.findOne({ where: { adminId: id } });
 
     if (!subAdmin) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Sub Admin not found with the given Id', res);
     }
+
     return apiResponseSuccess(subAdmin, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -390,26 +394,24 @@ export const editSubAdminRoles = async (req, res) => {
     const subAdminId = req.params.adminId;
     const { roles } = req.body;
 
-    if (!subAdminId) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Id not found', res);
-    }
-
-    const [updatedRows] = await Admin.update({ roles: JSON.stringify(roles) }, { where: { adminId: subAdminId } });
+    const [updatedRows] = await Admin.update({ roles }, { where: { adminId: subAdminId } });
 
     if (updatedRows === 0) {
       return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found with the given Id', res);
     }
+
     return apiResponseSuccess(
-      updatedRows,
+      roles,
       true,
       statusCode.success,
-      `SubAdmin roles updated with ${JSON.stringify(roles)}`,
-      res,
+      'SubAdmin roles updated successfully',
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const getIntroducerUserSingleData = async (req, res) => {
   try {
@@ -425,7 +427,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
     });
 
     if (!introducerUserResult) {
-      return apiResponseSuccess(null, true, statusCode.success, 'Introducer user not found', res);
+      return apiResponseErr(null, true, statusCode.badRequest, 'Introducer user not found', res);
     }
 
     const introducerUserName = introducerUserResult.userName;
@@ -453,7 +455,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
     });
 
     if (usersResult.rows.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No matching users found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No matching users found', {}, res);
     }
 
     let filteredIntroducerUsers = [];
@@ -467,7 +469,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
         wallet: matchedUser.wallet,
         role: matchedUser.role,
         webSiteDetail: matchedUser.webSiteDetail,
-        transactionDetail: [], // Initialize as an empty array
+        transactionDetail: [],
       };
 
       let matchedIntroducersUserName = null;
@@ -511,7 +513,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -522,7 +524,7 @@ export const subAdminPasswordResetCode = async (req, res) => {
     // Check if the user exists
     const existingUser = await Admin.findOne({ where: { userName } });
     if (!existingUser) {
-      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
     // Compare new password with the existing password
@@ -531,7 +533,7 @@ export const subAdminPasswordResetCode = async (req, res) => {
       return apiResponseErr(
         null,
         false,
-        statusCode.badRequest,
+        statusCode.exist,
         'New Password cannot be the same as existing password',
         res,
       );
@@ -545,22 +547,28 @@ export const subAdminPasswordResetCode = async (req, res) => {
     const resetData = await Admin.update({ password: encryptedPassword }, { where: { userName } });
     return apiResponseSuccess(resetData, true, statusCode.success, 'Password reset successful!', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const getIntroducerAccountSummary = async (req, res) => {
   try {
     const id = req.params.id;
-    // Query to retrieve introducer transactions for the specified user ID
-    const introSummary = await IntroducerTransaction.findAll({
+    const { page = 1, pageSize = 10 } = req.query;
+
+    const limit = parseInt(pageSize);
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await IntroducerTransaction.findAndCountAll({
       where: { introUserId: id },
       order: [['createdAt', 'DESC']],
+      limit,
+      offset: offset,
     });
 
     let balances = 0;
-    // Calculate balances based on transaction type
-    let accountData = introSummary.map((data) => data.toJSON());
+    let accountData = rows.map((data) => data.toJSON());
     accountData.reverse().forEach((data) => {
       if (data.transactionType === 'Deposit') {
         balances += parseFloat(data.amount);
@@ -570,28 +578,37 @@ export const getIntroducerAccountSummary = async (req, res) => {
         data.balance = balances;
       }
     });
-    return apiResponseSuccess(accountData, true, statusCode.success, 'success', res);
+
+    const totalPages = Math.ceil(count / pageSize);
+
+    return apiResponsePagination(
+      accountData, true, statusCode.success, 'success', {
+      page: parseInt(page),
+      limit,
+      totalPages,
+      totalItems: count,
+    },
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const SuperAdminPasswordResetCode = async (req, res) => {
   try {
     const { userName, oldPassword, password } = req.body;
-    // Check if the user exists
     const existingUser = await Admin.findOne({ where: { userName } });
     if (!existingUser) {
-      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
 
-    // Check if the old password is correct
     const oldPasswordMatches = await bcrypt.compare(oldPassword, existingUser.password);
     if (!oldPasswordMatches) {
-      return apiResponseErr(null, false, statusCode.unauthorize, 'Old password is incorrect', res);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Old password is incorrect', res);
     }
 
-    // Compare new password with the old password
     if (oldPassword === password) {
       return apiResponseErr(
         null,
@@ -602,10 +619,15 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
       );
     }
 
-    // Compare new password with the existing password
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      throw new CustomError('New Password cannot be the same as existing password', null, 400);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        'New Password cannot be the same as existing password',
+        res,
+      );
     }
 
     // Hash the new password
@@ -624,25 +646,20 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
 export const getSingleUserProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const { page = 1, pageSize = 10 } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
 
-    // Find user profile by userId
     const userProfile = await User.findOne({ where: { userId } });
     if (!userProfile) {
-      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
+      return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${userId}`, res);
     }
 
     const userName = userProfile.userName;
 
-    // Fetch UserTransactionDetail for the user with pagination and search
     const userTransactionDetailResult = await UserTransactionDetail.findAndCountAll({
       where: {
-        userName,
-        userName: {
-          [Op.like]: `%${search}%`,
-        },
+        userName
       },
       limit,
       offset,
@@ -666,39 +683,40 @@ export const getSingleUserProfile = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const updateSubAdminProfile = async (req, res) => {
   try {
-    // Check if the user exists
     const adminId = req.params.adminId;
     const { firstName, lastName } = req.body;
     const existingUser = await Admin.findOne({ where: { adminId } });
     if (!existingUser) {
-      throw new CustomError(`Existing User not found with id: ${adminId}`, null, statusCode.badRequest);
+      return apiResponseSuccess(null, false, statusCode.badRequest, `User not found with id: ${adminId}`, res);
     }
 
-    // Update fields if provided in req.body
     if (firstName) {
       existingUser.firstName = firstName;
     }
     if (lastName) {
       existingUser.lastName = lastName;
     }
-    // Save the updated user
     const updateAdmin = await existingUser.save();
     return apiResponseSuccess(updateAdmin, true, statusCode.success, 'Updated successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const viewSubAdminTransactions = async (req, res) => {
   try {
     const userId = req.params.subAdminId;
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
 
+    // Fetch all transactions
     const transactions = await Transaction.findAll({
       where: { subAdminId: userId },
       order: [['createdAt', 'DESC']],
@@ -715,17 +733,29 @@ export const viewSubAdminTransactions = async (req, res) => {
     });
 
     if (transactions.length === 0 && bankTransactions.length === 0 && websiteTransactions.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No transactions found', res);
+      return apiResponsePagination([], true, statusCode.success, 'No transactions found', {}, res);
     }
 
     const allTransactions = [...transactions, ...bankTransactions, ...websiteTransactions];
-    allTransactions.sort((a, b) => b.createdAt - a.createdAt);
+    allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    return apiResponseSuccess(allTransactions, true, statusCode.success, 'Updated successfully', res);
+    const paginatedTransactions = allTransactions.slice(offset, offset + limit);
+    const totalItems = allTransactions.length;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return apiResponsePagination(
+      paginatedTransactions,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page), limit, totalPages, totalItems },
+      res,
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const accountSummary = async (req, res) => {
   try {
@@ -733,7 +763,6 @@ export const accountSummary = async (req, res) => {
     const limit = parseInt(pageSize);
     const offset = (page - 1) * limit;
 
-    // Fetch all transactions without pagination
     const transactions = await Transaction.findAll({
       order: [['createdAt', 'DESC']],
     });
@@ -746,17 +775,10 @@ export const accountSummary = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
-    // Combine all transaction rows into one array
-    const allTransactions = [
-      ...transactions,
-      ...websiteTransactions,
-      ...bankTransactions,
-    ];
+    const allTransactions = [...transactions, ...websiteTransactions, ...bankTransactions];
 
-    // Sort all transactions by createdAt in descending order
     allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    // Apply pagination on the combined sorted array
     const paginatedTransactions = allTransactions.slice(offset, offset + limit);
     const totalItems = allTransactions.length;
     const totalPages = Math.ceil(totalItems / limit);
@@ -775,13 +797,7 @@ export const accountSummary = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -795,7 +811,7 @@ export const introducerLiveBalance = async (introUserId) => {
     });
 
     if (!intro) {
-      return apiResponseSuccess(null, true, statusCode.success, `Introducer with ID ${introUserId} not found`, res);
+      throw new CustomError(`Introducer with ID ${introUserId} not found`, null, 400);
     }
 
     const IntroducerId = intro.userName;
@@ -859,21 +875,14 @@ export const introducerLiveBalance = async (introUserId) => {
       liveBalance += amount;
     }
 
-    return Math.round(liveBalance)
-
+    return Math.round(liveBalance);
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    throw new Error(error.message);
   }
 };
 
 export const introducerProfile = async (req, res) => {
-  const { page = 1 } = req.params
+  const { page = 1 } = req.params;
   const { pageSize = 10 } = req.query;
 
   const userName = req.query.search;
@@ -910,20 +919,14 @@ export const introducerProfile = async (req, res) => {
       statusCode.success,
       'success',
       { page: parseInt(page), limit: parseInt(pageSize), totalPages, totalItems },
-      res
+      res,
     );
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res
-    );
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
-export const getIntroBalance = async (introUserId,) => {
+export const getIntroBalance = async (introUserId) => {
   console.log('introUserId', introUserId);
 
   try {
@@ -979,54 +982,41 @@ export const IntroducerBalance = async (introUserId, res) => {
 
     return balance;
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
-      res,
-    );
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const viewSubAdmins = async (req, res) => {
   try {
-    const { page = 1 } = req.params
+    const { page = 1 } = req.params;
     const searchQuery = req.query.search;
     const { pageSize = 10 } = req.query;
-    const limit = parseInt(pageSize)
-    const offset = (parseInt(page) - 1) * limit
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
 
     let whereCondition = {
       roles: {
-        [Op.not]: '["superAdmin"]'
-      }
+        [Op.not]: '["superAdmin"]',
+      },
     };
 
     if (searchQuery) {
       whereCondition = {
         ...whereCondition,
         userName: {
-          [Op.like]: `%${searchQuery}%`
-        }
+          [Op.like]: `%${searchQuery}%`,
+        },
       };
     }
 
     const { count, rows } = await Admin.findAndCountAll({
       where: whereCondition,
       limit,
-      offset
+      offset,
     });
 
     if (rows.length === 0) {
-      return apiResponsePagination(
-        [],
-        true,
-        statusCode.success,
-        'No data found for the selected criteria.',
-        {},
-        res,
-      );
+      return apiResponsePagination([], true, statusCode.success, 'No data found for the selected criteria.', {}, res);
     }
 
     const totalPages = Math.ceil(count / limit);
@@ -1037,17 +1027,9 @@ export const viewSubAdmins = async (req, res) => {
       statusCode.success,
       'success',
       { page: parseInt(page), limit, totalPages, totalItems: count },
-      res
-    );
-  } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.message,
       res,
     );
+  } catch (error) {
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
-}
-
-
+};

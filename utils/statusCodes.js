@@ -7,5 +7,5 @@ export const statusCode = {
   inActive: 403,
   unauthorize: 401,
   unauthorize: 401,
-  exist : 409
+  exist: 409,
 };

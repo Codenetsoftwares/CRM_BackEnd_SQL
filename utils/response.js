@@ -20,7 +20,7 @@ export const apiResponsePagination = (
   success,
   successCode,
   message,
-  { page=0, limit=0, totalPages=0, totalItems=0 },
+  { page = 0, limit = 0, totalPages = 0, totalItems = 0 },
   res,
 ) => {
   return res.status(successCode).send({

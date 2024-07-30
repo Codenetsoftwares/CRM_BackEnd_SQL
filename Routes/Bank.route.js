@@ -68,8 +68,6 @@ const BankRoutes = (app) => {
     handleApproveBank,
   );
 
- 
-
   // Testing Done
   app.get('/api/superAdmin/view-bank-requests', customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
   // Testing Done
@@ -112,11 +110,7 @@ const BankRoutes = (app) => {
     getBankNames,
   );
   // Testing Done
-  app.get(
-    '/api/super-admin/view-bank-edit-requests',
-    Authorize([string.superAdmin]),
-    viewBankEditRequests,
-  );
+  app.get('/api/super-admin/view-bank-edit-requests', Authorize([string.superAdmin]), viewBankEditRequests);
   // Testing Done
   app.post(
     '/api/admin/bank/isActive/:bank_id',
@@ -173,21 +167,16 @@ const BankRoutes = (app) => {
       string.createDepositTransaction,
       string.createWithdrawTransaction,
     ]),
-    getBankDetails
+    getBankDetails,
   );
-
 
   // no need to refactor this
   app.get(
     '/api/admin/manual-user-bank-account-summary/:bankId',
     validatedBankId,
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.bankView,
-      string.transactionView
-    ]),
-    manualUserBankSummary
+    Authorize([string.superAdmin, string.bankView, string.transactionView]),
+    manualUserBankSummary,
   );
 };
 

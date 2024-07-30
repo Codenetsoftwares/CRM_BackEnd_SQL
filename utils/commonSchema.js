@@ -1,4 +1,4 @@
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 export const validateAdminCreate = [
   body('firstName').notEmpty().withMessage('First Name is required'),
@@ -17,39 +17,87 @@ export const validateAdminCreate = [
 ];
 
 export const validateIntroducerCreate = [
-  body('firstName').notEmpty().withMessage('firstName is required'),
-  body('lastName').notEmpty().withMessage('lastName is required'),
-  body('userName').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required'),
-];
-
-export const validateCreateUser = [
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
-  body('userName').notEmpty().withMessage('Username is required'),
+  body('firstName')
+    .notEmpty()
+    .withMessage('First name is required')
+    .isString()
+    .withMessage('First name must be a string')
+    .isLength({ max: 50 })
+    .withMessage('First name must be at most 50 characters long'),
+  body('lastName')
+    .notEmpty()
+    .withMessage('Last name is required')
+    .isString()
+    .withMessage('Last name must be a string')
+    .isLength({ max: 50 })
+    .withMessage('Last name must be at most 50 characters long'),
+  body('userName')
+    .notEmpty()
+    .withMessage('Username is required')
+    .isString()
+    .withMessage('Username must be a string')
+    .isLength({ max: 50 })
+    .withMessage('Username must be at most 50 characters long'),
   body('password')
     .notEmpty()
     .withMessage('Password is required')
+    .isString()
+    .withMessage('Password must be a string')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
+];
+
+export const validateCreateUser = [
+  body('firstName')
+    .notEmpty()
+    .withMessage('First name is required')
+    .isString()
+    .withMessage('First name must be a string')
+    .isLength({ max: 50 })
+    .withMessage('First name must be at most 50 characters long'),
+  body('lastName')
+    .notEmpty()
+    .withMessage('Last name is required')
+    .isString()
+    .withMessage('Last name must be a string')
+    .isLength({ max: 50 })
+    .withMessage('Last name must be at most 50 characters long'),
+  body('userName')
+    .notEmpty()
+    .withMessage('Username is required')
+    .isString()
+    .withMessage('Username must be a string')
+    .isLength({ max: 50 })
+    .withMessage('Username must be at most 50 characters long'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isString()
+    .withMessage('Password must be a string')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
   body('contactNumber').optional().isNumeric().withMessage('Contact number must be numeric'),
 ];
 
 export const validateResetPassword = [
-  body('userName').notEmpty().withMessage('Username is required'),
+  body('userName')
+    .notEmpty()
+    .withMessage('Username is required')
+    .isString()
+    .withMessage('Username must be a string')
+    .isLength({ max: 50 })
+    .withMessage('Username must be at most 50 characters long'),
   body('password')
     .notEmpty()
     .withMessage('Password is required')
+    .isString()
+    .withMessage('Password must be a string')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
 ];
 
 export const validateLogin = [
-  body('userName')
-    .notEmpty()
-    .withMessage('Username is required')
-    .isString()
-    .withMessage('Username must be a string'),
+  body('userName').notEmpty().withMessage('Username is required').isString().withMessage('Username must be a string'),
   body('password')
     .notEmpty()
     .withMessage('Password is required')
@@ -97,23 +145,21 @@ export const updateIntroducerValidationSchema = [
     .notEmpty()
     .withMessage('Introducer ID is required')
     .isUUID()
-    .withMessage('Introducer ID must be a valid UUID'),
+    .withMessage('Introducer ID must be a valid ID'),
 
   body('firstName')
+    .optional()
     .notEmpty()
-    .withMessage('First name is required')
+    .withMessage('First name cannot be empty')
     .isString()
-    .withMessage('First name must be a string')
-    .isLength({ max: 50 })
-    .withMessage('First name must be at most 50 characters long'),
+    .withMessage('First name must be a string'),
 
   body('lastName')
+    .optional()
     .notEmpty()
-    .withMessage('Last name is required')
+    .withMessage('Last name cannot be empty')
     .isString()
-    .withMessage('Last name must be a string')
-    .isLength({ max: 50 })
-    .withMessage('Last name must be at most 50 characters long'),
+    .withMessage('Last name must be a string'),
 ];
 
 export const validateEditSubAdminRoles = [
@@ -121,7 +167,7 @@ export const validateEditSubAdminRoles = [
     .notEmpty()
     .withMessage('SubAdmin ID is required')
     .isUUID()
-    .withMessage('Introducer ID must be a valid UUID'),
+    .withMessage('Introducer ID must be a valid ID'),
   body('roles')
     .notEmpty()
     .withMessage('Roles are required')
@@ -133,6 +179,8 @@ export const createIntroducerDepositTransactionValidator = [
   body('amount')
     .notEmpty()
     .withMessage('Amount is required')
+    .isNumeric()
+    .withMessage('Amount must be a number')
     .isFloat({ gt: 0 })
     .withMessage('Amount must be a positive number'),
 
@@ -155,6 +203,8 @@ export const createIntroducerWithdrawalTransactionValidator = [
   body('amount')
     .notEmpty()
     .withMessage('Amount is required')
+    .isNumeric()
+    .withMessage('Amount must be a number')
     .isFloat({ gt: 0 })
     .withMessage('Amount must be a positive number'),
 
@@ -204,7 +254,7 @@ export const deleteWebsiteTransactionValidate = [
 ];
 
 export const validateMoveToTrash = [
-  param('editId').notEmpty().withMessage('editId is required').isUUID(4).withMessage('editId must be a valid UUID v4'),
+  param('editId').notEmpty().withMessage('editId is required').isUUID(4).withMessage('editId must be a valid ID'),
 ];
 
 export const validateDeleteTransaction = [
@@ -212,7 +262,7 @@ export const validateDeleteTransaction = [
     .notEmpty()
     .withMessage('requestId is required')
     .isUUID(4)
-    .withMessage('requestId must be a valid UUID v4'),
+    .withMessage('requestId must be a valid ID'),
 ];
 
 export const validateDeleteIntroducerTransaction = [
@@ -220,11 +270,11 @@ export const validateDeleteIntroducerTransaction = [
     .notEmpty()
     .withMessage('requestId is required')
     .isUUID(4)
-    .withMessage('requestId must be a valid UUID v4'),
+    .withMessage('requestId must be a valid ID'),
 ];
 
 export const validateDeleteTransactionWithId = [
-  param('editId').notEmpty().withMessage('editId is required').isUUID(4).withMessage('editId must be a valid UUID v4'),
+  param('editId').notEmpty().withMessage('editId is required').isUUID(4).withMessage('editId must be a valid ID'),
 ];
 
 export const validateDeleteIntroducerTransactionWithId = [
@@ -232,7 +282,7 @@ export const validateDeleteIntroducerTransactionWithId = [
     .notEmpty()
     .withMessage('IntroEditId is required')
     .isUUID(4)
-    .withMessage('IntroEditID must be a valid UUID v4'),
+    .withMessage('IntroEditID must be a valid ID'),
 ];
 
 export const validationDeleteBankRequest = [
@@ -240,7 +290,7 @@ export const validationDeleteBankRequest = [
     .notEmpty()
     .withMessage('Request ID is required')
     .isUUID(4)
-    .withMessage('Request ID must be a valid UUID v4'),
+    .withMessage('Request ID must be a valid ID'),
 ];
 
 export const validateDeleteBank = [
@@ -248,7 +298,7 @@ export const validateDeleteBank = [
     .notEmpty()
     .withMessage('Bank ID is required')
     .isUUID(4)
-    .withMessage('Bank ID must be a valid UUID v4'),
+    .withMessage('Bank ID must be a valid ID'),
 ];
 
 export const validateSaveWebsiteRequest = [
@@ -256,7 +306,7 @@ export const validateSaveWebsiteRequest = [
     .notEmpty()
     .withMessage('Request ID is required')
     .isUUID(4)
-    .withMessage('Request ID must be a valid UUID v4'),
+    .withMessage('Request ID must be a valid ID'),
 ];
 
 export const validateDeleteWebsite = [
@@ -264,7 +314,7 @@ export const validateDeleteWebsite = [
     .notEmpty()
     .withMessage('Website ID is required')
     .isUUID(4)
-    .withMessage('Website ID must be a valid UUID v4'),
+    .withMessage('Website ID must be a valid ID'),
 ];
 
 export const validateRejectBankDetail = [
@@ -272,7 +322,7 @@ export const validateRejectBankDetail = [
     .notEmpty()
     .withMessage('Bank ID is required')
     .isUUID(4)
-    .withMessage('Bank ID must be a valid UUID v4'),
+    .withMessage('Bank ID must be a valid ID'),
 ];
 
 export const validateRejectWebsiteDetail = [
@@ -280,7 +330,7 @@ export const validateRejectWebsiteDetail = [
     .notEmpty()
     .withMessage('Website ID is required')
     .isUUID(4)
-    .withMessage('Website ID must be a valid UUID v4'),
+    .withMessage('Website ID must be a valid ID'),
 ];
 
 export const validateBankId = [
@@ -332,15 +382,22 @@ export const validateIdParam = [
 ];
 
 export const validateBankUpdate = [
-  body('accountHolderName').notEmpty().withMessage('Account Holder Name is required').isString().withMessage('Account Holder Name must be a string'),
-  body('bankName').notEmpty().withMessage('Bank Name is required').isString().withMessage('Bank Name Name must be a string'),
+  body('accountHolderName')
+    .notEmpty()
+    .withMessage('Account Holder Name is required')
+    .isString()
+    .withMessage('Account Holder Name must be a string'),
+  body('bankName')
+    .notEmpty()
+    .withMessage('Bank Name is required')
+    .isString()
+    .withMessage('Bank Name Name must be a string'),
   body('accountNumber').isNumeric().withMessage('Account Number must be a number'),
   body('ifscCode').notEmpty().withMessage('IFSC Code is required').isString().withMessage('IFSC Code must be a string'),
   body('upiId').optional().isString().withMessage('UPI ID must be a string'),
   body('upiAppName').optional().isString().withMessage('UPI App Name must be a string'),
   body('upiNumber').optional().isString().withMessage('UPI Number must be a string'),
 ];
-
 
 export const approveBankDetailEditRequestValidator = [
   body('isApproved').isBoolean().withMessage('isApproved field must be a boolean value'),
@@ -351,7 +408,7 @@ export const validateUpdateWebsite = [
     .notEmpty()
     .withMessage('Website ID is required')
     .isUUID()
-    .withMessage('Website ID must be a valid UUID'),
+    .withMessage('Website ID must be a valid ID'),
   body('websiteName')
     .optional()
     .isString()
@@ -365,7 +422,7 @@ export const approveWebValidate = [
     .notEmpty()
     .withMessage('requestId is required')
     .isUUID()
-    .withMessage('requestId must be a valid UUID'),
+    .withMessage('requestId must be a valid ID'),
   body('isApproved').isBoolean().withMessage('isApproved field must be a boolean value'),
 ];
 
@@ -447,8 +504,8 @@ export const validateSubAdminId = [
   param('subAdminId')
     .notEmpty()
     .withMessage('SubAdmin ID is required')
-    .isUUID(4)
-    .withMessage('SubAdmin ID is not valid'),
+    .isString()
+    .withMessage('SubAdmin ID must be a string'),
 ];
 
 export const validateApproval = [
@@ -458,41 +515,39 @@ export const validateApproval = [
 ];
 
 export const update = [
-  param('adminId').notEmpty().withMessage('Admin Id is required'),
-
-  body('firstName')
-  .optional()
-  .notEmpty()
-  .withMessage('First name must not be empty')
-  .isString()
-  .withMessage('First name must be a string'),
-
-body('lastName')
-  .optional()
-  .notEmpty()
-  .withMessage('Last name must not be empty')
-  .isString()
-  .withMessage('Last name must be a string'),
-];
-
-export const updateUserProfileValidators = [
-  param('userId')
-    .notEmpty()
-    .withMessage('User Id is required')
+  param('adminId').notEmpty().withMessage('Admin Id is required')
     .isUUID(4)
-    .withMessage('User Id is not valid'),
+    .withMessage('Admin ID is not valid'),
 
   body('firstName')
     .optional()
     .notEmpty()
-    .withMessage('First name must not be empty')
+    .withMessage('First name cannot be empty')
     .isString()
     .withMessage('First name must be a string'),
 
   body('lastName')
     .optional()
     .notEmpty()
-    .withMessage('Last name must not be empty')
+    .withMessage('Last name cannot be empty')
+    .isString()
+    .withMessage('Last name must be a string'),
+];
+
+export const updateUserProfileValidators = [
+  param('userId').notEmpty().withMessage('User Id is required').isUUID(4).withMessage('User Id is not valid'),
+
+  body('firstName')
+    .optional()
+    .notEmpty()
+    .withMessage('First name cannot be empty')
+    .isString()
+    .withMessage('First name must be a string'),
+
+  body('lastName')
+    .optional()
+    .notEmpty()
+    .withMessage('Last name cannot be empty')
     .isString()
     .withMessage('Last name must be a string'),
 
@@ -586,7 +641,7 @@ export const validateWebsiteActive = [
     .notEmpty()
     .withMessage('Website ID is required')
     .isUUID(4)
-    .withMessage('Website ID must be a valid UUID v4'),
+    .withMessage('Website ID must be a valid ID'),
 
   body('isActive')
     .notEmpty()
@@ -658,11 +713,22 @@ export const validateIntroId = [
     .notEmpty()
     .withMessage('Introducer ID is required')
     .isUUID()
-    .withMessage('Introducer ID must be a valid UUID'),
+    .withMessage('Introducer ID must be a valid ID'),
+];
+
+export const validateIntroIdWithPagination = [
+  param('introId')
+    .notEmpty()
+    .withMessage('Introducer ID is required')
+    .isUUID()
+    .withMessage('Introducer ID must be a valid ID'),
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be an integer greater than or equal to 1'),
+  query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be an integer greater than or equal to 1'),
+  query('search').optional().isString().withMessage('Search must be a string').trim(),
 ];
 
 export const validateIntroUserId = [
-  param('user_id').notEmpty().withMessage('User ID is required').isUUID().withMessage('User ID must be a valid UUID'),
+  param('user_id').notEmpty().withMessage('User ID is required').isUUID().withMessage('User ID must be a valid ID'),
 ];
 
 export const validateIntroducerUsername = [
@@ -670,13 +736,34 @@ export const validateIntroducerUsername = [
 ];
 
 export const validateAdminId = [
-  param('adminId').notEmpty().withMessage('Admin Id is required').isUUID().withMessage('Admin ID must be a valid UUID'),
-]
+  param('adminId').notEmpty().withMessage('Admin Id is required').isUUID().withMessage('Admin ID must be a valid ID'),
+];
 
 export const validatedBankId = [
   param('bankId')
     .notEmpty()
     .withMessage('Bank ID is required')
     .isUUID(4)
-    .withMessage('Bank ID must be a valid UUID v4'),
+    .withMessage('Bank ID must be a valid ID'),
+];
+
+export const paginationAndSearch = [
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be an integer greater than or equal to 1'),
+  query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be an integer greater than or equal to 1'),
+  query('search').optional().isString().withMessage('Search must be a string'),
+];
+
+export const validatePagination = [
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be an integer greater than or equal to 1'),
+  query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be an integer greater than or equal to 1'),
+];
+
+export const validateIntroducerAccountSummary = [
+  param('id')
+    .notEmpty()
+    .withMessage('Introducer ID is required')
+    .isUUID(4)
+    .withMessage('Introducer ID must be valid ID'),
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be an integer greater than or equal to 1'),
+  query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be an integer greater than or equal to 1'),
 ];

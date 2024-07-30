@@ -5,7 +5,7 @@ import BankTransaction from '../models/bankTransaction.model.js';
 import EditRequest from '../models/editRequest.model.js';
 import WebsiteTransaction from '../models/websiteTransaction.model.js';
 import Trash from '../models/trash.model.js';
-import  Transaction  from '../models/transaction.model.js';
+import Transaction from '../models/transaction.model.js';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import IntroducerEditRequest from '../models/introducerEditRequest.model.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
@@ -106,7 +106,13 @@ export const deleteBankTransaction = async (req, res) => {
 
     const updateResult = await deleteTransaction(transaction, user);
     if (updateResult) {
-      return apiResponseSuccess(updateResult, true, statusCode.success, 'Bank Transaction Move to trash request sent to Super Admin', res);
+      return apiResponseSuccess(
+        updateResult,
+        true,
+        statusCode.success,
+        'Bank Transaction Move to trash request sent to Super Admin',
+        res,
+      );
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -486,7 +492,7 @@ export const deleteTransactionWithId = async (req, res) => {
         bonus: editRequest.bonus,
         bankCharges: editRequest.bankCharges,
         createdAt: editRequest.createdAt,
-        Transaction_Id: editRequest.Transaction_Id,
+        Transaction_Id: editRequest.Transaction_Id || null,
         message: editRequest.message,
         type: editRequest.type,
         nameType: editRequest.nameType,
@@ -803,13 +809,13 @@ export const viewTrash = async (req, res) => {
     // Build the search condition
     const searchCondition = search
       ? {
-        where: {
-          // Example: assuming `name` field should be searched; adjust as needed
-          name: {
-            [Op.iLike]: `%${search}%`,
+          where: {
+            // Example: assuming `name` field should be searched; adjust as needed
+            name: {
+              [Op.iLike]: `%${search}%`,
+            },
           },
-        },
-      }
+        }
       : {};
 
     // Fetch records with pagination and search
@@ -821,7 +827,7 @@ export const viewTrash = async (req, res) => {
 
     // Check if results exist
     if (resultArray.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No records found',{}, res);
+      return apiResponsePagination([], true, statusCode.success, 'No records found', {}, res);
     }
 
     // Calculate total pages
@@ -844,7 +850,6 @@ export const viewTrash = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const restoreBankData = async (req, res) => {
   try {
@@ -1030,7 +1035,6 @@ export const deleteIntroducerEditRequest = async (req, res) => {
     const deletedRows = await IntroducerEditRequest.destroy({ where: { introTransactionId: id } }); //id correction
 
     if (deletedRows === 1) {
-
       return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseSuccess([], true, statusCode.success, 'Data not found', res);
@@ -1056,7 +1060,7 @@ export const viewDeleteRequests = async (req, res) => {
 
     // Check if results exist
     if (resultArray.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No records found',{}, res);
+      return apiResponsePagination([], true, statusCode.success, 'No records found', {}, res);
     }
 
     // Calculate total pages
@@ -1085,7 +1089,8 @@ export const rejectDeleteRequest = async (req, res) => {
     const id = req.params.editId;
 
     // Delete record from EditRequest table
-    const deletedRows = await EditRequest.destroy({ // id correction
+    const deletedRows = await EditRequest.destroy({
+      // id correction
       where: { bankId: id },
     });
 

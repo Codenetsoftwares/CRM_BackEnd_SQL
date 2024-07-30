@@ -130,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-        websiteName: {
-          [Op.like]: `%${search}%`,
-        },
-      }
+          websiteName: {
+            [Op.like]: `%${search}%`,
+          },
+        }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -229,9 +229,9 @@ export const deleteEditWebsiteRequest = async (req, res) => {
 
 export const getActiveWebsiteNames = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query
-    const limit = parseInt(pageSize)
-    const offset = (parseInt(page) - 1) * limit
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
     const activeWebsites = await Website.findAndCountAll({
       attributes: ['websiteName', 'isActive'],
       limit,
@@ -241,17 +241,21 @@ export const getActiveWebsiteNames = async (req, res) => {
       },
     });
 
-    const totalItems = activeWebsites.count
+    const totalItems = activeWebsites.count;
     const totalPages = Math.ceil(totalItems / limit);
 
-
-    return apiResponsePagination(activeWebsites.rows, true, statusCode.success, 'Active websites fetched successfully', {
-      page: parseInt(page),
-      limit: limit,
-      totalPages,
-      totalItems,
-    },
-      res
+    return apiResponsePagination(
+      activeWebsites.rows,
+      true,
+      statusCode.success,
+      'Active websites fetched successfully',
+      {
+        page: parseInt(page),
+        limit: limit,
+        totalPages,
+        totalItems,
+      },
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -603,7 +607,6 @@ export const updateWebsite = async (req, res) => {
   }
 };
 
-
 export const approveWebsiteDetailEditRequest = async (req, res) => {
   try {
     const { requestId } = req.params;
@@ -714,15 +717,7 @@ export const getWebsiteDetails = async (req, res) => {
     });
 
     if (websiteData.length === 0) {
-      return apiResponsePagination(
-        [],
-        true,
-        statusCode.success,
-        'No website details found',
-        {
-        },
-        res,
-      );
+      return apiResponsePagination([], true, statusCode.success, 'No website details found', {}, res);
     }
 
     const totalPages = Math.ceil(totalItems / limit);
@@ -753,9 +748,7 @@ export const getWebsiteDetails = async (req, res) => {
           if (subAdmins && subAdmins.length > 0) {
             website.dataValues.subAdmins = subAdmins;
 
-            const userSubAdmin = subAdmins.find(
-              (subAdmin) => subAdmin.subAdminId === userSubAdminId
-            );
+            const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
 
             if (userSubAdmin) {
               website.dataValues.balance = await getWebsiteBalance(website.websiteId);
@@ -801,7 +794,7 @@ export const getWebsiteDetails = async (req, res) => {
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
-}
+};
 
 const WebsiteServices = {
   getBankRequests: async () => {

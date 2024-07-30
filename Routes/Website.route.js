@@ -146,7 +146,12 @@ const WebsiteRoutes = (app) => {
   );
 
   // done
-  app.get('/api/superAdmin/view-website-edit-requests', customErrorHandler, Authorize([string.superAdmin]), getEditWebsiteRequests);
+  app.get(
+    '/api/superAdmin/view-website-edit-requests',
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    getEditWebsiteRequests,
+  );
 
   // done
   app.post(
@@ -184,7 +189,7 @@ const WebsiteRoutes = (app) => {
       string.createDepositTransaction,
       string.createWithdrawTransaction,
     ]),
-    getWebsiteDetails
+    getWebsiteDetails,
   );
 
   // no need to refactor this

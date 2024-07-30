@@ -13,7 +13,13 @@ export const Authorize = (roles) => {
 
       const tokenParts = authToken.split(' ');
       if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer' || !tokenParts[1]) {
-        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token format is invalid. Expected format: Bearer <token>', res);
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.unauthorize,
+          'Authorization token format is invalid. Expected format: Bearer <token>',
+          res,
+        );
       }
 
       let user;
@@ -22,7 +28,13 @@ export const Authorize = (roles) => {
         console.log('Decoded user:', user); // Log decoded user for debugging
       } catch (err) {
         console.error('JWT Verification Error:', err.message);
-        return apiResponseErr(null, false, statusCode.unauthorize, 'Authorization token is invalid or has expired.', res);
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.unauthorize,
+          'Authorization token is invalid or has expired.',
+          res,
+        );
       }
 
       if (!user || !user.userName) {
@@ -44,7 +56,13 @@ export const Authorize = (roles) => {
       if (roles && roles.length > 0) {
         const userHasRequiredRole = roles.some((role) => rolesArray.includes(role));
         if (!userHasRequiredRole) {
-          return apiResponseErr(null, false, statusCode.unauthorize, 'User does not have permission to access this resource', res);
+          return apiResponseErr(
+            null,
+            false,
+            statusCode.unauthorize,
+            'User does not have permission to access this resource',
+            res,
+          );
         }
       }
 
