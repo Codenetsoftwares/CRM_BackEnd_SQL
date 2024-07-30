@@ -237,20 +237,22 @@ export const validateDeleteSubAdmin = [
 ];
 
 export const validateDeleteBankTransaction = [
-  body('requestId').isString().notEmpty().withMessage('Request ID is required and should be a string'),
+  body('requestId').notEmpty().withMessage('Request ID is required').isUUID()
+  .withMessage('requestId must be a valid UUID'),
 ];
 
 export const validates = [
-  param('editId').notEmpty().withMessage('editId is required').isString().withMessage('editId must be a string'),
+  param('editId').notEmpty().withMessage('editId is required').isUUID()
+  .withMessage('editId ID must be a valid UUID'),
 ];
 
 export const deleteWebsiteTransactionValidate = [
   body('requestId')
     .trim()
     .notEmpty()
-    .withMessage('Request ID is required')
+    .withMessage('RequestId is required')
     .isUUID()
-    .withMessage('Invalid Request ID format'),
+    .withMessage('requestId must be a valid UUID'),
 ];
 
 export const validateMoveToTrash = [
@@ -278,11 +280,11 @@ export const validateDeleteTransactionWithId = [
 ];
 
 export const validateDeleteIntroducerTransactionWithId = [
-  param('IntroEditId')
+  param('introTransactionId')
     .notEmpty()
-    .withMessage('IntroEditId is required')
+    .withMessage('introTransactionId is required')
     .isUUID(4)
-    .withMessage('IntroEditID must be a valid ID'),
+    .withMessage('introTransactionId must be a valid UUID v4'),
 ];
 
 export const validationDeleteBankRequest = [
@@ -334,23 +336,24 @@ export const validateRejectWebsiteDetail = [
 ];
 
 export const validateBankId = [
-  param('bank_id').notEmpty().withMessage('Bank Id is required').isString().withMessage('Bank Id must be a string'),
+  param('bankId').notEmpty().withMessage('Bank Id is required').isUUID(4)
+  .withMessage('Bank Id must be a valid UUID v4'),
 ];
 
 export const validateWebsiteId = [
   param('websiteId')
     .notEmpty()
     .withMessage('Website Id is required')
-    .isString()
-    .withMessage('Website Id must be a string'),
+    .isUUID(4)
+    .withMessage('Website ID must be a valid UUID v4'),
 ];
 
 export const validateTransactionId = [
-  param('Transaction_Id')
-    .exists()
+  param('TransactionID')
+  .notEmpty()
     .withMessage('Transaction ID is required')
-    .isString()
-    .withMessage('Website Id must be a string'),
+    .isUUID(4)
+    .withMessage('Transaction ID must be a valid UUID v4'),
 ];
 
 export const validateIntroTransactionId = [
@@ -437,9 +440,11 @@ export const validateAddBankName = [
 ];
 
 export const validateApproveBank = [
-  param('bankId').isString().withMessage('bankId  must be a string').notEmpty().withMessage('bankId  is required'),
+  param('bankId').notEmpty().withMessage('bankId  is required')
+  .isUUID(4)
+  .withMessage('bank ID must be a valid UUID v4'),
   body('isApproved').isBoolean().withMessage('isApproved must be a boolean value'),
-  body('subAdmins').notEmpty().withMessage('subAdmins  is required'),
+  body('subAdmins').isArray().withMessage('subAdmins must be an array'),
 ];
 
 export const addBankBalanceValidate = [

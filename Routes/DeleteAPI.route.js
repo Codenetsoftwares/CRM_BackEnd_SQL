@@ -1,7 +1,6 @@
 import { string } from '../constructor/string.js';
 import { Authorize } from '../middleware/Authorize.js';
 import {
-  approveBankTransactionRequest,
   deleteBank,
   deleteBankRequest,
   deleteBankTransaction,
@@ -21,6 +20,7 @@ import {
   restoreIntroducerData,
   restoreTransactionData,
   restoreWebsiteData,
+  saveBankTransaction,
   saveWebsiteRequest,
   viewDeleteRequests,
   viewTrash,
@@ -58,7 +58,7 @@ const DeleteAPIRoute = (app) => {
     validateDeleteBankTransaction,
     customErrorHandler,
     Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
-    deleteBankTransaction,
+    saveBankTransaction,
   );
 
   // API To Approve Bank Transaction To Move Into Trash Request
@@ -68,7 +68,7 @@ const DeleteAPIRoute = (app) => {
     validates,
     customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
-    approveBankTransactionRequest,
+    deleteBankTransaction,
   );
 
   // API To Move The Website Transaction Into Trash
@@ -102,6 +102,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Move The Introducer Transaction Into Trash
+  // Testing Done
   app.post(
     '/api/admin/save-introducer-transaction-request',
     validateDeleteIntroducerTransaction,
@@ -109,7 +110,7 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
     deleteIntroducerTransaction,
   );
-
+   // Testing Done
   app.post(
     '/api/delete-transaction/:editId',
     validateDeleteTransactionWithId,
@@ -117,15 +118,15 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     deleteTransactionWithId,
   );
-
+   // Testing Done
   app.post(
-    '/api/delete-introducer-transaction/:IntroEditId',
+    '/api/delete-introducer-transaction/:introTransactionId',
     validateDeleteIntroducerTransactionWithId,
     customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
     deleteIntroducerTransactionWithId,
   );
-
+  // Testing Done
   app.post(
     '/api/admin/save-bank-request',
     validationDeleteBankRequest,
@@ -135,7 +136,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API For Bank Delete Request
-
+  // Testing Done
   app.post(
     '/api/delete-bank/:bankId',
     validateDeleteBank,
@@ -145,6 +146,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API TO Sent deleting Website Detail's approval
+  // Testing Done
   app.post(
     '/api/admin/save-website-request',
     validateSaveWebsiteRequest,
@@ -154,6 +156,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API For Website Delete Request
+  // Testing Done
   app.post(
     '/api/delete-website/:websiteId',
     validateDeleteWebsite,
@@ -163,7 +166,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API For Rejecting Bank Detail
-
+   // pending 
   app.delete(
     '/api/reject/bank-detail/:bankId',
     validateRejectBankDetail,
@@ -173,7 +176,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API For Rejecting Website Detail
-
+  // pending
   app.delete(
     '/api/reject/website-detail/:websiteId',
     validateRejectWebsiteDetail,
@@ -183,8 +186,10 @@ const DeleteAPIRoute = (app) => {
   );
 
   //  API To View Trash Data
+   // Testing Done
   app.get('/api/admin/view-trash', customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), viewTrash);
   // API To Re-Store The Bank Transaction Data
+  // Testing Done
   app.post(
     '/api/restore/bank/data/:bankId',
     validateBankId,
@@ -194,6 +199,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Re-Store The Website Transaction Data
+  // Testing Done
   app.post(
     '/api/restore/website/data/:websiteId',
     validateWebsiteId,
@@ -203,14 +209,16 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Re-Store The Transaction Data
+  // Testing Done
   app.post(
-    '/api/restore/transaction/data/:Transaction_Id',
+    '/api/restore/transaction/data/:TransactionID',
     validateTransactionId,
     customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
     restoreTransactionData,
   );
   // API To Re-Store The Introducer Transaction
+  // Testing Done
   app.post(
     '/api/restore/Introducer/data/:introTransactionId',
     validateIntroTransactionId,
@@ -218,7 +226,7 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     restoreIntroducerData,
   );
-
+  //pending
   app.delete(
     '/api/reject/introducer-detail/:IntroEditID',
     validateIntroEditID,
@@ -226,6 +234,7 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     deleteIntroducerEditRequest,
   );
+  // Testing Done
   app.get(
     '/api/admin/view-Delete-Request',
     customErrorHandler,

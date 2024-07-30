@@ -72,7 +72,7 @@ const BankRoutes = (app) => {
   app.get('/api/superAdmin/view-bank-requests', customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
   // Testing Done
   app.get(
-    '/api/get-single-bank-name/:bank_id',
+    '/api/get-single-bank-name/:bankId',
     validateBankId,
     customErrorHandler,
     Authorize([string.superAdmin, string.transactionView, string.bankView]),

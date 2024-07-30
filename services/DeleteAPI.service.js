@@ -9,12 +9,14 @@ import Transaction from '../models/transaction.model.js';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import IntroducerEditRequest from '../models/introducerEditRequest.model.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
-import EditWebsiteRequest from '../models/websiteRequest.model.js';
+import EditWebsiteRequest from '../models/editWebsiteRequest.model.js';
 import Website from '../models/website.model.js';
 import CustomError from '../utils/extendError.js';
 import UserTransactionDetail from '../models/userTransactionDetail.model.js';
+import Bank from '../models/bank.model.js';
+import { Op } from 'sequelize';
 
-export const deleteBankTransaction = async (req, res) => {
+export const saveBankTransaction = async (req, res) => {
   try {
     const user = req.user;
     const { requestId } = req.body;
@@ -119,10 +121,10 @@ export const deleteBankTransaction = async (req, res) => {
   }
 };
 
-export const approveBankTransactionRequest = async (req, res) => {
+export const deleteBankTransaction = async (req, res) => {
   try {
     const id = req.params.editId;
-    const editRequest = await EditRequest.findOne({ where: { bankId: id } }); //wrong id
+    const editRequest = await EditRequest.findOne({ where: { editId: id } }); //wrong id
 
     if (!editRequest) {
       return apiResponseSuccess([], true, statusCode.success, 'Bank Request not found', res);
@@ -508,20 +510,22 @@ export const deleteTransactionWithId = async (req, res) => {
       await EditRequest.destroy({ where: { editId: id } });
 
       // Remove the transaction detail from the user
-      await UserTransactionDetail.destroy({ where: { Transaction_id: editRequest.Transaction_id } });
+      await UserTransactionDetail.destroy({ where: { Transaction_Id: editRequest.Transaction_Id } });
+
       return apiResponseSuccess(restoreResult, true, statusCode.success, 'Transaction moved to Trash', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false,  statusCode.internalServerError, error.message, res);
   }
 };
 
+
 export const deleteIntroducerTransactionWithId = async (req, res) => {
   try {
-    const id = req.params.IntroEditId;
-    const editRequest = await IntroducerEditRequest.findOne({ where: { IntroEditId: id } });
+    const id = req.params.introTransactionId;
+    const editRequest = await IntroducerEditRequest.findOne({ where: { introTransactionId: id } });
 
     if (!editRequest) {
       return apiResponseSuccess([], true, statusCode.success, 'Edit Request not found', res);
@@ -560,7 +564,7 @@ export const deleteIntroducerTransactionWithId = async (req, res) => {
       await IntroducerTransaction.destroy({ where: { introTransactionId: editRequest.introTransactionId } });
 
       // Delete the edit request from the original table
-      await IntroducerEditRequest.destroy({ where: { IntroEditId: id } });
+      await IntroducerEditRequest.destroy({ where: { introTransactionId: id } });
       return apiResponseSuccess(restoreResult, true, statusCode.success, 'Transaction moved to Trash', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
@@ -800,27 +804,16 @@ export const rejectWebsiteDetail = async (req, res) => {
 export const viewTrash = async (req, res) => {
   try {
     // Retrieve pagination and search parameters from query
-    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const { page = 1, pageSize = 10, } = req.query;
 
     // Convert pagination parameters to integers
     const limit = parseInt(pageSize, 10);
     const offset = (parseInt(page, 10) - 1) * limit;
 
-    // Build the search condition
-    const searchCondition = search
-      ? {
-          where: {
-            // Example: assuming `name` field should be searched; adjust as needed
-            name: {
-              [Op.iLike]: `%${search}%`,
-            },
-          },
-        }
-      : {};
+   
 
     // Fetch records with pagination and search
     const { count, rows: resultArray } = await Trash.findAndCountAll({
-      ...searchCondition,
       limit,
       offset,
     });
@@ -934,10 +927,10 @@ export const restoreWebsiteData = async (req, res) => {
 
 export const restoreTransactionData = async (req, res) => {
   try {
-    const transactionID = req.params.Transaction_Id;
+    const transactionID = req.params.TransactionID;
 
     // Retrieve deleted data from the Trash table based on transactionID
-    const deletedData = await Trash.findOne({ where: { Transaction_Id: transactionID } });
+    const deletedData = await Trash.findOne({ where: { TransactionID: transactionID } });
 
     if (!deletedData) {
       return apiResponseSuccess([], true, statusCode.success, 'Data not found in Trash', res);

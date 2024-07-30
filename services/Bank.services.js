@@ -389,13 +389,13 @@ export const viewBankRequests = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
 export const getSingleBankDetails = async (req, res) => {
   try {
-    const id = req.params.bank_id;
+    const id = req.params.bankId;
     const { page = 1, pageSize = 10 } = req.query;
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
@@ -469,7 +469,7 @@ export const getSingleBankDetails = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
