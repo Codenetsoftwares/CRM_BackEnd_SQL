@@ -139,7 +139,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ where: { userName } });
 
     if (!user) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
     }
     return apiResponseSuccess({ token: accessToken.accessToken }, true, statusCode.success, 'Login successful', res);
   } catch (error) {

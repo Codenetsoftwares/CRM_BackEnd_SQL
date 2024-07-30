@@ -344,7 +344,7 @@ export const getIntroducerById = async (req, res) => {
     });
 
     if (!introducers || introducers.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No introducers found', res);
+      return apiResponseSuccess([], true, statusCode.success, 'No introducers found', res);
     }
 
     return apiResponsePagination(
@@ -425,7 +425,7 @@ export const getIntroducerUserSingleData = async (req, res) => {
     });
 
     if (!introducerUserResult) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'Introducer user not found', res);
     }
 
     const introducerUserName = introducerUserResult.userName;
@@ -522,7 +522,7 @@ export const subAdminPasswordResetCode = async (req, res) => {
     // Check if the user exists
     const existingUser = await Admin.findOne({ where: { userName } });
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
     }
 
     // Compare new password with the existing password
@@ -582,7 +582,7 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
     // Check if the user exists
     const existingUser = await Admin.findOne({ where: { userName } });
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
     }
 
     // Check if the old password is correct
@@ -631,7 +631,7 @@ export const getSingleUserProfile = async (req, res) => {
     // Find user profile by userId
     const userProfile = await User.findOne({ where: { userId } });
     if (!userProfile) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
     }
 
     const userName = userProfile.userName;
