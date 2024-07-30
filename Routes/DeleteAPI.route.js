@@ -4,6 +4,7 @@ import {
   approveBankTransactionRequest,
   deleteBank,
   deleteBankRequest,
+  deleteBankTransaction,
   deleteIntroducerEditRequest,
   deleteIntroducerTransaction,
   deleteIntroducerTransactionWithId,
@@ -24,7 +25,6 @@ import {
   viewDeleteRequests,
   viewTrash,
 } from '../services/DeleteAPI.service.js';
-import { deleteBankTransaction } from '../services/DeleteAPI.service.js';
 import {
   deleteWebsiteTransactionValidate,
   validateBankId,
@@ -52,6 +52,7 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 
 const DeleteAPIRoute = (app) => {
   // API To Move The Bank Transaction Into Trash
+  // Testing Done
   app.post(
     '/api/admin/save-bank-transaction-request',
     validateDeleteBankTransaction,
@@ -61,7 +62,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Approve Bank Transaction To Move Into Trash Request
-
+  // Testing Done
   app.post(
     '/api/delete-bank-transaction/:editId',
     validates,
@@ -71,6 +72,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Move The Website Transaction Into Trash
+   // Testing Done
   app.post(
     '/api/admin/save-website-transaction-request',
     deleteWebsiteTransactionValidate,
@@ -80,7 +82,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Approve Website Transaction To Move Into Trash Request
-
+  // Testing Done
   app.post(
     '/api/delete-website-transaction/:editId',
     validateMoveToTrash,
@@ -90,7 +92,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Move The Transaction Into Trash
-
+  // Testing Done
   app.post(
     '/api/admin/save-transaction-request',
     validateDeleteTransaction,

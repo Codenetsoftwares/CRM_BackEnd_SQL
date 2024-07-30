@@ -1,15 +1,16 @@
 import { Authorize } from '../middleware/Authorize.js';
-import BankServices, {
+import {
   addBankBalance,
   addBankName,
-  approveBank,
   deleteSubAdmin,
   getActiveBanks,
   getActiveVisibleBankAndWebsite,
   getBankDetails,
   getBankNames,
   getSingleBankDetails,
+  handleApproveBank,
   manualUserBankSummary,
+  rejectBankRequest,
   updateBankPermissions,
   updateBankStatus,
   viewBankEditRequests,
@@ -17,7 +18,6 @@ import BankServices, {
   viewSubAdminBanks,
   withdrawBankBalance,
 } from '../services/Bank.services.js';
-import { deleteBankRequest } from '../services/Bank.services.js';
 import { string } from '../constructor/string.js';
 import {
   addBankBalanceValidate,
@@ -41,7 +41,7 @@ const BankRoutes = (app) => {
     validateDeleteBankRequest,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    deleteBankRequest,
+    rejectBankRequest,
   );
   // Testing Not Done
   app.delete(
@@ -65,8 +65,11 @@ const BankRoutes = (app) => {
     validateApproveBank,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    approveBank,
+    handleApproveBank,
   );
+
+ 
+
   // Testing Done
   app.get('/api/superAdmin/view-bank-requests', customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
   // Testing Done

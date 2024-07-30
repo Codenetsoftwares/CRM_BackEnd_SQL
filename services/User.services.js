@@ -164,11 +164,13 @@ export const addWebsiteDetails = async (req, res) => {
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
     }
-
-    let websitesArray = existingUser.Websites_Details ? existingUser.Websites_Details : [];
+    //  const result=await existingUser.Websites_Details.json()
+    console.log(typeof  existingUser.Websites_Details)
+    // let websitesArray = existingUser.Websites_Details ? existingUser.Websites_Details : [];
     if (!Array.isArray(websitesArray)) {
       websitesArray = [];
     }
+  
 
     for (const website of websites) {
       if (websitesArray.includes(website)) {

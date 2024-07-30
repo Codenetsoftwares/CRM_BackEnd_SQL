@@ -542,8 +542,8 @@ export const updateWebsitePermissions = async (req, res) => {
 export const updateWebsite = async (req, res) => {
   try {
     const id = req.params.website_id;
-
     const { websiteName } = req.body;
+
     // Retrieve existing website details from the database
     const editWebsite = await Website.findOne({ where: { websiteId: id } });
     if (!editWebsite) {
@@ -556,18 +556,16 @@ export const updateWebsite = async (req, res) => {
       return apiResponseSuccess([], true, statusCode.success, `Website with id ${id} has already been edited.`, res);
     }
 
-    let changedFields = {};
+    let changedFields = [];
 
     // Compare each field in the data object with the existingTransaction
     if (websiteName && websiteName !== editWebsite.websiteName) {
-      changedFields.websiteName = websiteName;
+      changedFields.push({ field: 'websiteName', value: websiteName });
     }
 
     // Check if the new website name already exists (case-insensitive)
     const duplicateWebsite = await Website.findOne({
-      where: {
-        websiteName: websiteName,
-      },
+      where: { websiteName: websiteName },
     });
 
     if (duplicateWebsite) {
@@ -575,9 +573,7 @@ export const updateWebsite = async (req, res) => {
     }
 
     const duplicateEditWebsite = await EditWebsiteRequest.findOne({
-      where: {
-        websiteName: websiteName,
-      },
+      where: { websiteName: websiteName },
     });
 
     if (duplicateEditWebsite) {
@@ -596,7 +592,7 @@ export const updateWebsite = async (req, res) => {
       websiteName: updatedTransactionData.websiteName,
       message: "Website Detail's has been edited",
       type: 'Edit',
-      changedFields: JSON.stringify(changedFields),
+      changedFields: changedFields, // Store the array of objects directly
       isApproved: false, // Assuming this corresponds to the 'isApproved' column
     });
 
@@ -606,6 +602,7 @@ export const updateWebsite = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const approveWebsiteDetailEditRequest = async (req, res) => {
   try {
