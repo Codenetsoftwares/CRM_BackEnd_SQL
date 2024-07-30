@@ -795,7 +795,7 @@ export const introducerLiveBalance = async (introUserId) => {
     });
 
     if (!intro) {
-      throw new Error(`Introducer with ID ${introUserId} not found`);
+      return apiResponseSuccess(null, true, statusCode.success, `Introducer with ID ${introUserId} not found`, res);
     }
 
     const IntroducerId = intro.userName;

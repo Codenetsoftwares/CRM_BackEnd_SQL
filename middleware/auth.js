@@ -50,7 +50,7 @@ export const AuthorizeRole = (roles) => {
       next();
     } catch (error) {
       console.error('Authorization Error:', error.message);
-      return apiResponseErr(null, false, statusCode.internalServerError, 'An error occurred during the authorization process.', res);
+      return apiResponseErr(null, false, statusCode.unauthorize, 'Unauthorized access', res);
     }
   };
 };

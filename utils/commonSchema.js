@@ -45,12 +45,18 @@ export const validateResetPassword = [
 ];
 
 export const validateLogin = [
-  body('userName').notEmpty().withMessage('Username is required'),
+  body('userName')
+    .notEmpty()
+    .withMessage('Username is required')
+    .isString()
+    .withMessage('Username must be a string'),
   body('password')
     .notEmpty()
     .withMessage('Password is required')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
+    .withMessage('Password must be at least 6 characters long')
+    .isString()
+    .withMessage('Password must be a string'),
 ];
 
 export const updateUserProfileValidationSchema = [
@@ -455,59 +461,79 @@ export const update = [
   param('adminId').notEmpty().withMessage('Admin Id is required'),
 
   body('firstName')
-    .if(body('firstName').exists()) // Check if firstName exists in the request body
+  .optional()
+  .notEmpty()
+  .withMessage('First name must not be empty')
+  .isString()
+  .withMessage('First name must be a string'),
+
+body('lastName')
+  .optional()
+  .notEmpty()
+  .withMessage('Last name must not be empty')
+  .isString()
+  .withMessage('Last name must be a string'),
+];
+
+export const updateUserProfileValidators = [
+  param('userId')
     .notEmpty()
-    .withMessage('First name is required')
+    .withMessage('User Id is required')
+    .isUUID(4)
+    .withMessage('User Id is not valid'),
+
+  body('firstName')
+    .optional()
+    .notEmpty()
+    .withMessage('First name must not be empty')
     .isString()
     .withMessage('First name must be a string'),
 
   body('lastName')
-    .if(body('lastName').exists()) // Check if lastName exists in the request body
+    .optional()
     .notEmpty()
-    .withMessage('Last name is required')
+    .withMessage('Last name must not be empty')
     .isString()
     .withMessage('Last name must be a string'),
-];
-
-export const updateUserProfileValidators = [
-  param('userId').notEmpty().withMessage('User Id is required').isUUID(4).withMessage('User Id is not valid'),
-
-  body('firstName').optional({ nullable: true }).isString().withMessage('First name must be a string'),
-
-  body('lastName').optional({ nullable: true }).isString().withMessage('Last name must be a string'),
 
   body('introducersUserName')
-    .optional({ nullable: true })
+    .optional()
+    .notEmpty()
+    .withMessage('Introducer user name must not be empty')
     .isString()
     .withMessage('Introducer user name must be a string'),
 
   body('introducerPercentage')
     .notEmpty()
-    .withMessage('introducerPercentage is required')
+    .withMessage('Introducer percentage is required')
     .isFloat({ min: 0, max: 100 })
     .withMessage('Introducer percentage must be a number between 0 and 100'),
 
   body('introducersUserName1')
-    .optional({ nullable: true })
+    .optional()
+    .notEmpty()
+    .withMessage('Introducer user name 1 must not be empty')
     .isString()
-    .withMessage('Introducer user name must be a string'),
+    .withMessage('Introducer user name 1 must be a string'),
 
   body('introducerPercentage1')
     .notEmpty()
-    .withMessage('introducerPercentage1 is required')
+    .withMessage('Introducer percentage 1 is required')
     .isFloat({ min: 0, max: 100 })
-    .withMessage('Introducer percentage must be a number between 0 and 100'),
+    .withMessage('Introducer percentage 1 must be a number between 0 and 100'),
 
   body('introducersUserName2')
-    .optional({ nullable: true })
+    .optional()
+    .notEmpty()
+    .withMessage('Introducer user name 2 must not be empty')
     .isString()
-    .withMessage('Introducer user name must be a string'),
+    .withMessage('Introducer user name 2 must be a string'),
 
   body('introducerPercentage2')
     .notEmpty()
-    .withMessage('introducerPercentage2 is required')
+    .withMessage('Introducer percentage 2 is required')
     .isFloat({ min: 0, max: 100 })
-    .withMessage('Introducer percentage must be a number between 0 and 100'),
+    .withMessage('Introducer percentage 2 must be a number between 0 and 100'),
 ];
 
 export const validateWebsite = [
@@ -644,7 +670,7 @@ export const validateIntroducerUsername = [
 ];
 
 export const validateAdminId = [
-param('adminId').notEmpty().withMessage('Admin Id is required').isUUID().withMessage('Admin ID must be a valid UUID'),
+  param('adminId').notEmpty().withMessage('Admin Id is required').isUUID().withMessage('Admin ID must be a valid UUID'),
 ]
 
 export const validatedBankId = [

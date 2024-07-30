@@ -10,7 +10,7 @@ import CustomError from '../utils/extendError.js';
 import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import { v4 as uuidv4 } from 'uuid';
-import { QueryTypes, Sequelize, where } from 'sequelize';
+import { Op, QueryTypes, Sequelize, where } from 'sequelize';
 import Transaction from '../models/transaction.model.js';
 
 export const addWebsiteName = async (req, res) => {
