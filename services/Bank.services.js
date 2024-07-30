@@ -13,42 +13,46 @@ import BankSubAdmins from '../models/bankSubAdmins.model.js';
 import sequelize from '../db.js';
 import BankTransaction from '../models/bankTransaction.model.js';
 import Website from '../models/website.model.js';
+import CustomError from '../utils/extendError.js';
+import { string } from '../constructor/string.js';
 
 export const updateBank = async (req, res) => {
   try {
     const bankId = req.params.bank_id;
-    const { accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber } = req.body // send every thing in req.body 
+    const { accountHolderName, bankName, accountNumber, ifscCode, upiId, upiAppName, upiNumber } = req.body; // send everything in req.body 
 
     // Retrieve existing bank details from the database
     const existingBank = await Bank.findOne({ where: { bankId } });
+    
     // Check if bank details exist
     if (!existingBank) {
       return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
     // Update logic
-    let changedFields = {};
+    let changedFields = [];
+    
     // Compare each field in the data object with the existingBank
     if (accountHolderName !== existingBank.accountHolderName) {
-      changedFields.accountHolderName = accountHolderName;
+      changedFields.push({ field: 'accountHolderName', value: accountHolderName });
     }
     if (bankName !== existingBank.bankName) {
-      changedFields.bankName = bankName;
+      changedFields.push({ field: 'bankName', value: bankName });
     }
     if (accountNumber !== existingBank.accountNumber) {
-      changedFields.accountNumber = accountNumber;
+      changedFields.push({ field: 'accountNumber', value: accountNumber });
     }
     if (ifscCode !== existingBank.ifscCode) {
-      changedFields.ifscCode = ifscCode;
+      changedFields.push({ field: 'ifscCode', value: ifscCode });
     }
     if (upiId !== existingBank.upiId) {
-      changedFields.upiId = upiId;
+      changedFields.push({ field: 'upiId', value: upiId });
     }
     if (upiAppName !== existingBank.upiAppName) {
-      changedFields.upiAppName = upiAppName;
+      changedFields.push({ field: 'upiAppName', value: upiAppName });
     }
     if (upiNumber !== existingBank.upiNumber) {
-      changedFields.upiNumber = upiNumber;
+      changedFields.push({ field: 'upiNumber', value: upiNumber });
     }
 
     // Check for duplicate bank name
@@ -61,14 +65,9 @@ export const updateBank = async (req, res) => {
     }
 
     // Update existingBank attributes
-    existingBank.accountHolderName =
-      accountHolderName !== undefined ? accountHolderName : existingBank.accountHolderName;
-    existingBank.bankName =
-      bankName !== undefined
-        ? bankName.replace(/\s+/g, '')
-        : existingBank.bankName.replace(/\s+/g, '');
-    existingBank.accountNumber =
-      accountNumber !== undefined ? accountNumber : existingBank.accountNumber;
+    existingBank.accountHolderName = accountHolderName !== undefined ? accountHolderName : existingBank.accountHolderName;
+    existingBank.bankName = bankName !== undefined ? bankName.replace(/\s+/g, '') : existingBank.bankName.replace(/\s+/g, '');
+    existingBank.accountNumber = accountNumber !== undefined ? accountNumber : existingBank.accountNumber;
     existingBank.ifscCode = ifscCode !== undefined ? ifscCode : existingBank.ifscCode;
     existingBank.upiId = upiId !== undefined ? upiId : existingBank.upiId;
     existingBank.upiAppName = upiAppName !== undefined ? upiAppName : existingBank.upiAppName;
@@ -87,7 +86,7 @@ export const updateBank = async (req, res) => {
       upiId: existingBank.upiId,
       upiAppName: existingBank.upiAppName,
       upiNumber: existingBank.upiNumber,
-      changedFields: JSON.stringify(changedFields),
+      changedFields, // Store the array of objects directly
       isApproved: false,
       type: 'Edit',
       message: "Bank Detail's has been edited",
@@ -105,6 +104,8 @@ export const updateBank = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
+
 
 export const approveBankDetailEditRequest = async (req, res) => {
   try {
@@ -160,7 +161,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
   }
 };
 
-export const deleteBankRequest = async (req, res) => {
+export const rejectBankRequest = async (req, res) => {
   try {
     const id = req.params.bankId;
 
@@ -272,73 +273,80 @@ export const addBankName = async (req, res) => {
   }
 };
 
-export const approveBank = async (req, res) => {
+export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmins) => {
+  const transaction = await sequelize.transaction();
+  try {
+    console.log('approvedBankRequest.bankId:', approvedBankRequest.bankId); // Debug logging
+
+    await Bank.create({
+      bankId: approvedBankRequest.bankId,
+      bankName: approvedBankRequest.bankName,
+      accountHolderName: approvedBankRequest.accountHolderName,
+      accountNumber: approvedBankRequest.accountNumber,
+      ifscCode: approvedBankRequest.ifscCode,
+      upiId: approvedBankRequest.upiId,
+      upiAppName: approvedBankRequest.upiAppName,
+      upiNumber: approvedBankRequest.upiNumber,
+      subAdminName: approvedBankRequest.subAdminName,
+      isActive: true,
+    }, { transaction });
+
+    await Promise.all(subAdmins.map(async (subAdmin) => {
+      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+      await BankSubAdmins.create({
+        bankId: approvedBankRequest.bankId,
+        subAdminId,
+        isDeposit,
+        isWithdraw,
+        isEdit,
+        isRenew,
+        isDelete,
+      }, { transaction });
+    }));
+
+    await transaction.commit();
+    return subAdmins.length; // Return the number of subadmins processed for further verification
+  } catch (error) {
+    await transaction.rollback();
+    throw new CustomError(error.message, null, error.responseCode ?? statusCode.internalServerError);
+  }
+};
+
+export const deleteBankRequest = async (bankId) => {
+  const result = await BankRequest.destroy({ where: { bankId } });
+  return result; // Return the number of rows deleted for further verification
+};
+
+export const handleApproveBank = async (req, res) => {
   try {
     const { isApproved, subAdmins } = req.body;
     const bankId = req.params.bankId;
 
-    // Find the bank request by bankId
-    const approvedBankRequest = await BankRequest.findOne({ where: { bankId } });
+    console.log('bankId:', bankId); // Debug logging
 
-    // Throw error if bank request not found
-    if (!approvedBankRequest) {
-      return apiResponseSuccess([], true, statusCode.success, 'Bank not found in the approval requests!', res);
+    const approvedBankRequests = await BankRequest.findAll({ where: { bankId } });
+
+    if (!approvedBankRequests || approvedBankRequests.length === 0) {
+      throw new CustomError('Bank not found in the approval requests!', null, statusCode.badRequest);
     }
 
-    // If approval is granted, insert bank details and assign subAdmins
     if (isApproved) {
-      await sequelize.transaction(async (t) => {
-        // Insert bank details into Bank table
-        const newBank = await Bank.create(
-          {
-            bankId: approvedBankRequest.bankId,
-            bankName: approvedBankRequest.bankName,
-            accountHolderName: approvedBankRequest.accountHolderName,
-            accountNumber: approvedBankRequest.accountNumber,
-            ifscCode: approvedBankRequest.ifscCode,
-            upiId: approvedBankRequest.upiId,
-            upiAppName: approvedBankRequest.upiAppName,
-            upiNumber: approvedBankRequest.upiNumber,
-            subAdminName: approvedBankRequest.subAdminName,
-            isActive: true,
-          },
-          { transaction: t },
-        );
-
-        // Check if subAdmins is an array before mapping
-        if (Array.isArray(subAdmins)) {
-          // Insert subAdmins into BankSubAdmins table
-          await Promise.all(
-            subAdmins.map(async (subAdmin) => {
-              await BankSubAdmins.create(
-                {
-                  bankId: newBank.bankId,
-                  subAdminId: subAdmin.subAdminId,
-                  isDeposit: subAdmin.isDeposit,
-                  isWithdraw: subAdmin.isWithdraw,
-                  isEdit: subAdmin.isEdit,
-                  isRenew: subAdmin.isRenew,
-                  isDelete: subAdmin.isDelete,
-                },
-                { transaction: t },
-              );
-            }),
-          );
-        }
-
-        // Delete bank request after successful insertion
-        await BankRequest.destroy({ where: { bankId } }, { transaction: t });
-      });
-
-      // Send success response
-      return apiResponseSuccess(null, true, statusCode.success, 'Bank approved successfully & SubAdmin Assigned', res);
+      const rowsInserted = await approveBankAndAssignSubAdmin(approvedBankRequests[0], subAdmins);
+      if (rowsInserted > 0) {
+        await deleteBankRequest(bankId);
+      } else {
+        throw new CustomError('Failed to insert rows into Bank table.', null, statusCode.badRequest);
+      }
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank approval was not granted.', res);
     }
+    return apiResponseSuccess(null, true, statusCode.success,  'Bank approved successfully & SubAdmin Assigned', res);
   } catch (error) {
+    console.error(error); // Debug logging
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const viewBankRequests = async (req, res) => {
   try {

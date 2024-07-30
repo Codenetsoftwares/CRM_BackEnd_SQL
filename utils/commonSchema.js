@@ -174,7 +174,7 @@ export const createIntroducerWithdrawalTransactionValidator = [
 ];
 
 export const validateDeleteBankRequest = [
-  param('bankId').notEmpty().withMessage('bank_id is required').isString().withMessage('bank_id must be a string'),
+  param('bankId').notEmpty().withMessage('bankId is required').isString().withMessage('bankId must be a string'),
 ];
 
 export const validateDeleteSubAdmin = [

@@ -2,10 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import BankTransaction from '../models/bankTransaction.model.js';
-import EditRequest from '../models/editBankRequest.model.js';
+import EditRequest from '../models/editRequest.model.js';
 import WebsiteTransaction from '../models/websiteTransaction.model.js';
 import Trash from '../models/trash.model.js';
-import { Transaction } from 'sequelize';
+import  Transaction  from '../models/transaction.model.js';
 import IntroducerTransaction from '../models/introducerTransaction.model.js';
 import IntroducerEditRequest from '../models/introducerEditRequest.model.js';
 import EditBankRequest from '../models/editBankRequest.model.js';
@@ -106,7 +106,7 @@ export const deleteBankTransaction = async (req, res) => {
 
     const updateResult = await deleteTransaction(transaction, user);
     if (updateResult) {
-      return apiResponseSuccess(updateResult, true, statusCode.success, 'Transaction status updated successfully', res);
+      return apiResponseSuccess(updateResult, true, statusCode.success, 'Bank Transaction Move to trash request sent to Super Admin', res);
     }
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
@@ -320,7 +320,7 @@ export const deleteTransaction = async (req, res) => {
     }
 
     const existingEditRequest = await EditRequest.findOne({
-      where: { transactionId: transaction.transactionId, type: 'Delete' },
+      where: { transactionID: transaction.transactionID, type: 'Delete' },
     });
     if (existingEditRequest) {
       throw new CustomError('Request Already Sent For Approval', null, 409);
