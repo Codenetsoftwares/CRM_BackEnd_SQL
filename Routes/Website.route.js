@@ -13,6 +13,7 @@ import {
   getWebsiteDetails,
   getWebsiteNames,
   handleApproveWebsite,
+  manualUserWebsiteAccountSummary,
   rejectWebsiteRequest,
   updateWebsitePermissions,
   viewWebsiteRequests,
@@ -195,60 +196,11 @@ const WebsiteRoutes = (app) => {
   // no need to refactor this
   app.post(
     '/api/admin/manual-user-website-account-summary/:websiteId',
+    validateWebsiteId,
+    customErrorHandler,
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View', 'Website-View']),
-    async (req, res) => {
-      try {
-        let balances = 0;
-        const websiteId = req.params.websiteId;
-
-        const websiteSummaryQuery = `SELECT * FROM WebsiteTransaction WHERE websiteId = ? ORDER BY createdAt DESC`;
-        const [websiteSummaryRows] = await database.execute(websiteSummaryQuery, [websiteId]);
-        const websiteSummary = websiteSummaryRows;
-
-        const accountSummaryQuery = `SELECT * FROM Transaction WHERE websiteId = ? ORDER BY createdAt DESC`;
-        const [accountSummaryRows] = await database.execute(accountSummaryQuery, [websiteId]);
-        const accountSummary = accountSummaryRows;
-
-        const allTransactions = [...accountSummary, ...websiteSummary];
-
-        allTransactions.sort((a, b) => {
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
-          return dateB - dateA;
-        });
-
-        let allData = JSON.parse(JSON.stringify(allTransactions));
-        allData
-          .slice(0)
-          .reverse()
-          .map((data) => {
-            if (data.transactionType === 'Manual-Website-Deposit') {
-              balances += parseFloat(data.depositAmount);
-              data.balance = balances;
-            }
-            if (data.transactionType === 'Manual-Website-Withdraw') {
-              balances -= parseFloat(data.withdrawAmount);
-              data.balance = balances;
-            }
-            if (data.transactionType === 'Deposit') {
-              const netAmount = balances - parseFloat(data.bonus) - parseFloat(data.amount);
-              balances = netAmount;
-              data.balance = balances;
-            }
-            if (data.transactionType === 'Withdraw') {
-              let totalamount = 0;
-              totalamount += parseFloat(data.amount);
-              balances += totalamount;
-              data.balance = balances;
-            }
-          });
-        return res.status(200).send(allData);
-      } catch (e) {
-        console.error(e);
-        res.status(e.code || 500).send({ message: e.message });
-      }
-    },
+    manualUserWebsiteAccountSummary
   );
-};
+}
 
 export default WebsiteRoutes;

@@ -48,7 +48,7 @@ export const addWebsiteName = async (req, res) => {
     });
     return apiResponseSuccess(newWebsiteRequest, true, statusCode.create, 'Website name sent for approval!', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -78,7 +78,7 @@ export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, su
 
     return subAdmins.length;
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -117,7 +117,7 @@ export const handleApproveWebsite = async (req, res) => {
 
     return apiResponseSuccess(null, true, statusCode.success, 'Website approved successfully & SubAdmin Assigned', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -130,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-          websiteName: {
-            [Op.like]: `%${search}%`,
-          },
-        }
+        websiteName: {
+          [Op.like]: `%${search}%`,
+        },
+      }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -158,7 +158,7 @@ export const viewWebsiteRequests = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -179,7 +179,7 @@ export const deleteWebsiteRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -201,7 +201,7 @@ export const rejectWebsiteRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -223,7 +223,7 @@ export const deleteEditWebsiteRequest = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -258,7 +258,7 @@ export const getActiveWebsiteNames = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -286,7 +286,7 @@ export const deleteSubAdminFromWebsite = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -314,7 +314,7 @@ export const getSingleWebsiteDetails = async (req, res) => {
 
     return apiResponseSuccess([response], true, statusCode.success, 'Website data retrieved successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -360,7 +360,7 @@ export const addWebsiteBalance = async (req, res) => {
 
     return apiResponseSuccess(websiteTransaction, true, statusCode.create, 'Wallet Balance Added to Your Website', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -418,7 +418,7 @@ export const withdrawWebsiteBalance = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -434,7 +434,7 @@ export const getWebsiteNames = async (req, res) => {
 
     return apiResponseSuccess(websites, true, statusCode.success, 'Websites retrieved successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -443,7 +443,7 @@ export const getEditWebsiteRequests = async (req, res) => {
     const editRequests = await EditWebsiteRequest.findAll();
     return apiResponseSuccess(editRequests, true, statusCode.success, 'Websites retrieved successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -454,7 +454,7 @@ export const websiteActive = async (req, res) => {
 
     // Validate input
     if (typeof isActive !== 'boolean') {
-      throw new CustomError('isActive field must be a boolean value', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'isActive field must be a boolean value', res);
     }
 
     // Update isActive field in the database
@@ -467,7 +467,7 @@ export const websiteActive = async (req, res) => {
     // Send success response
     return apiResponseSuccess(updatedRowsCount, true, statusCode.success, 'Website status updated successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -495,7 +495,7 @@ export const websiteSubAdminView = async (req, res) => {
 
     return apiResponseSuccess(websiteData, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -539,7 +539,7 @@ export const updateWebsitePermissions = async (req, res) => {
 
     return apiResponseSuccess(results, true, statusCode.success, 'Website Permission Updated successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -603,7 +603,7 @@ export const updateWebsite = async (req, res) => {
     // Send success response
     return apiResponseSuccess(null, true, statusCode.create, "Website Detail's Sent to Super Admin For Approval", res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -655,7 +655,7 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
       return apiResponseSuccess(null, true, statusCode.badRequest, 'Edit request has already been processed', res);
     }
   } catch (error) {
-    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
+    apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
   }
 };
 
@@ -694,7 +694,7 @@ export const getWebsiteBalance = async (websiteId) => {
 
     return balance;
   } catch (error) {
-    apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.errMessage, res);
+    apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
   }
 };
 
@@ -705,7 +705,7 @@ export const getWebsiteDetails = async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Fetch website data with pagination
-    const { count: totalItems, rows: websiteData } = await Website.findAndCountAll({
+    const { count: totalItems, rows: websiteDataArray } = await Website.findAndCountAll({
       where: {
         websiteName: {
           [Op.like]: `%${search}%`,
@@ -716,6 +716,7 @@ export const getWebsiteDetails = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
+    let websiteData = websiteDataArray
     if (websiteData.length === 0) {
       return apiResponsePagination([], true, statusCode.success, 'No website details found', {}, res);
     }
@@ -792,8 +793,66 @@ export const getWebsiteDetails = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
+export const manualUserWebsiteAccountSummary = async (req, res) => {
+  try {
+    let balances = 0;
+    const websiteId = req.params.websiteId;
+
+    const websiteSummary = await WebsiteTransaction.findAll({
+      where: { websiteId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const accountSummary = await Transaction.findAll({
+      where: { websiteId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const allTransactions = [...accountSummary, ...websiteSummary].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateB - dateA;
+    });
+
+    let allData = JSON.parse(JSON.stringify(allTransactions));
+    allData
+      .slice(0)
+      .reverse()
+      .map((data) => {
+        if (data.transactionType === 'Manual-Website-Deposit') {
+          balances += parseFloat(data.depositAmount);
+          data.balance = balances;
+        }
+        if (data.transactionType === 'Manual-Website-Withdraw') {
+          balances -= parseFloat(data.withdrawAmount);
+          data.balance = balances;
+        }
+        if (data.transactionType === 'Deposit') {
+          const netAmount = balances - parseFloat(data.bonus) - parseFloat(data.amount);
+          balances = netAmount;
+          data.balance = balances;
+        }
+        if (data.transactionType === 'Withdraw') {
+          let totalAmount = 0;
+          totalAmount += parseFloat(data.amount);
+          balances += totalAmount;
+          data.balance = balances;
+        }
+      });
+
+    return apiResponseSuccess(
+      allData,
+      true,
+      statusCode.success,
+      'success',
+      res,
+    );
+  } catch (error) {
+    apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
+  }
+}
 

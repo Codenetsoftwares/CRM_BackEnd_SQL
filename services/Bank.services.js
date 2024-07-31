@@ -15,6 +15,7 @@ import BankTransaction from '../models/bankTransaction.model.js';
 import Website from '../models/website.model.js';
 import CustomError from '../utils/extendError.js';
 import { string } from '../constructor/string.js';
+import customErrorHandler from '../utils/customErrorHandler.js';
 
 export const addBankName = async (req, res) => {
   try {
@@ -797,7 +798,7 @@ export const getBankDetails = async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Fetch total count of banks for pagination
-    const { count: totalItems, rows: bankData } = await Bank.findAndCountAll({
+    const { count: totalItems, rows: bankDataArray } = await Bank.findAndCountAll({
       where: {
         bankName: {
           [Op.like]: `%${search}%`,
@@ -807,6 +808,8 @@ export const getBankDetails = async (req, res) => {
       offset,
       order: [['createdAt', 'DESC']],
     });
+
+    let bankData = bankDataArray;
 
     if (bankData.length === 0) {
       return apiResponsePagination([], true, statusCode.success, 'No bank details found', {}, res);
@@ -830,7 +833,7 @@ export const getBankDetails = async (req, res) => {
       await Promise.all(balancePromises);
     } else {
       // For subAdmins, filter banks based on user permissions
-      const userSubAdminId = req.user.userName; // Accessing userName property
+      let userSubAdminId = req.user.userName;
       console.log('userSubAdminId', userSubAdminId);
       if (userSubAdminId) {
         const filteredBanksPromises = bankData.map(async (bank) => {
@@ -879,6 +882,7 @@ export const getBankDetails = async (req, res) => {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const manualUserBankSummary = async (req, res) => {
   try {
@@ -961,21 +965,17 @@ export const manualUserBankSummary = async (req, res) => {
 
 
 export const getBankBalance = async (bankId) => {
-  // const pool = await connectToDB();
   try {
-    // Find all bank transactions for the given bankId
     const bankTransactions = await BankTransaction.findAll({
       where: { bankId },
     });
 
-    // Find all transactions associated with the given bankId
     const transactions = await Transaction.findAll({
       where: { bankId },
     });
 
     let balance = 0;
 
-    // Calculate balance based on bank transactions
     for (const transaction of bankTransactions) {
       if (transaction.depositAmount) {
         balance += parseFloat(transaction.depositAmount);
@@ -985,7 +985,6 @@ export const getBankBalance = async (bankId) => {
       }
     }
 
-    // Calculate balance based on regular transactions
     for (const transaction of transactions) {
       if (transaction.transactionType === 'Deposit') {
         balance += parseFloat(transaction.amount);
@@ -995,9 +994,8 @@ export const getBankBalance = async (bankId) => {
     }
 
     return balance;
-  } catch (e) {
-    console.error(e);
-    throw e; // Rethrow the error to handle it at the calling site
+  } catch (error) {
+    throw new CustomError(error.message, null, statusCode.internalServerError)
   }
 }
 

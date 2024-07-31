@@ -21,6 +21,7 @@ import {
 import { string } from '../constructor/string.js';
 import {
   addBankBalanceValidate,
+  paginationAndSearch,
   updateBankPermissionsValidator,
   updateBankStatusValidate,
   validateAddBankName,
@@ -92,6 +93,7 @@ const BankRoutes = (app) => {
   );
 
   // Testing Not Done
+  // remove subAdmin permission from bank
   app.delete(
     '/api/bank/delete-subAdmin/:bankId/:subAdminId',
     validateDeleteSubAdmin,
@@ -99,9 +101,12 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
     deleteSubAdmin,
   );
+
   // Testing Done
   app.get(
     '/api/admin/bank-name',
+    paginationAndSearch,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.dashboardView,
@@ -114,8 +119,20 @@ const BankRoutes = (app) => {
     ]),
     getBankNames,
   );
+
+  // Testing Done
+  // updated permission of subAdmin in a bank
+  app.put(
+    '/api/bank/edit-request/:bankId',
+    updateBankPermissionsValidator,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
+    updateBankPermissions,
+  );
+
   // Testing Done
   app.get('/api/super-admin/view-bank-edit-requests', Authorize([string.superAdmin]), viewBankEditRequests);
+
   // Testing Done
   app.post(
     '/api/admin/bank/isActive/:bank_id',
@@ -124,6 +141,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     updateBankStatus,
   );
+
   // Testing Done
   app.get(
     '/api/admin/bank/view-subAdmin/:subAdminId',
@@ -132,14 +150,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     viewSubAdminBanks,
   );
-  // Testing Done
-  app.put(
-    '/api/bank/edit-request/:bankId',
-    updateBankPermissionsValidator,
-    customErrorHandler,
-    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
-    updateBankPermissions,
-  );
+
   // Testing Done
   app.get(
     '/api/active-visible-bank',
@@ -149,6 +160,8 @@ const BankRoutes = (app) => {
   // Testing Done
   app.get(
     '/api/get-activeBank-name',
+    paginationAndSearch,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.bankView,
