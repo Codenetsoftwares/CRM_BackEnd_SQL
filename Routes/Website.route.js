@@ -28,6 +28,7 @@ import {
   validateAddWebsiteBalance,
   validateApproval,
   validateDeleteSubAdminFromWebsite,
+  validatePagination,
   validateWebsite,
   validateWebsiteActive,
   validateWebsiteId,
@@ -58,16 +59,23 @@ const WebsiteRoutes = (app) => {
   // API To View Website-Requests
   app.get(
     '/api/superAdmin/view-website-requests',
+    validatePagination,
     customErrorHandler,
     Authorize([string.superAdmin]),
     viewWebsiteRequests,
   );
 
   // done
-  app.delete('/api/reject/:websiteId', customErrorHandler, Authorize([string.superAdmin]), deleteWebsiteRequest); // not understanding this ... two apis work same "rejectWebsiteRequest"
+  app.delete('/api/reject/:websiteId',
+    validateWebsiteId,
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    deleteWebsiteRequest
+  ); // not understanding this ... two apis work same "rejectWebsiteRequest"
 
   app.delete(
     '/api/website/reject/:websiteId',
+    validateWebsiteId,
     customErrorHandler,
     Authorize([string.superAdmin]),
     rejectWebsiteRequest,
@@ -76,6 +84,7 @@ const WebsiteRoutes = (app) => {
   // done
   app.delete(
     '/api/reject-website-edit/:websiteId',
+    validateWebsiteId,
     customErrorHandler,
     Authorize([string.superAdmin]),
     deleteEditWebsiteRequest,
@@ -84,6 +93,7 @@ const WebsiteRoutes = (app) => {
   // done
   app.get(
     '/api/get-activeWebsite-name',
+    validatePagination,
     customErrorHandler,
     Authorize([
       string.superAdmin,
@@ -97,6 +107,7 @@ const WebsiteRoutes = (app) => {
   );
 
   // done
+  // SubAdmin Permission Remove From websiteSubAdmin
   app.delete(
     '/api/website/delete-subAdmin/:websiteId/:subAdminId',
     validateDeleteSubAdminFromWebsite,

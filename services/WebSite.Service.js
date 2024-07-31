@@ -103,7 +103,7 @@ export const handleApproveWebsite = async (req, res) => {
           where: { websiteId },
         });
       } else {
-        return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Website table.',res);
+        return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Website table.', res);
       }
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Website approval was not granted.', res);
@@ -168,7 +168,7 @@ export const deleteWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(result, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }
@@ -190,7 +190,7 @@ export const rejectWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(result, true, statusCode.success, 'Data deleted successfully', res);
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
     }

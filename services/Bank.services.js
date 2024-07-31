@@ -821,7 +821,7 @@ export const getBankDetails = async (req, res) => {
     if (userRole.includes(string.superAdmin)) {
       // For superAdmin, fetch balances for all banks
       const balancePromises = bankData.map(async (bank) => {
-        bank.dataValues.balance = await getBankBalance(bank.id);
+        bank.dataValues.balance = await getBankBalance(bank.bankId);
         const subAdmins = await BankSubAdmins.findAll({
           where: { bankId: bank.bankId },
         });
@@ -855,14 +855,11 @@ export const getBankDetails = async (req, res) => {
           }
         });
 
-        // Wait for all promises to complete
         const filteredBanks = await Promise.all(filteredBanksPromises);
 
-        // Filter out null values (banks not authorized for the subAdmin)
         bankData = filteredBanks.filter((bank) => bank !== null);
       } else {
         console.error('SubAdminId not found in req.user');
-        // Handle the case where subAdminId is not found in req.user
       }
     }
     return apiResponsePagination(

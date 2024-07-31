@@ -9,8 +9,8 @@ const WebsiteRequest = sequelize.define('WebsiteRequest', {
   subAdminId: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
   createdAt: { type: DataTypes.DATE },
-  isApproved: { type: DataTypes.BOOLEAN },
-  isActive: { type: DataTypes.BOOLEAN },
+  isApproved: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isActive: { type: DataTypes.BOOLEAN, defaultValue: false },
 });
 
 export default WebsiteRequest;

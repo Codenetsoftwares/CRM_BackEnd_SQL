@@ -641,42 +641,31 @@ export const validateWebsite = [
 ];
 
 export const validateDeleteSubAdminFromWebsite = [
-  param('websiteId').isString().withMessage('websiteId must be a string'),
+  param('websiteId').notEmpty().withMessage('Website Id is required').isUUID(4).withMessage('Website Id is not a valid Id'),
   param('subAdminId').isString().withMessage('subAdminId must be a string'),
 ];
 
 export const validateAddWebsiteBalance = [
-  // Validate amount field
   body('amount').notEmpty().withMessage('Amount is required').isNumeric().withMessage('Amount must be a number'),
-
-  // Validate transactionType field
   body('transactionType')
     .notEmpty()
     .withMessage('Transaction type is required')
     .equals('Manual-Website-Deposit')
     .withMessage('Invalid transaction type'),
-
-  // Validate remarks field
   body('remarks').notEmpty().withMessage('Remarks is required'),
 ];
 
 export const validateWithdrawalWebsiteBalance = [
-  // Validate amount field
   body('amount').notEmpty().withMessage('Amount is required').isNumeric().withMessage('Amount must be a number'),
-
-  // Validate transactionType field
   body('transactionType')
     .notEmpty()
     .withMessage('Transaction type is required')
     .equals('Manual-Website-Withdraw')
     .withMessage('Invalid transaction type'),
-
-  // Validate remarks field
   body('remarks').notEmpty().withMessage('Remarks is required'),
 ];
 
 export const validateWebsiteActive = [
-  // Validate isActive field
   param('websiteId')
     .notEmpty()
     .withMessage('Website ID is required')
@@ -716,7 +705,7 @@ export const validateBankDetails = [
   body('bank_details.*.ifsc_code').notEmpty().withMessage('IFSC code is required'),
   body('bank_details.*.account_number').notEmpty().withMessage('Account number is required'),
 ];
-export const validateWebsiteName = [body('website_name').isArray().withMessage('Bank details must be an array')];
+export const validateWebsiteName = [body('website_name').isArray().withMessage('Website name must be an array')];
 
 export const validateAddUpiDetails = [
   body('upi_details').isArray().withMessage('UPI details must be an array'),

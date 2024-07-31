@@ -253,13 +253,14 @@ export const getIntroducerUserData = async (req, res) => {
     console.log('Matched Introducers UserName:', matchedIntroducersUserName);
     console.log('Matched Introducer Percentage:', matchedIntroducerPercentage);
 
-    // If matched introducersUserName found, include it along with percentage in the response
+    // If matched introducersUserName found, include it along with percentage in the response 
+    
     if (matchedIntroducersUserName) {
       filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
       filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
       return apiResponseSuccess(filteredIntroducerUser, true, statusCode.success, 'success', res);
     } else {
-      return apiResponseErr(null, true, statusCode.unauthorize, 'Unauthorized', res);
+      return apiResponseErr(null, true, statusCode.badRequest, 'Introducer User Data Not Found', res);
     }
   } catch (error) {
     console.error('Error in getIntroducerUserData:', error);
