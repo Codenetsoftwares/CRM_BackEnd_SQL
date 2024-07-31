@@ -134,7 +134,13 @@ export const createTransaction = async (req, res) => {
     });
 
     if (existingTransaction) {
-      return apiResponseErr(null, false, statusCode.exist, 'Transaction ID is already in use. Please try again after 48 hours.', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        'Transaction ID is already in use. Please try again after 48 hours.',
+        res,
+      );
     }
 
     // Retrieve website data

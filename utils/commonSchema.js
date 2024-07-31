@@ -224,16 +224,11 @@ export const createIntroducerWithdrawalTransactionValidator = [
 ];
 
 export const validateDeleteBankRequest = [
-  param('bankId')
-    .notEmpty()
-    .withMessage('bankId is required')
-    .isUUID()
-    .withMessage('bankId must be a valid ID'),
+  param('bankId').notEmpty().withMessage('bankId is required').isString().withMessage('bankId must be a string'),
 ];
 
 export const validateDeleteSubAdmin = [
-  param('bankId').notEmpty().withMessage('bankId is required').isUUID()
-    .withMessage('bankId must be a valid ID'),
+  param('bankId').notEmpty().withMessage('bankId is required').isUUID().withMessage('bankId must be a valid ID'),
   param('subAdminId')
     .notEmpty()
     .withMessage('subAdminId is required')
@@ -242,13 +237,15 @@ export const validateDeleteSubAdmin = [
 ];
 
 export const validateDeleteBankTransaction = [
-  body('requestId').notEmpty().withMessage('Request ID is required').isUUID()
-    .withMessage('requestId must be a valid ID'),
+  body('requestId')
+    .notEmpty()
+    .withMessage('Request ID is required')
+    .isUUID()
+    .withMessage('requestId must be a valid UUID'),
 ];
 
 export const validates = [
-  param('editId').notEmpty().withMessage('editId is required').isUUID()
-    .withMessage('editId ID must be a valid ID'),
+  param('editId').notEmpty().withMessage('editId is required').isUUID().withMessage('editId ID must be a valid UUID'),
 ];
 
 export const deleteWebsiteTransactionValidate = [
@@ -257,7 +254,7 @@ export const deleteWebsiteTransactionValidate = [
     .notEmpty()
     .withMessage('RequestId is required')
     .isUUID()
-    .withMessage('requestId must be a valid ID'),
+    .withMessage('requestId must be a valid UUID'),
 ];
 
 export const validateMoveToTrash = [
@@ -301,11 +298,7 @@ export const validationDeleteBankRequest = [
 ];
 
 export const validateDeleteBank = [
-  param('bankId')
-    .notEmpty()
-    .withMessage('Bank ID is required')
-    .isUUID(4)
-    .withMessage('Bank ID must be a valid ID'),
+  param('bankId').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid ID'),
 ];
 
 export const validateSaveWebsiteRequest = [
@@ -325,11 +318,7 @@ export const validateDeleteWebsite = [
 ];
 
 export const validateRejectBankDetail = [
-  param('bankId')
-    .notEmpty()
-    .withMessage('Bank ID is required')
-    .isUUID(4)
-    .withMessage('Bank ID must be a valid ID'),
+  param('bankId').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid ID'),
 ];
 
 export const validateRejectWebsiteDetail = [
@@ -341,8 +330,7 @@ export const validateRejectWebsiteDetail = [
 ];
 
 export const validateBankId = [
-  param('bankId').notEmpty().withMessage('Bank Id is required').isUUID(4)
-    .withMessage('Bank Id must be a valid ID'),
+  param('bankId').notEmpty().withMessage('Bank Id is required').isUUID(4).withMessage('Bank Id must be a valid ID'),
 ];
 
 export const validateWebsiteId = [
@@ -391,6 +379,7 @@ export const validateIdParam = [
 
 export const validateBankUpdate = [
   body('accountHolderName')
+    .optional()
     .notEmpty()
     .withMessage('Account Holder Name is required')
     .isString()
@@ -400,15 +389,49 @@ export const validateBankUpdate = [
     .withMessage('Bank Name is required')
     .isString()
     .withMessage('Bank Name Name must be a string'),
-  body('accountNumber').isNumeric().withMessage('Account Number must be a number'),
-  body('ifscCode').notEmpty().withMessage('IFSC Code is required').isString().withMessage('IFSC Code must be a string'),
-  body('upiId').optional().isString().withMessage('UPI ID must be a string'),
-  body('upiAppName').optional().isString().withMessage('UPI App Name must be a string'),
-  body('upiNumber').optional().isString().withMessage('UPI Number must be a string'),
+  body('accountNumber')
+    .optional()
+    .notEmpty()
+    .withMessage('accountNumber is required')
+    .isNumeric()
+    .withMessage('Account Number must be a number'),
+  body('ifscCode')
+    .optional()
+    .notEmpty()
+    .withMessage('IFSC Code is required')
+    .isString()
+    .withMessage('IFSC Code must be a string'),
+  body('upiId')
+    .optional()
+    .notEmpty()
+    .withMessage('upiId is required')
+    .isString()
+    .withMessage('UPI ID must be a string'),
+  body('upiAppName')
+    .optional()
+    .notEmpty()
+    .withMessage('upiAppName is required')
+    .isString()
+    .withMessage('UPI App Name must be a string'),
+  body('upiNumber')
+    .optional()
+    .notEmpty()
+    .withMessage('upiNumber is required')
+    .isString()
+    .withMessage('UPI Number must be a string'),
 ];
 
 export const approveBankDetailEditRequestValidator = [
-  body('isApproved').isBoolean().withMessage('isApproved field must be a boolean value'),
+  param('requestId')
+    .notEmpty()
+    .withMessage('requestId is required')
+    .isUUID()
+    .withMessage('requestId must be a valid ID'),
+  body('isApproved')
+    .notEmpty()
+    .withMessage('isApproved is required')
+    .isBoolean()
+    .withMessage('isApproved field must be a boolean value'),
 ];
 
 export const validateUpdateWebsite = [
@@ -418,7 +441,6 @@ export const validateUpdateWebsite = [
     .isUUID()
     .withMessage('Website ID must be a valid ID'),
   body('websiteName')
-    .optional()
     .isString()
     .withMessage('Website Name must be a string')
     .notEmpty()
@@ -431,7 +453,11 @@ export const approveWebValidate = [
     .withMessage('requestId is required')
     .isUUID()
     .withMessage('requestId must be a valid ID'),
-  body('isApproved').isBoolean().withMessage('isApproved field must be a boolean value'),
+  body('isApproved')
+    .notEmpty()
+    .withMessage('isApproved is required')
+    .isBoolean()
+    .withMessage('isApproved field must be a boolean value'),
 ];
 
 export const validateAddBankName = [
@@ -445,9 +471,7 @@ export const validateAddBankName = [
 ];
 
 export const validateApproveBank = [
-  param('bankId').notEmpty().withMessage('bankId  is required')
-    .isUUID(4)
-    .withMessage('bank ID must be a valid ID '),
+  param('bankId').notEmpty().withMessage('bankId  is required').isUUID(4).withMessage('bank ID must be a valid ID '),
   body('isApproved').isBoolean().withMessage('isApproved must be a boolean value'),
   body('subAdmins.*.subAdminId')
     .isString()
@@ -463,24 +487,21 @@ export const validateApproveBank = [
 ];
 
 export const addBankBalanceValidate = [
-  param('bank_id').notEmpty().withMessage('bank_id is required').isUUID(4)
-    .withMessage('Bank ID must be a valid ID '),
+  param('bank_id').notEmpty().withMessage('bank_id is required').isUUID(4).withMessage('Bank ID must be a valid ID '),
   body('amount').isNumeric().withMessage('Amount must be a number'),
   body('transactionType').equals('Manual-Bank-Deposit').withMessage('Invalid transaction type'),
   body('remarks').notEmpty().withMessage('Remark is required'),
 ];
 
 export const withdrawBankBalanceValidate = [
-  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4)
-    .withMessage('Bank ID must be a valid ID '),
+  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid ID '),
   body('amount').isNumeric().withMessage('Amount must be a number'),
   body('transactionType').equals('Manual-Bank-Withdraw').withMessage('Invalid transaction type'),
   body('remarks').notEmpty().withMessage('Remark is required'),
 ];
 
 export const updateBankStatusValidate = [
-  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4)
-    .withMessage('Bank ID must be a valid ID '),
+  param('bank_id').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid ID '),
   body('isActive').isBoolean().withMessage('isActive field must be a boolean value'),
 ];
 
@@ -493,8 +514,7 @@ export const viewSubAdminBanksValidate = [
 ];
 
 export const updateBankPermissionsValidator = [
-  param('bankId').notEmpty().withMessage('Bank ID  is required').isUUID(4)
-    .withMessage('Bank ID must be a valid ID '),
+  param('bankId').notEmpty().withMessage('Bank ID  is required').isUUID(4).withMessage('Bank ID must be a valid ID '),
   body('subAdmins').isArray().withMessage('subAdmins must be an array'),
   body('subAdmins.*.subAdminId')
     .isString()
@@ -555,9 +575,7 @@ export const validateApproval = [
 ];
 
 export const update = [
-  param('adminId').notEmpty().withMessage('Admin Id is required')
-    .isUUID(4)
-    .withMessage('Admin ID is not valid'),
+  param('adminId').notEmpty().withMessage('Admin Id is required').isUUID(4).withMessage('Admin ID is not valid'),
 
   body('firstName')
     .optional()
@@ -641,7 +659,11 @@ export const validateWebsite = [
 ];
 
 export const validateDeleteSubAdminFromWebsite = [
-  param('websiteId').notEmpty().withMessage('Website Id is required').isUUID(4).withMessage('Website Id is not a valid Id'),
+  param('websiteId')
+    .notEmpty()
+    .withMessage('Website Id is required')
+    .isUUID(4)
+    .withMessage('Website Id is not a valid Id'),
   param('subAdminId').isString().withMessage('subAdminId must be a string'),
 ];
 
@@ -681,7 +703,15 @@ export const validateWebsiteActive = [
 
 export const updateWebsitePermissionsValidator = [
   param('websiteId').isInt().withMessage('websiteId must be an integer'),
-  body('subAdmins').isArray().withMessage('subAdmins must be an array'),
+  body('subAdmins')
+    .isArray()
+    .withMessage('subAdmins must be an array')
+    .custom((value) => {
+      if (!Array.isArray(value)) {
+        throw new Error('subAdmins must be an array');
+      }
+      return true;
+    }),
   body('subAdmins.*.subAdminId')
     .isString()
     .withMessage('subAdminId must be a string')
@@ -735,6 +765,8 @@ export const validateIntroId = [
     .withMessage('Introducer ID is required')
     .isUUID()
     .withMessage('Introducer ID must be a valid ID'),
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be an integer greater than or equal to 1'),
+  query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be an integer greater than or equal to 1'),
 ];
 
 export const validateIntroIdWithPagination = [
@@ -761,11 +793,7 @@ export const validateAdminId = [
 ];
 
 export const validatedBankId = [
-  param('bankId')
-    .notEmpty()
-    .withMessage('Bank ID is required')
-    .isUUID(4)
-    .withMessage('Bank ID must be a valid ID'),
+  param('bankId').notEmpty().withMessage('Bank ID is required').isUUID(4).withMessage('Bank ID must be a valid ID'),
 ];
 
 export const paginationAndSearch = [

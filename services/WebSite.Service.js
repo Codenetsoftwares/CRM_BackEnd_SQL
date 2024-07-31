@@ -109,7 +109,13 @@ export const handleApproveWebsite = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Website approval was not granted.', res);
     }
 
-    return apiResponseSuccess(approvedWebsiteRequest, true, statusCode.success, 'Website approved successfully & SubAdmin Assigned', res);
+    return apiResponseSuccess(
+      approvedWebsiteRequest,
+      true,
+      statusCode.success,
+      'Website approved successfully & SubAdmin Assigned',
+      res,
+    );
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
@@ -124,10 +130,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-        websiteName: {
-          [Op.like]: `%${search}%`,
-        },
-      }
+          websiteName: {
+            [Op.like]: `%${search}%`,
+          },
+        }
       : {};
 
     const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
@@ -595,7 +601,7 @@ export const updateWebsite = async (req, res) => {
     });
 
     // Send success response
-    return apiResponseSuccess(null, true, statusCode.create, "Website Detail's Sent to Super Admin For Approval", res);
+    return apiResponseSuccess(null, true, statusCode.success, "Website Detail's Sent to Super Admin For Approval", res);
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
@@ -710,7 +716,7 @@ export const getWebsiteDetails = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
-    let websiteData = websiteDataArray
+    let websiteData = websiteDataArray;
     if (websiteData.length === 0) {
       return apiResponsePagination([], true, statusCode.success, 'No website details found', {}, res);
     }
@@ -838,15 +844,8 @@ export const manualUserWebsiteAccountSummary = async (req, res) => {
         }
       });
 
-    return apiResponseSuccess(
-      allData,
-      true,
-      statusCode.success,
-      'success',
-      res,
-    );
+    return apiResponseSuccess(allData, true, statusCode.success, 'success', res);
   } catch (error) {
     apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
   }
-}
-
+};

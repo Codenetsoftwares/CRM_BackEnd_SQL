@@ -84,13 +84,7 @@ export const userPasswordResetCode = async (req, res) => {
 
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.exist,
-        'New Password cannot be the same as existing password',
-        res,
-      );
+      return apiResponseErr(null, false, statusCode.exist, 'New Password cannot be the same as existing password', res);
     }
 
     const passwordSalt = await bcrypt.genSalt();
@@ -183,7 +177,6 @@ export const addWebsiteDetails = async (req, res) => {
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
-
 };
 
 export const addUpiDetails = async (req, res) => {

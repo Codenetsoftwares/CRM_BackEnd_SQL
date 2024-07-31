@@ -521,7 +521,6 @@ export const deleteTransactionWithId = async (req, res) => {
   }
 };
 
-
 export const deleteIntroducerTransactionWithId = async (req, res) => {
   try {
     const id = req.params.introTransactionId;
@@ -804,13 +803,11 @@ export const rejectWebsiteDetail = async (req, res) => {
 export const viewTrash = async (req, res) => {
   try {
     // Retrieve pagination and search parameters from query
-    const { page = 1, pageSize = 10, } = req.query;
+    const { page = 1, pageSize = 10 } = req.query;
 
     // Convert pagination parameters to integers
     const limit = parseInt(pageSize, 10);
     const offset = (parseInt(page, 10) - 1) * limit;
-
-
 
     // Fetch records with pagination and search
     const { count, rows: resultArray } = await Trash.findAndCountAll({

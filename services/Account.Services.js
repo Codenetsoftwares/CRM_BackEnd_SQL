@@ -400,18 +400,11 @@ export const editSubAdminRoles = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found with the given Id', res);
     }
 
-    return apiResponseSuccess(
-      roles,
-      true,
-      statusCode.success,
-      'SubAdmin roles updated successfully',
-      res
-    );
+    return apiResponseSuccess(roles, true, statusCode.success, 'SubAdmin roles updated successfully', res);
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const getIntroducerUserSingleData = async (req, res) => {
   try {
@@ -530,13 +523,7 @@ export const subAdminPasswordResetCode = async (req, res) => {
     // Compare new password with the existing password
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.exist,
-        'New Password cannot be the same as existing password',
-        res,
-      );
+      return apiResponseErr(null, false, statusCode.exist, 'New Password cannot be the same as existing password', res);
     }
 
     // Hash the new password
@@ -582,19 +569,22 @@ export const getIntroducerAccountSummary = async (req, res) => {
     const totalPages = Math.ceil(count / pageSize);
 
     return apiResponsePagination(
-      accountData, true, statusCode.success, 'success', {
-      page: parseInt(page),
-      limit,
-      totalPages,
-      totalItems: count,
-    },
-      res
+      accountData,
+      true,
+      statusCode.success,
+      'success',
+      {
+        page: parseInt(page),
+        limit,
+        totalPages,
+        totalItems: count,
+      },
+      res,
     );
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const SuperAdminPasswordResetCode = async (req, res) => {
   try {
@@ -621,13 +611,7 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
 
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.exist,
-        'New Password cannot be the same as existing password',
-        res,
-      );
+      return apiResponseErr(null, false, statusCode.exist, 'New Password cannot be the same as existing password', res);
     }
 
     // Hash the new password
@@ -659,7 +643,7 @@ export const getSingleUserProfile = async (req, res) => {
 
     const userTransactionDetailResult = await UserTransactionDetail.findAndCountAll({
       where: {
-        userName
+        userName,
       },
       limit,
       offset,
@@ -755,7 +739,6 @@ export const viewSubAdminTransactions = async (req, res) => {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
-
 
 export const accountSummary = async (req, res) => {
   try {

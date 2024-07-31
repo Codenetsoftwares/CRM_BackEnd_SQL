@@ -66,11 +66,12 @@ const WebsiteRoutes = (app) => {
   );
 
   // done
-  app.delete('/api/reject/:websiteId',
+  app.delete(
+    '/api/reject/:websiteId',
     validateWebsiteId,
     customErrorHandler,
     Authorize([string.superAdmin]),
-    deleteWebsiteRequest
+    deleteWebsiteRequest,
   ); // not understanding this ... two apis work same "rejectWebsiteRequest"
 
   app.delete(
@@ -210,8 +211,8 @@ const WebsiteRoutes = (app) => {
     validateWebsiteId,
     customErrorHandler,
     Authorize(['superAdmin', 'Bank-View', 'Transaction-View', 'Website-View']),
-    manualUserWebsiteAccountSummary
+    manualUserWebsiteAccountSummary,
   );
-}
+};
 
 export default WebsiteRoutes;

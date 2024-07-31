@@ -72,7 +72,7 @@ export const updateIntroducerProfile = async (req, res) => {
 
     return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -86,13 +86,7 @@ export const introducerPasswordResetCode = async (req, res) => {
 
     const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (newPasswordIsDuplicate) {
-      return apiResponseErr(
-        null,
-        false,
-        statusCode.exist,
-        'New Password cannot be the same as existing password',
-        res,
-      );
+      return apiResponseErr(null, false, statusCode.exist, 'New Password cannot be the same as existing password', res);
     }
 
     const passwordSalt = await bcrypt.genSalt();
@@ -253,8 +247,8 @@ export const getIntroducerUserData = async (req, res) => {
     console.log('Matched Introducers UserName:', matchedIntroducersUserName);
     console.log('Matched Introducer Percentage:', matchedIntroducerPercentage);
 
-    // If matched introducersUserName found, include it along with percentage in the response 
-    
+    // If matched introducersUserName found, include it along with percentage in the response
+
     if (matchedIntroducersUserName) {
       filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
       filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
@@ -283,7 +277,7 @@ export const getIntroducerLiveBalance = async (req, res) => {
     console.log('data', data);
     return apiResponseSuccess({ LiveBalance: data }, true, statusCode.success, 'success', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -321,7 +315,7 @@ export const introducerAccountSummary = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
