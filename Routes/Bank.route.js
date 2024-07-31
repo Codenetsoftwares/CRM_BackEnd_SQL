@@ -36,22 +36,6 @@ import customErrorHandler from '../utils/customErrorHandler.js';
 
 const BankRoutes = (app) => {
   // Testing Done
-  app.delete(
-    '/api/bank/reject/:bankId',
-    validateDeleteBankRequest,
-    customErrorHandler,
-    Authorize([string.superAdmin]),
-    rejectBankRequest,
-  );
-  // Testing Not Done
-  app.delete(
-    '/api/bank/delete-subAdmin/:bankId/:subAdminId',
-    validateDeleteSubAdmin,
-    customErrorHandler,
-    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
-    deleteSubAdmin,
-  );
-  // Testing Done
   app.post(
     '/api/add-bank-name',
     validateAddBankName,
@@ -66,6 +50,14 @@ const BankRoutes = (app) => {
     customErrorHandler,
     Authorize([string.superAdmin]),
     handleApproveBank,
+  );
+  // Testing Done
+  app.delete(
+    '/api/bank/reject/:bankId',
+    validateDeleteBankRequest,
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    rejectBankRequest,
   );
 
   // Testing Done
@@ -93,6 +85,15 @@ const BankRoutes = (app) => {
     customErrorHandler,
     Authorize([string.superAdmin, string.transactionView, string.bankView]),
     withdrawBankBalance,
+  );
+
+  // Testing Not Done
+  app.delete(
+    '/api/bank/delete-subAdmin/:bankId/:subAdminId',
+    validateDeleteSubAdmin,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
+    deleteSubAdmin,
   );
   // Testing Done
   app.get(

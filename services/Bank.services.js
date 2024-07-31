@@ -16,6 +16,65 @@ import Website from '../models/website.model.js';
 import CustomError from '../utils/extendError.js';
 import { string } from '../constructor/string.js';
 
+export const addBankName = async (req, res) => {
+  try {
+    const userName = req.user;
+    const {
+      accountHolderName = '',
+      bankName,
+      accountNumber = '',
+      ifscCode = '',
+      upiId = '',
+      upiAppName = '',
+      upiNumber = '',
+    } = req.body;
+
+    const trimmedBankName = bankName.replace(/\s+/g, '');
+    if (!trimmedBankName) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Please provide a bank name to add', res);
+    }
+
+    // Check if the bank name already exists in Bank or BankRequest tables
+    const [existingBank, existingBankRequest] = await Promise.all([
+      Bank.findOne({
+        where: sequelize.where(
+          sequelize.fn('REPLACE', sequelize.fn('LOWER', sequelize.col('bankName')), ' ', ''),
+          trimmedBankName.toLowerCase(),
+        ),
+      }),
+      BankRequest.findOne({
+        where: sequelize.where(
+          sequelize.fn('REPLACE', sequelize.fn('LOWER', sequelize.col('bankName')), ' ', ''),
+          trimmedBankName.toLowerCase(),
+        ),
+      }),
+    ]);
+
+    if (existingBank || existingBankRequest) {
+      return apiResponseErr(null, false, statusCode.exist, 'Bank name already exists!', res);
+    }
+
+    const bankId = uuidv4();
+    // Insert new bank name
+    const bank = await BankRequest.create({
+      bankId,
+      bankName: trimmedBankName,
+      accountHolderName: accountHolderName || null,
+      accountNumber: accountNumber || null,
+      ifscCode: ifscCode || null,
+      upiId: upiId || null,
+      upiAppName: upiAppName || null,
+      upiNumber: upiNumber || null,
+      subAdminName: userName && userName.firstName ? userName.firstName : null,
+      subAdminId: userName && userName.userName ? userName.userName : null,
+    });
+
+    return apiResponseSuccess(bank, true, statusCode.create, 'Bank name sent for approval!', res);
+  } catch (error) {
+    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+  }
+};
+
 export const updateBank = async (req, res) => {
   try {
     const bankId = req.params.bank_id;
@@ -211,66 +270,7 @@ export const deleteSubAdmin = async (req, res) => {
     }
     return apiResponseSuccess(result, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
-  }
-};
-
-export const addBankName = async (req, res) => {
-  try {
-    const userName = req.user;
-    const {
-      accountHolderName = '',
-      bankName,
-      accountNumber = '',
-      ifscCode = '',
-      upiId = '',
-      upiAppName = '',
-      upiNumber = '',
-    } = req.body;
-
-    const trimmedBankName = bankName.replace(/\s+/g, '');
-    if (!trimmedBankName) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Please provide a bank name to add', res);
-    }
-
-    // Check if the bank name already exists in Bank or BankRequest tables
-    const [existingBank, existingBankRequest] = await Promise.all([
-      Bank.findOne({
-        where: sequelize.where(
-          sequelize.fn('REPLACE', sequelize.fn('LOWER', sequelize.col('bankName')), ' ', ''),
-          trimmedBankName.toLowerCase(),
-        ),
-      }),
-      BankRequest.findOne({
-        where: sequelize.where(
-          sequelize.fn('REPLACE', sequelize.fn('LOWER', sequelize.col('bankName')), ' ', ''),
-          trimmedBankName.toLowerCase(),
-        ),
-      }),
-    ]);
-
-    if (existingBank || existingBankRequest) {
-      return apiResponseErr(null, false, statusCode.exist, 'Bank name already exists!', res);
-    }
-
-    const bankId = uuidv4();
-    // Insert new bank name
-    const bank = await BankRequest.create({
-      bankId,
-      bankName: trimmedBankName,
-      accountHolderName: accountHolderName || null,
-      accountNumber: accountNumber || null,
-      ifscCode: ifscCode || null,
-      upiId: upiId || null,
-      upiAppName: upiAppName || null,
-      upiNumber: upiNumber || null,
-      subAdminName: userName && userName.firstName ? userName.firstName : null,
-      subAdminId: userName && userName.userName ? userName.userName : null,
-    });
-
-    return apiResponseSuccess(bank, true, statusCode.create, 'Bank name sent for approval!', res);
-  } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false,  statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -321,11 +321,6 @@ export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmin
   }
 };
 
-export const deleteBankRequest = async (bankId) => {
-  const result = await BankRequest.destroy({ where: { bankId } });
-  return result; // Return the number of rows deleted for further verification
-};
-
 export const handleApproveBank = async (req, res) => {
   try {
     const { isApproved, subAdmins } = req.body;
@@ -342,7 +337,7 @@ export const handleApproveBank = async (req, res) => {
     if (isApproved) {
       const rowsInserted = await approveBankAndAssignSubAdmin(approvedBankRequests[0], subAdmins);
       if (rowsInserted > 0) {
-        await deleteBankRequest(bankId);
+        await BankRequest.destroy({ where: { bankId } });
       } else {
         throw new CustomError('Failed to insert rows into Bank table.', null, statusCode.badRequest);
       }
