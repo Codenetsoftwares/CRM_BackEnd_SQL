@@ -224,7 +224,11 @@ export const createIntroducerWithdrawalTransactionValidator = [
 ];
 
 export const validateDeleteBankRequest = [
-  param('bankId').notEmpty().withMessage('bankId is required').isString().withMessage('bankId must be a string'),
+  param('bankId')
+    .notEmpty()
+    .withMessage('bankId is required')
+    .isUUID()
+    .withMessage('bankId must be a valid ID'),
 ];
 
 export const validateDeleteSubAdmin = [
@@ -238,12 +242,12 @@ export const validateDeleteSubAdmin = [
 
 export const validateDeleteBankTransaction = [
   body('requestId').notEmpty().withMessage('Request ID is required').isUUID()
-  .withMessage('requestId must be a valid UUID'),
+    .withMessage('requestId must be a valid ID'),
 ];
 
 export const validates = [
   param('editId').notEmpty().withMessage('editId is required').isUUID()
-  .withMessage('editId ID must be a valid UUID'),
+    .withMessage('editId ID must be a valid ID'),
 ];
 
 export const deleteWebsiteTransactionValidate = [
@@ -252,7 +256,7 @@ export const deleteWebsiteTransactionValidate = [
     .notEmpty()
     .withMessage('RequestId is required')
     .isUUID()
-    .withMessage('requestId must be a valid UUID'),
+    .withMessage('requestId must be a valid ID'),
 ];
 
 export const validateMoveToTrash = [
@@ -284,7 +288,7 @@ export const validateDeleteIntroducerTransactionWithId = [
     .notEmpty()
     .withMessage('introTransactionId is required')
     .isUUID(4)
-    .withMessage('introTransactionId must be a valid UUID v4'),
+    .withMessage('introTransactionId must be a valid ID v4'),
 ];
 
 export const validationDeleteBankRequest = [
@@ -337,7 +341,7 @@ export const validateRejectWebsiteDetail = [
 
 export const validateBankId = [
   param('bankId').notEmpty().withMessage('Bank Id is required').isUUID(4)
-  .withMessage('Bank Id must be a valid UUID v4'),
+    .withMessage('Bank Id must be a valid ID v4'),
 ];
 
 export const validateWebsiteId = [
@@ -345,15 +349,15 @@ export const validateWebsiteId = [
     .notEmpty()
     .withMessage('Website Id is required')
     .isUUID(4)
-    .withMessage('Website ID must be a valid UUID v4'),
+    .withMessage('Website ID must be a valid ID v4'),
 ];
 
 export const validateTransactionId = [
   param('TransactionID')
-  .notEmpty()
+    .notEmpty()
     .withMessage('Transaction ID is required')
     .isUUID(4)
-    .withMessage('Transaction ID must be a valid UUID v4'),
+    .withMessage('Transaction ID must be a valid ID v4'),
 ];
 
 export const validateIntroTransactionId = [
@@ -441,10 +445,20 @@ export const validateAddBankName = [
 
 export const validateApproveBank = [
   param('bankId').notEmpty().withMessage('bankId  is required')
-  .isUUID(4)
-  .withMessage('bank ID must be a valid UUID v4'),
+    .isUUID(4)
+    .withMessage('bank ID must be a valid ID v4'),
   body('isApproved').isBoolean().withMessage('isApproved must be a boolean value'),
-  body('subAdmins').isArray().withMessage('subAdmins must be an array'),
+  body('subAdmins.*.subAdminId')
+    .isString()
+    .withMessage('subAdminId must be a string')
+    .not()
+    .isEmpty()
+    .withMessage('subAdminId is required'),
+  body('subAdmins.*.isDeposit').isBoolean().withMessage('isDeposit must be a boolean'),
+  body('subAdmins.*.isWithdraw').isBoolean().withMessage('isWithdraw must be a boolean'),
+  body('subAdmins.*.isEdit').isBoolean().withMessage('isEdit must be a boolean'),
+  body('subAdmins.*.isRenew').isBoolean().withMessage('isRenew must be a boolean'),
+  body('subAdmins.*.isDelete').isBoolean().withMessage('isDelete must be a boolean'),
 ];
 
 export const addBankBalanceValidate = [
@@ -477,7 +491,12 @@ export const viewSubAdminBanksValidate = [
 export const updateBankPermissionsValidator = [
   param('bankId').notEmpty().withMessage('subAdminId is required').isString().withMessage('bankId must be a string'),
   body('subAdmins').isArray().withMessage('subAdmins must be an array'),
-  body('subAdmins.*.subAdminId').isString().withMessage('subAdminId must be a string'),
+  body('subAdmins.*.subAdminId')
+    .isString()
+    .withMessage('subAdminId must be a string')
+    .not()
+    .isEmpty()
+    .withMessage('subAdminId is required'),
   body('subAdmins.*.isDeposit').isBoolean().withMessage('isDeposit must be a boolean'),
   body('subAdmins.*.isWithdraw').isBoolean().withMessage('isWithdraw must be a boolean'),
   body('subAdmins.*.isEdit').isBoolean().withMessage('isEdit must be a boolean'),
@@ -517,6 +536,17 @@ export const validateApproval = [
   param('websiteId').notEmpty().withMessage('Website ID must be provided'),
   body('isApproved').isBoolean().withMessage('isApproved must be a boolean'),
   body('subAdmins').isArray().withMessage('subAdmins must be an array'),
+  body('subAdmins.*.subAdminId')
+    .isString()
+    .withMessage('subAdminId must be a string')
+    .not()
+    .isEmpty()
+    .withMessage('subAdminId is required'),
+  body('subAdmins.*.isDeposit').isBoolean().withMessage('isDeposit must be a boolean'),
+  body('subAdmins.*.isWithdraw').isBoolean().withMessage('isWithdraw must be a boolean'),
+  body('subAdmins.*.isEdit').isBoolean().withMessage('isEdit must be a boolean'),
+  body('subAdmins.*.isRenew').isBoolean().withMessage('isRenew must be a boolean'),
+  body('subAdmins.*.isDelete').isBoolean().withMessage('isDelete must be a boolean'),
 ];
 
 export const update = [
@@ -657,26 +687,18 @@ export const validateWebsiteActive = [
 
 export const updateWebsitePermissionsValidator = [
   param('websiteId').isInt().withMessage('websiteId must be an integer'),
-  body('subAdmins')
-    .isArray()
-    .withMessage('subAdmins must be an array')
-    .custom((value) => {
-      if (!Array.isArray(value)) {
-        throw new Error('subAdmins must be an array');
-      }
-      return true;
-    }),
+  body('subAdmins').isArray().withMessage('subAdmins must be an array'),
   body('subAdmins.*.subAdminId')
     .isString()
     .withMessage('subAdminId must be a string')
     .not()
     .isEmpty()
     .withMessage('subAdminId is required'),
-  body('subAdmins.*.isDeposit').optional().isBoolean().withMessage('isDeposit must be a boolean'),
-  body('subAdmins.*.isWithdraw').optional().isBoolean().withMessage('isWithdraw must be a boolean'),
-  body('subAdmins.*.isEdit').optional().isBoolean().withMessage('isEdit must be a boolean'),
-  body('subAdmins.*.isRenew').optional().isBoolean().withMessage('isRenew must be a boolean'),
-  body('subAdmins.*.isDelete').optional().isBoolean().withMessage('isDelete must be a boolean'),
+  body('subAdmins.*.isDeposit').isBoolean().withMessage('isDeposit must be a boolean'),
+  body('subAdmins.*.isWithdraw').isBoolean().withMessage('isWithdraw must be a boolean'),
+  body('subAdmins.*.isEdit').isBoolean().withMessage('isEdit must be a boolean'),
+  body('subAdmins.*.isRenew').isBoolean().withMessage('isRenew must be a boolean'),
+  body('subAdmins.*.isDelete').isBoolean().withMessage('isDelete must be a boolean'),
 ];
 
 export const validateBankDetails = [

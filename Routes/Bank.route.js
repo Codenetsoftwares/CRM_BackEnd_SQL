@@ -29,6 +29,7 @@ import {
   validatedBankId,
   validateDeleteBankRequest,
   validateDeleteSubAdmin,
+  validatePagination,
   viewSubAdminBanksValidate,
   withdrawBankBalanceValidate,
 } from '../utils/commonSchema.js';
@@ -43,6 +44,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin, string.transactionView, string.bankView]),
     addBankName,
   );
+
   // Testing Done
   app.post(
     '/api/approve-bank/:bankId',
@@ -51,6 +53,7 @@ const BankRoutes = (app) => {
     Authorize([string.superAdmin]),
     handleApproveBank,
   );
+
   // Testing Done
   app.delete(
     '/api/bank/reject/:bankId',
@@ -61,7 +64,8 @@ const BankRoutes = (app) => {
   );
 
   // Testing Done
-  app.get('/api/superAdmin/view-bank-requests', customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
+  app.get('/api/superAdmin/view-bank-requests', validatePagination, customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
+
   // Testing Done
   app.get(
     '/api/get-single-bank-name/:bankId',

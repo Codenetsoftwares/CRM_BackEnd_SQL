@@ -270,7 +270,7 @@ export const deleteSubAdmin = async (req, res) => {
     }
     return apiResponseSuccess(result, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
   } catch (error) {
-    return apiResponseErr(null, false,  statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -314,7 +314,7 @@ export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmin
     );
 
     await transaction.commit();
-    return subAdmins.length; // Return the number of subadmins processed for further verification
+    return subAdmins.length; 
   } catch (error) {
     await transaction.rollback();
     throw new CustomError(error.message, null, error.responseCode ?? statusCode.internalServerError);
@@ -331,7 +331,7 @@ export const handleApproveBank = async (req, res) => {
     const approvedBankRequests = await BankRequest.findAll({ where: { bankId } });
 
     if (!approvedBankRequests || approvedBankRequests.length === 0) {
-      throw new CustomError('Bank not found in the approval requests!', null, statusCode.badRequest);
+      return apiResponseSuccess(null, true, statusCode.success, 'Bank not found in the approval requests!', res);
     }
 
     if (isApproved) {
@@ -339,14 +339,13 @@ export const handleApproveBank = async (req, res) => {
       if (rowsInserted > 0) {
         await BankRequest.destroy({ where: { bankId } });
       } else {
-        throw new CustomError('Failed to insert rows into Bank table.', null, statusCode.badRequest);
+        return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Bank table.', res);
       }
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank approval was not granted.', res);
     }
     return apiResponseSuccess(null, true, statusCode.success, 'Bank approved successfully & SubAdmin Assigned', res);
   } catch (error) {
-    console.error(error); // Debug logging
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
 };
