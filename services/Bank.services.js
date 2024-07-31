@@ -314,7 +314,7 @@ export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmin
     );
 
     await transaction.commit();
-    return subAdmins.length; 
+    return subAdmins.length;
   } catch (error) {
     await transaction.rollback();
     throw new CustomError(error.message, null, error.responseCode ?? statusCode.internalServerError);
@@ -390,76 +390,27 @@ export const viewBankRequests = async (req, res) => {
 export const getSingleBankDetails = async (req, res) => {
   try {
     const id = req.params.bankId;
-    const { page = 1, pageSize = 10 } = req.query;
-    const limit = parseInt(pageSize);
-    const offset = (parseInt(page) - 1) * limit;
-
-    console.log('id', id);
 
     const dbBankData = await Bank.findOne({ where: { bankId: id } });
-    console.log('bankdata', dbBankData);
 
     if (!dbBankData) {
-      return apiResponsePagination([], true, statusCode.success, 'Bank not found', {}, res);
+      return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
-    let balance = 0;
-
-    const bankTransactionsResult = await BankTransaction.findAndCountAll({
-      where: { bankId: dbBankData.bankId },
-      limit,
-      offset,
-    });
-
-    const transactionsResult = await Transaction.findAndCountAll({
-      where: { bankId: dbBankData.bankId },
-      limit,
-      offset,
-    });
-
-    const bankTransactions = bankTransactionsResult.rows;
-    const transactions = transactionsResult.rows;
-
-    bankTransactions.forEach((transaction) => {
-      if (transaction.depositAmount) {
-        balance += parseFloat(transaction.depositAmount);
-      }
-      if (transaction.withdrawAmount) {
-        balance -= parseFloat(transaction.withdrawAmount);
-      }
-    });
-
-    transactions.forEach((transaction) => {
-      if (transaction.transactionType === 'Deposit') {
-        balance += parseFloat(transaction.amount);
-      } else {
-        balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
-      }
-    });
+    const bankBalance = await getBankBalance(id);
 
     const response = {
       bank_id: dbBankData.bankId,
       bankName: dbBankData.bankName,
       subAdminName: dbBankData.subAdminName,
-      balance: balance,
-      bankTransactions: bankTransactions,
-      transactions: transactions,
+      balance: bankBalance,
     };
 
-    const totalItems = bankTransactionsResult.count + transactionsResult.count;
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return apiResponsePagination(
+    return apiResponseSuccess(
       response,
       true,
       statusCode.success,
       'Bank Details retrieved successfully',
-      {
-        page: parseInt(page),
-        limit,
-        totalPages,
-        totalItems,
-      },
       res,
     );
   } catch (error) {
@@ -867,7 +818,7 @@ export const getBankDetails = async (req, res) => {
     if (userRole.includes(string.superAdmin)) {
       // For superAdmin, fetch balances for all banks
       const balancePromises = bankData.map(async (bank) => {
-        bank.dataValues.balance = await BankServices.getBankBalance(bank.id);
+        bank.dataValues.balance = await getBankBalance(bank.id);
         const subAdmins = await BankSubAdmins.findAll({
           where: { bankId: bank.bankId },
         });
@@ -889,7 +840,7 @@ export const getBankDetails = async (req, res) => {
           bank.dataValues.subAdmins = subAdmins.length ? subAdmins : [];
           const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
           if (userSubAdmin) {
-            bank.dataValues.balance = await BankServices.getBankBalance(bank.id);
+            bank.dataValues.balance = await getBankBalance(bank.id);
             bank.dataValues.isDeposit = userSubAdmin.isDeposit;
             bank.dataValues.isWithdraw = userSubAdmin.isWithdraw;
             bank.dataValues.isRenew = userSubAdmin.isRenew;
@@ -1008,100 +959,46 @@ export const manualUserBankSummary = async (req, res) => {
   }
 };
 
-const BankServices = {
-  approveBankAndAssignSubadmin: async (approvedBankRequests, subAdmins) => {
-    try {
-      console.log('approvedBankRequests', approvedBankRequests);
-      const insertBankDetails = `INSERT INTO Bank (bankId, bankName, accountHolderName, accountNumber, ifscCode, upiId, 
-        upiAppName, upiNumber, subAdminName, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      const insertSubadmin = `INSERT INTO BankSubAdmins (bankId, subAdminId, isDeposit, isWithdraw, isEdit, 
-        isRenew, isDelete) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-      await database.execute(insertBankDetails, [
-        approvedBankRequests[0].bankId,
-        approvedBankRequests[0].bankName,
-        approvedBankRequests[0].accountHolderName,
-        approvedBankRequests[0].accountNumber,
-        approvedBankRequests[0].ifscCode,
-        approvedBankRequests[0].upiId,
-        approvedBankRequests[0].upiAppName,
-        approvedBankRequests[0].upiNumber,
-        approvedBankRequests[0].subAdminName,
-        true,
-      ]);
-      // Execute insert queries for each subadmin concurrently
-      await Promise.all(
-        subAdmins.map(async (subAdmin) => {
-          const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
-          // Insert subadmin details
-          await database.execute(insertSubadmin, [
-            approvedBankRequests[0].bankId,
-            subAdminId,
-            isDeposit,
-            isWithdraw,
-            isEdit,
-            isRenew,
-            isDelete,
-          ]);
-        }),
-      );
 
-      return subAdmins.length; // Return the number of subadmins processed for further verification
-    } catch (error) {
-      throw error; // Propagate error to the caller
-    }
-  },
+export const getBankBalance = async (bankId) => {
+  // const pool = await connectToDB();
+  try {
+    // Find all bank transactions for the given bankId
+    const bankTransactions = await BankTransaction.findAll({
+      where: { bankId },
+    });
 
-  getBankRequests: async () => {
-    try {
-      const sql = 'SELECT * FROM BankRequest';
-      const [result] = await database.execute(sql);
-      return result;
-    } catch (error) {
-      console.error(error);
-      throw new Error('Internal Server error');
-    }
-  },
+    // Find all transactions associated with the given bankId
+    const transactions = await Transaction.findAll({
+      where: { bankId },
+    });
 
-  getBankBalance: async (bankId) => {
-    // const pool = await connectToDB();
-    try {
-      // Find all bank transactions for the given bankId
-      const bankTransactions = await BankTransaction.findAll({
-        where: { bankId },
-      });
+    let balance = 0;
 
-      // Find all transactions associated with the given bankId
-      const transactions = await Transaction.findAll({
-        where: { bankId },
-      });
-
-      let balance = 0;
-
-      // Calculate balance based on bank transactions
-      for (const transaction of bankTransactions) {
-        if (transaction.depositAmount) {
-          balance += parseFloat(transaction.depositAmount);
-        }
-        if (transaction.withdrawAmount) {
-          balance -= parseFloat(transaction.withdrawAmount);
-        }
+    // Calculate balance based on bank transactions
+    for (const transaction of bankTransactions) {
+      if (transaction.depositAmount) {
+        balance += parseFloat(transaction.depositAmount);
       }
-
-      // Calculate balance based on regular transactions
-      for (const transaction of transactions) {
-        if (transaction.transactionType === 'Deposit') {
-          balance += parseFloat(transaction.amount);
-        } else {
-          balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
-        }
+      if (transaction.withdrawAmount) {
+        balance -= parseFloat(transaction.withdrawAmount);
       }
-
-      return balance;
-    } catch (e) {
-      console.error(e);
-      throw e; // Rethrow the error to handle it at the calling site
     }
-  },
-};
 
-export default BankServices;
+    // Calculate balance based on regular transactions
+    for (const transaction of transactions) {
+      if (transaction.transactionType === 'Deposit') {
+        balance += parseFloat(transaction.amount);
+      } else {
+        balance -= parseFloat(transaction.bankCharges) + parseFloat(transaction.amount);
+      }
+    }
+
+    return balance;
+  } catch (e) {
+    console.error(e);
+    throw e; // Rethrow the error to handle it at the calling site
+  }
+}
+
+

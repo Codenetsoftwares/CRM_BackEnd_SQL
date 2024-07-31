@@ -288,7 +288,7 @@ export const validateDeleteIntroducerTransactionWithId = [
     .notEmpty()
     .withMessage('introTransactionId is required')
     .isUUID(4)
-    .withMessage('introTransactionId must be a valid ID v4'),
+    .withMessage('introTransactionId must be a valid ID '),
 ];
 
 export const validationDeleteBankRequest = [
@@ -341,7 +341,7 @@ export const validateRejectWebsiteDetail = [
 
 export const validateBankId = [
   param('bankId').notEmpty().withMessage('Bank Id is required').isUUID(4)
-    .withMessage('Bank Id must be a valid ID v4'),
+    .withMessage('Bank Id must be a valid ID'),
 ];
 
 export const validateWebsiteId = [
@@ -349,7 +349,7 @@ export const validateWebsiteId = [
     .notEmpty()
     .withMessage('Website Id is required')
     .isUUID(4)
-    .withMessage('Website ID must be a valid ID v4'),
+    .withMessage('Website ID must be a valid ID '),
 ];
 
 export const validateTransactionId = [
@@ -357,7 +357,7 @@ export const validateTransactionId = [
     .notEmpty()
     .withMessage('Transaction ID is required')
     .isUUID(4)
-    .withMessage('Transaction ID must be a valid ID v4'),
+    .withMessage('Transaction ID must be a valid ID '),
 ];
 
 export const validateIntroTransactionId = [
@@ -446,7 +446,7 @@ export const validateAddBankName = [
 export const validateApproveBank = [
   param('bankId').notEmpty().withMessage('bankId  is required')
     .isUUID(4)
-    .withMessage('bank ID must be a valid ID v4'),
+    .withMessage('bank ID must be a valid ID '),
   body('isApproved').isBoolean().withMessage('isApproved must be a boolean value'),
   body('subAdmins.*.subAdminId')
     .isString()

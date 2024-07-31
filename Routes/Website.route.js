@@ -1,6 +1,6 @@
 import { database } from '../services/database.service.js';
 import { Authorize } from '../middleware/Authorize.js';
-import WebsiteServices, {
+import {
   addWebsiteBalance,
   addWebsiteName,
   deleteEditWebsiteRequest,

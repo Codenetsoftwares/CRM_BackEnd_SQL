@@ -8,12 +8,12 @@ const Website = sequelize.define('Website', {
   websiteName: { type: DataTypes.STRING },
   subAdminName: { type: DataTypes.STRING },
   createdAt: { type: DataTypes.DATE },
-  isActive: { type: DataTypes.BOOLEAN },
-  isDeposit: { type: DataTypes.BOOLEAN },
-  isWithdraw: { type: DataTypes.BOOLEAN },
-  isEdit: { type: DataTypes.BOOLEAN },
-  isRenew: { type: DataTypes.BOOLEAN },
-  isDelete: { type: DataTypes.BOOLEAN },
+  isActive: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isDeposit: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isWithdraw: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isEdit: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isRenew: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isDelete: { type: DataTypes.BOOLEAN, defaultValue: false },
 });
 
 export default Website;

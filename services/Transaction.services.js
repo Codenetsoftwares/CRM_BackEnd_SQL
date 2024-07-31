@@ -1,5 +1,5 @@
-import WebsiteServices, { getWebsiteBalance } from '../services/WebSite.Service.js';
-import BankServices from '../services/Bank.services.js';
+import { getWebsiteBalance } from '../services/WebSite.Service.js';
+import { getBankBalance } from '../services/Bank.services.js';
 import { v4 as uuidv4 } from 'uuid';
 import IntroducerUser from '../models/introducerUser.model.js';
 import CustomError from '../utils/extendError.js';
@@ -159,7 +159,7 @@ export const createTransaction = async (req, res) => {
     const bankId = dbBankData.bankId;
 
     // Check bank balance if needed
-    const bankBalance = await BankServices.getBankBalance(bankId);
+    const bankBalance = await getBankBalance(bankId);
     const totalBankBalance = parseFloat(bankCharges) + parseFloat(amount);
     if (bankBalance < totalBankBalance) {
       throw new CustomError('Insufficient Bank balance', null, statusCode.badRequest);

@@ -796,17 +796,4 @@ export const getWebsiteDetails = async (req, res) => {
   }
 };
 
-const WebsiteServices = {
-  getBankRequests: async () => {
-    try {
-      const sql = 'SELECT * FROM BankRequest';
-      const result = await database.execute(sql);
-      return result;
-    } catch (error) {
-      console.error(error);
-      throw new Error('Internal Server error');
-    }
-  },
-};
 
-export default WebsiteServices;
