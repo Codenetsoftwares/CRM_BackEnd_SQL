@@ -47,7 +47,7 @@ export const saveBankTransaction = async (req, res) => {
       });
 
       if (existingEditRequest) {
-        throw new CustomError('Request Already Sent For Approval', null, 409);
+        return apiResponseErr(null, false, statusCode.exist, 'Request Already Sent For Approval', res);
       }
 
       const updatedTransactionData = {
@@ -203,7 +203,7 @@ export const deleteWebsiteTransaction = async (req, res) => {
     });
 
     if (existingEditRequest) {
-      throw new CustomError('Request Already Sent For Approval', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Request Already Sent For Approval', res);
     }
 
     const updatedTransactionData = {
@@ -331,7 +331,7 @@ export const deleteTransaction = async (req, res) => {
       where: { transactionID: transaction.transactionID, type: 'Delete' },
     });
     if (existingEditRequest) {
-      throw new CustomError('Request Already Sent For Approval', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Request Already Sent For Approval', res);
     }
 
     // Prepare updated transaction data
@@ -417,7 +417,7 @@ export const deleteIntroducerTransaction = async (req, res) => {
       where: { introTransactionId: transaction.introTransactionId, type: 'Delete' },
     });
     if (existingEditRequest) {
-      throw new CustomError('Request Already Sent For Approval', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Request Already Sent For Approval', res);
     }
 
     // Prepare updated transaction data
@@ -517,7 +517,7 @@ export const deleteTransactionWithId = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'Approval request rejected by super admin', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false,  statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -601,7 +601,7 @@ export const deleteBankRequest = async (req, res) => {
     });
 
     if (existingEditRequest) {
-      throw new CustomError('Request Already Sent For Approval', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Request Already Sent For Approval', res);
     }
 
     // Prepare data for the new edit request
@@ -704,7 +704,7 @@ export const saveWebsiteRequest = async (req, res) => {
     });
 
     if (existingEditRequest) {
-      throw new CustomError('Request Already Sent For Approval', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Request Already Sent For Approval', res);
     }
 
     // Prepare data for the new edit request
@@ -810,7 +810,7 @@ export const viewTrash = async (req, res) => {
     const limit = parseInt(pageSize, 10);
     const offset = (parseInt(page, 10) - 1) * limit;
 
-   
+
 
     // Fetch records with pagination and search
     const { count, rows: resultArray } = await Trash.findAndCountAll({

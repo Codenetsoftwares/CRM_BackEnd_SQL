@@ -46,13 +46,13 @@ export const generateAdminAccessToken = async (userName, password, persist, res)
     const admin = await Admin.findOne({ where: { userName } });
 
     if (!admin) {
-      throw new CustomError('Invalid User Name ', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid User Name ', res);
     }
 
     const passwordValid = await bcrypt.compare(password, admin.password);
 
     if (!passwordValid) {
-      throw new CustomError('Invalid Password', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid Password', res);
     }
 
     const accessTokenPayload = {

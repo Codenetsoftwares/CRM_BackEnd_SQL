@@ -36,7 +36,7 @@ export const createUser = async (req, res) => {
     const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
 
     if (existingUser || existingAdmin || existingIntroducerUser) {
-      throw new CustomError(`User already exists with username: ${userName}`, null, 409);
+      return apiResponseErr(null, false, statusCode.exist, `User already exists with username: ${userName}`, res);
     }
 
     const saltRounds = 10;

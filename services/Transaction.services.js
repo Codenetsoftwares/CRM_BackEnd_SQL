@@ -134,7 +134,7 @@ export const createTransaction = async (req, res) => {
     });
 
     if (existingTransaction) {
-      throw new CustomError('Transaction ID is already in use. Please try again after 48 hours.', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Transaction ID is already in use. Please try again after 48 hours.', res);
     }
 
     // Retrieve website data
@@ -148,13 +148,13 @@ export const createTransaction = async (req, res) => {
     const websiteBalance = await getWebsiteBalance(websiteId);
     const totalBalance = parseFloat(bonus) + parseFloat(amount);
     if (websiteBalance < totalBalance) {
-      throw new CustomError('Insufficient Website balance', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Insufficient Website balance', res);
     }
 
     // Retrieve bank data
     const dbBankData = await Bank.findOne({ where: { bankName } });
     if (!dbBankData) {
-      throw new CustomError('Bank data not found', null, statusCode.notFound);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Bank data not found', res);
     }
     const bankId = dbBankData.bankId;
 
@@ -162,7 +162,7 @@ export const createTransaction = async (req, res) => {
     const bankBalance = await getBankBalance(bankId);
     const totalBankBalance = parseFloat(bankCharges) + parseFloat(amount);
     if (bankBalance < totalBankBalance) {
-      throw new CustomError('Insufficient Bank balance', null, statusCode.badRequest);
+      return apiResponseErr(null, false, statusCode.badRequest, 'Insufficient Bank balance', res);
     }
 
     // Retrieve user data
@@ -210,7 +210,7 @@ export const createTransaction = async (req, res) => {
 
       // Ensure userId exists and matches an existing User record's id
       if (!user.id) {
-        throw new CustomError('User ID not found or invalid', null, statusCode.badRequest);
+        return apiResponseErr(null, false, statusCode.badRequest, 'User ID not found or invalid', res);
       }
 
       // Create transaction detail record in UserTransactionDetail table
@@ -248,7 +248,7 @@ export const createTransaction = async (req, res) => {
 
       // Ensure userId exists and matches an existing User record's id
       if (!user.id) {
-        throw new CustomError('User ID not found or invalid', null, statusCode.badRequest);
+        return apiResponseErr(null, false, statusCode.badRequest, 'User ID not found or invalid', res);
       }
 
       // Create transaction detail record in UserTransactionDetail table

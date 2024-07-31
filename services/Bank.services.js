@@ -318,7 +318,7 @@ export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmin
     return subAdmins.length;
   } catch (error) {
     await transaction.rollback();
-    throw new CustomError(error.message, null, error.responseCode ?? statusCode.internalServerError);
+    throw new CustomError(error.message, null, statusCode.internalServerError);
   }
 };
 

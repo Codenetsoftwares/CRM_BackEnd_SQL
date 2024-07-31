@@ -18,7 +18,6 @@ export const addWebsiteName = async (req, res) => {
     const userData = req.user;
     let { websiteName } = req.body;
 
-    // Remove spaces from the websiteName
     websiteName = websiteName.replace(/\s+/g, '');
 
     if (!websiteName) {
@@ -36,7 +35,7 @@ export const addWebsiteName = async (req, res) => {
     ]);
 
     if (existingWebsiteRequests.length > 0 || existingWebsites.length > 0) {
-      throw new CustomError('Website name already exists', null, 409);
+      return apiResponseErr(null, false, statusCode.exist, 'Website name already exists', res);
     }
 
     const websiteId = uuidv4();
@@ -84,11 +83,6 @@ export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, su
 
 // Separate controller function
 export const handleApproveWebsite = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return apiResponseErr(null, false, statusCode.badRequest, errors.array(), res);
-  }
-
   try {
     const { isApproved, subAdmins } = req.body;
     const { websiteId } = req.params;
@@ -98,7 +92,7 @@ export const handleApproveWebsite = async (req, res) => {
     });
 
     if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
-      throw new CustomError('Website not found in the approval requests!', null, statusCode.badRequest);
+      return apiResponseSuccess(null, true, statusCode.success, 'Website not found in the approval requests!', res);
     }
 
     if (isApproved) {
@@ -109,13 +103,13 @@ export const handleApproveWebsite = async (req, res) => {
           where: { websiteId },
         });
       } else {
-        throw new CustomError('Failed to insert rows into Website table.', null, statusCode.badRequest);
+        return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Website table.',res);
       }
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Website approval was not granted.', res);
     }
 
-    return apiResponseSuccess(null, true, statusCode.success, 'Website approved successfully & SubAdmin Assigned', res);
+    return apiResponseSuccess(approvedWebsiteRequest, true, statusCode.success, 'Website approved successfully & SubAdmin Assigned', res);
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }

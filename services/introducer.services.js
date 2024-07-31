@@ -21,7 +21,7 @@ export const createIntroducerUser = async (req, res) => {
     const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
 
     if (existingIntroducerUser) {
-      throw new CustomError(`User already exists: ${userName}`, null, 409);
+      return apiResponseErr(null, false, statusCode.exist, `User already exists: ${userName}`, res);
     }
 
     const passwordSalt = await bcrypt.genSalt();

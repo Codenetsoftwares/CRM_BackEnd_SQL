@@ -22,7 +22,7 @@ export const createAdmin = async (req, res) => {
     const existingAdmin = await Admin.findOne({ where: { userName } });
 
     if (existingAdmin) {
-      throw new CustomError(`Admin already exists with user name: ${userName}`, null, 409);
+      return apiResponseErr(null, false, statusCode.exist, `Admin already exists with user name: ${userName}`, res);
     }
 
     const passwordSalt = await bcrypt.genSalt();
@@ -811,7 +811,7 @@ export const introducerLiveBalance = async (introUserId) => {
     });
 
     if (!intro) {
-      throw new CustomError(`Introducer with ID ${introUserId} not found`, null, 400);
+      return apiResponseErr(null, false, statusCode.exist, `Introducer with ID ${introUserId} not found`, res);
     }
 
     const IntroducerId = intro.userName;
