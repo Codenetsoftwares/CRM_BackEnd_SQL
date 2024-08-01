@@ -3,15 +3,18 @@ import {
   depositView,
   viewEditIntroducerTransactionRequests,
   withdrawView,
-} from '../services/Transaction.services.js';
-import { Authorize } from '../middleware/Authorize.js';
-import { string } from '../constructor/string.js';
-import customErrorHandler from '../utils/customErrorHandler.js';
-import { validateCreateTransaction } from '../utils/commonSchema.js';
+} from "../services/Transaction.services.js";
+import { Authorize } from "../middleware/Authorize.js";
+import { string } from "../constructor/string.js";
+import customErrorHandler from "../utils/customErrorHandler.js";
+import {
+  validateCreateTransaction,
+  validatePagination,
+} from "../utils/commonSchema.js";
 
 const TransactionRoutes = (app) => {
   app.post(
-    '/api/admin/create/transaction',
+    "/api/admin/create/transaction",
     validateCreateTransaction,
     customErrorHandler,
     Authorize([
@@ -21,21 +24,35 @@ const TransactionRoutes = (app) => {
       string.createWithdrawTransaction,
       string.createTransaction,
     ]),
-    createTransaction,
+    createTransaction
   );
 
   // API To View Deposit Transaction Details
 
-  app.get('/api/deposit/view', Authorize([string.superAdmin]), depositView);
+  app.get(
+    "/api/deposit/view",
+    validatePagination,
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    depositView
+  );
 
   // API To View Withdraw Transaction Details
 
-  app.get('/api/withdraw/view', Authorize([string.superAdmin]), withdrawView);
+  app.get(
+    "/api/withdraw/view",
+    validatePagination,
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    withdrawView
+  );
 
   app.get(
-    '/api/superAdmin/view-edit-introducer-transaction-requests',
+    "/api/superAdmin/view-edit-introducer-transaction-requests",
+    validatePagination,
+    customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin]),
-    viewEditIntroducerTransactionRequests,
+    viewEditIntroducerTransactionRequests
   );
 };
 
