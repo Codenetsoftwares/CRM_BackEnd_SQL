@@ -72,7 +72,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API To Move The Website Transaction Into Trash
-   // Testing Done
+  // Testing Done
   app.post(
     '/api/admin/save-website-transaction-request',
     deleteWebsiteTransactionValidate,
@@ -110,7 +110,7 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.transactionDeleteRequest, string.dashboardView]),
     deleteIntroducerTransaction,
   );
-   // Testing Done
+  // Testing Done
   app.post(
     '/api/delete-transaction/:editId',
     validateDeleteTransactionWithId,
@@ -118,7 +118,7 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     deleteTransactionWithId,
   );
-   // Testing Done
+  // Testing Done
   app.post(
     '/api/delete-introducer-transaction/:introTransactionId',
     validateDeleteIntroducerTransactionWithId,
@@ -166,7 +166,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   // API For Rejecting Bank Detail
-   // pending 
+  // pending
   app.delete(
     '/api/reject/bank-detail/:bankId',
     validateRejectBankDetail,
@@ -186,7 +186,7 @@ const DeleteAPIRoute = (app) => {
   );
 
   //  API To View Trash Data
-   // Testing Done
+  // Testing Done
   app.get('/api/admin/view-trash', customErrorHandler, Authorize([string.superAdmin, string.requestAdmin]), viewTrash);
   // API To Re-Store The Bank Transaction Data
   // Testing Done

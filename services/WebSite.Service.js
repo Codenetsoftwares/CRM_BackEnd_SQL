@@ -1,41 +1,63 @@
-import { validationResult } from 'express-validator';
-import sequelize from '../db.js';
-import EditWebsiteRequest from '../models/editWebsiteRequest.model.js';
-import Website from '../models/website.model.js';
-import WebsiteRequest from '../models/websiteRequest.model.js';
-import WebsiteSubAdmins from '../models/websiteSubAdmins.model.js';
-import WebsiteTransaction from '../models/websiteTransaction.model.js';
-import { database } from '../services/database.service.js';
-import CustomError from '../utils/extendError.js';
-import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
-import { statusCode } from '../utils/statusCodes.js';
-import { v4 as uuidv4 } from 'uuid';
-import { Op, QueryTypes, Sequelize, where } from 'sequelize';
-import Transaction from '../models/transaction.model.js';
+import { validationResult } from "express-validator";
+import sequelize from "../db.js";
+import EditWebsiteRequest from "../models/editWebsiteRequest.model.js";
+import Website from "../models/website.model.js";
+import WebsiteRequest from "../models/websiteRequest.model.js";
+import WebsiteSubAdmins from "../models/websiteSubAdmins.model.js";
+import WebsiteTransaction from "../models/websiteTransaction.model.js";
+import { database } from "../services/database.service.js";
+import CustomError from "../utils/extendError.js";
+import {
+  apiResponseErr,
+  apiResponsePagination,
+  apiResponseSuccess,
+} from "../utils/response.js";
+import { statusCode } from "../utils/statusCodes.js";
+import { v4 as uuidv4 } from "uuid";
+import { Op, QueryTypes, Sequelize, where } from "sequelize";
+import Transaction from "../models/transaction.model.js";
 
 export const addWebsiteName = async (req, res) => {
   try {
     const userData = req.user;
     let { websiteName } = req.body;
 
-    websiteName = websiteName.replace(/\s+/g, '');
+    websiteName = websiteName.replace(/\s+/g, "");
 
     if (!websiteName) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Please provide a website name to add', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Please provide a website name to add",
+        res
+      );
     }
 
     // Check if the website name already exists in WebsiteRequest or Website table (ignoring case)
     const [existingWebsiteRequests, existingWebsites] = await Promise.all([
       WebsiteRequest.findAll({
-        where: sequelize.where(sequelize.fn('LOWER', sequelize.col('websiteName')), websiteName.toLowerCase()),
+        where: sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("websiteName")),
+          websiteName.toLowerCase()
+        ),
       }),
       Website.findAll({
-        where: sequelize.where(sequelize.fn('LOWER', sequelize.col('websiteName')), websiteName.toLowerCase()),
+        where: sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("websiteName")),
+          websiteName.toLowerCase()
+        ),
       }),
     ]);
 
     if (existingWebsiteRequests.length > 0 || existingWebsites.length > 0) {
-      return apiResponseErr(null, false, statusCode.exist, 'Website name already exists', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        "Website name already exists",
+        res
+      );
     }
 
     const websiteId = uuidv4();
@@ -45,13 +67,29 @@ export const addWebsiteName = async (req, res) => {
       subAdminId: userData && userData.userName ? userData.userName : null,
       subAdminName: userData && userData.firstName ? userData.firstName : null,
     });
-    return apiResponseSuccess(newWebsiteRequest, true, statusCode.create, 'Website name sent for approval!', res);
+    return apiResponseSuccess(
+      newWebsiteRequest,
+      true,
+      statusCode.create,
+      "Website name sent for approval!",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
-export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, subAdmins, res) => {
+export const approveWebsiteAndAssignSubAdmin = async (
+  approvedWebsiteRequest,
+  subAdmins,
+  res
+) => {
   try {
     const insertedWebsite = await Website.create({
       websiteId: approvedWebsiteRequest[0].websiteId,
@@ -61,7 +99,8 @@ export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, su
     });
 
     const subAdminPromises = subAdmins.map(async (subAdmin) => {
-      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+      const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } =
+        subAdmin;
       await WebsiteSubAdmins.create({
         websiteId: approvedWebsiteRequest[0].websiteId,
         subAdminId,
@@ -77,7 +116,13 @@ export const approveWebsiteAndAssignSubAdmin = async (approvedWebsiteRequest, su
 
     return subAdmins.length;
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -92,49 +137,83 @@ export const handleApproveWebsite = async (req, res) => {
     });
 
     if (!approvedWebsiteRequest || approvedWebsiteRequest.length === 0) {
-      return apiResponseSuccess(null, true, statusCode.success, 'Website not found in the approval requests!', res);
+      return apiResponseSuccess(
+        null,
+        true,
+        statusCode.success,
+        "Website not found in the approval requests!",
+        res
+      );
     }
 
     if (isApproved) {
-      const rowsInserted = await approveWebsiteAndAssignSubAdmin(approvedWebsiteRequest, subAdmins);
+      const rowsInserted = await approveWebsiteAndAssignSubAdmin(
+        approvedWebsiteRequest,
+        subAdmins
+      );
 
       if (rowsInserted > 0) {
         await WebsiteRequest.destroy({
           where: { websiteId },
         });
       } else {
-        return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Website table.', res);
+        return apiResponseErr(
+          null,
+          false,
+          statusCode.badRequest,
+          "Failed to insert rows into Website table.",
+          res
+        );
       }
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website approval was not granted.', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Website approval was not granted.",
+        res
+      );
     }
 
-    return apiResponseSuccess(approvedWebsiteRequest, true, statusCode.success, 'Website approved successfully & SubAdmin Assigned', res);
+    return apiResponseSuccess(
+      approvedWebsiteRequest,
+      true,
+      statusCode.success,
+      "Website approved successfully & SubAdmin Assigned",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
 export const viewWebsiteRequests = async (req, res) => {
   try {
-    const { page = 1, size = 10, search = '' } = req.query;
+    const { page = 1, size = 10, search = "" } = req.query;
 
     const limit = parseInt(size);
     const offset = (parseInt(page) - 1) * limit;
 
     const whereCondition = search
       ? {
-        websiteName: {
-          [Op.like]: `%${search}%`,
-        },
-      }
+          websiteName: {
+            [Op.like]: `%${search}%`,
+          },
+        }
       : {};
 
-    const { count, rows: websiteRequests } = await WebsiteRequest.findAndCountAll({
-      where: whereCondition,
-      limit,
-      offset,
-    });
+    const { count, rows: websiteRequests } =
+      await WebsiteRequest.findAndCountAll({
+        where: whereCondition,
+        limit,
+        offset,
+      });
 
     const totalPages = Math.ceil(count / limit);
 
@@ -142,17 +221,23 @@ export const viewWebsiteRequests = async (req, res) => {
       websiteRequests,
       true,
       statusCode.success,
-      'Website requests fetched successfully',
+      "Website requests fetched successfully",
       {
         page: parseInt(page),
         limit: limit,
         totalItems: count,
         totalPages,
       },
-      res,
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -168,12 +253,30 @@ export const deleteWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(result, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(
+        result,
+        true,
+        statusCode.success,
+        "Data deleted successfully",
+        res
+      );
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Data not found",
+        res
+      );
     }
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -190,12 +293,30 @@ export const rejectWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(result, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(
+        result,
+        true,
+        statusCode.success,
+        "Data deleted successfully",
+        res
+      );
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Data not found",
+        res
+      );
     }
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -212,12 +333,30 @@ export const deleteEditWebsiteRequest = async (req, res) => {
 
     // Check if any rows were affected
     if (result === 1) {
-      return apiResponseSuccess(null, true, statusCode.success, 'Data deleted successfully', res);
+      return apiResponseSuccess(
+        null,
+        true,
+        statusCode.success,
+        "Data deleted successfully",
+        res
+      );
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Data not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Data not found",
+        res
+      );
     }
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -227,7 +366,7 @@ export const getActiveWebsiteNames = async (req, res) => {
     const limit = parseInt(pageSize);
     const offset = (parseInt(page) - 1) * limit;
     const activeWebsites = await Website.findAndCountAll({
-      attributes: ['websiteName', 'isActive'],
+      attributes: ["websiteName", "isActive"],
       limit,
       offset,
       where: {
@@ -242,17 +381,23 @@ export const getActiveWebsiteNames = async (req, res) => {
       activeWebsites.rows,
       true,
       statusCode.success,
-      'Active websites fetched successfully',
+      "Active websites fetched successfully",
       {
         page: parseInt(page),
         limit: limit,
         totalPages,
         totalItems,
       },
-      res,
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -263,7 +408,13 @@ export const deleteSubAdminFromWebsite = async (req, res) => {
     // Check if the website exists
     const website = await WebsiteSubAdmins.findOne({ where: { websiteId } });
     if (!website) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found!', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Website not found!",
+        res
+      );
     }
 
     // Delete the sub-admin with the specified subAdminId
@@ -275,12 +426,30 @@ export const deleteSubAdminFromWebsite = async (req, res) => {
     });
 
     if (result) {
-      return apiResponseSuccess(null, true, statusCode.success, 'SubAdmin Permission removed successfully', res);
+      return apiResponseSuccess(
+        null,
+        true,
+        statusCode.success,
+        "SubAdmin Permission removed successfully",
+        res
+      );
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found!', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "SubAdmin not found!",
+        res
+      );
     }
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -291,7 +460,13 @@ export const getSingleWebsiteDetails = async (req, res) => {
     // Fetch website data
     const dbWebsiteData = await Website.findOne({ where: { websiteId: id } });
     if (!dbWebsiteData) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Website not found",
+        res
+      );
     }
 
     // Fetch website balance
@@ -306,9 +481,21 @@ export const getSingleWebsiteDetails = async (req, res) => {
       balance: websiteBalance,
     };
 
-    return apiResponseSuccess([response], true, statusCode.success, 'Website data retrieved successfully', res);
+    return apiResponseSuccess(
+      [response],
+      true,
+      statusCode.success,
+      "Website data retrieved successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -318,22 +505,46 @@ export const addWebsiteBalance = async (req, res) => {
     const userName = req.user;
     const { amount, transactionType, remarks } = req.body;
 
-    if (transactionType !== 'Manual-Website-Deposit') {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid transaction type', res);
+    if (transactionType !== "Manual-Website-Deposit") {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Invalid transaction type",
+        res
+      );
     }
 
-    if (!amount || typeof amount !== 'number') {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid amount', res);
+    if (!amount || typeof amount !== "number") {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Invalid amount",
+        res
+      );
     }
 
     if (!remarks) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Remark is required', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Remark is required",
+        res
+      );
     }
 
     // Fetch website data
     const website = await Website.findOne({ where: { websiteId: id } });
     if (!website) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Website not found",
+        res
+      );
     }
 
     // Prepare the transaction data
@@ -352,9 +563,21 @@ export const addWebsiteBalance = async (req, res) => {
     // Insert the transaction data into WebsiteTransaction table
     await WebsiteTransaction.create(websiteTransaction);
 
-    return apiResponseSuccess(websiteTransaction, true, statusCode.create, 'Wallet Balance Added to Your Website', res);
+    return apiResponseSuccess(
+      websiteTransaction,
+      true,
+      statusCode.create,
+      "Wallet Balance Added to Your Website",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -364,28 +587,58 @@ export const withdrawWebsiteBalance = async (req, res) => {
     const userName = req.user;
     const { amount, transactionType, remarks } = req.body;
 
-    if (!amount || typeof amount !== 'number') {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid amount', res);
+    if (!amount || typeof amount !== "number") {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Invalid amount",
+        res
+      );
     }
 
-    if (transactionType !== 'Manual-Website-Withdraw') {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid transaction type', res);
+    if (transactionType !== "Manual-Website-Withdraw") {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Invalid transaction type",
+        res
+      );
     }
 
     if (!remarks) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Remark is required', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Remark is required",
+        res
+      );
     }
 
     // Fetch website data
     const website = await Website.findOne({ where: { websiteId: id } });
     if (!website) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Website not found",
+        res
+      );
     }
 
     // Fetch website balance
     const websiteBalance = await getWebsiteBalance(id);
     if (websiteBalance < Number(amount)) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Insufficient Website Balance', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Insufficient Website Balance",
+        res
+      );
     }
 
     // Prepare the transaction data
@@ -408,36 +661,72 @@ export const withdrawWebsiteBalance = async (req, res) => {
       websiteTransaction,
       true,
       statusCode.create,
-      'Wallet Balance Deducted from your Website',
-      res,
+      "Wallet Balance Deducted from your Website",
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
 export const getWebsiteNames = async (req, res) => {
   try {
     const websites = await Website.findAll({
-      attributes: ['websiteName'],
+      attributes: ["websiteName"],
     });
 
     if (!websites) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No websites found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "No websites found",
+        res
+      );
     }
 
-    return apiResponseSuccess(websites, true, statusCode.success, 'Websites retrieved successfully', res);
+    return apiResponseSuccess(
+      websites,
+      true,
+      statusCode.success,
+      "Websites retrieved successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
 export const getEditWebsiteRequests = async (req, res) => {
   try {
     const editRequests = await EditWebsiteRequest.findAll();
-    return apiResponseSuccess(editRequests, true, statusCode.success, 'Websites retrieved successfully', res);
+    return apiResponseSuccess(
+      editRequests,
+      true,
+      statusCode.success,
+      "Websites retrieved successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -447,21 +736,48 @@ export const websiteActive = async (req, res) => {
     const { isActive } = req.body;
 
     // Validate input
-    if (typeof isActive !== 'boolean') {
-      return apiResponseErr(null, false, statusCode.badRequest, 'isActive field must be a boolean value', res);
+    if (typeof isActive !== "boolean") {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "isActive field must be a boolean value",
+        res
+      );
     }
 
     // Update isActive field in the database
-    const [updatedRowsCount] = await Website.update({ isActive }, { where: { websiteId } });
+    const [updatedRowsCount] = await Website.update(
+      { isActive },
+      { where: { websiteId } }
+    );
 
     // Check if any rows were updated
     if (updatedRowsCount === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No websites found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "No websites found",
+        res
+      );
     }
     // Send success response
-    return apiResponseSuccess(updatedRowsCount, true, statusCode.success, 'Website status updated successfully', res);
+    return apiResponseSuccess(
+      updatedRowsCount,
+      true,
+      statusCode.success,
+      "Website status updated successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -484,12 +800,30 @@ export const websiteSubAdminView = async (req, res) => {
     });
 
     if (websiteData.length === 0) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Website not found for this sub-admin', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Website not found for this sub-admin",
+        res
+      );
     }
 
-    return apiResponseSuccess(websiteData, true, statusCode.success, 'success', res);
+    return apiResponseSuccess(
+      websiteData,
+      true,
+      statusCode.success,
+      "success",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -528,12 +862,24 @@ export const updateWebsitePermissions = async (req, res) => {
           });
           return existingSubAdmin;
         }
-      }),
+      })
     );
 
-    return apiResponseSuccess(results, true, statusCode.success, 'Website Permission Updated successfully', res);
+    return apiResponseSuccess(
+      results,
+      true,
+      statusCode.success,
+      "Website Permission Updated successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -545,20 +891,34 @@ export const updateWebsite = async (req, res) => {
     // Retrieve existing website details from the database
     const editWebsite = await Website.findOne({ where: { websiteId: id } });
     if (!editWebsite) {
-      return apiResponseSuccess([], true, statusCode.success, 'Website not found for Editing', res);
+      return apiResponseSuccess(
+        [],
+        true,
+        statusCode.success,
+        "Website not found for Editing",
+        res
+      );
     }
 
     // Check if the website has already been edited
-    const editHistory = await EditWebsiteRequest.findAll({ where: { websiteId: id } });
+    const editHistory = await EditWebsiteRequest.findAll({
+      where: { websiteId: id },
+    });
     if (editHistory.length > 0) {
-      return apiResponseSuccess([], true, statusCode.success, `Website with id ${id} has already been edited.`, res);
+      return apiResponseSuccess(
+        [],
+        true,
+        statusCode.success,
+        `Website with id ${id} has already been edited.`,
+        res
+      );
     }
 
     let changedFields = [];
 
     // Compare each field in the data object with the existingTransaction
     if (websiteName && websiteName !== editWebsite.websiteName) {
-      changedFields.push({ field: 'websiteName', value: websiteName });
+      changedFields.push({ field: "websiteName", value: websiteName });
     }
 
     // Check if the new website name already exists (case-insensitive)
@@ -567,7 +927,13 @@ export const updateWebsite = async (req, res) => {
     });
 
     if (duplicateWebsite) {
-      return apiResponseErr(null, false, statusCode.exist, 'Website name already exists in Website', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        "Website name already exists in Website",
+        res
+      );
     }
 
     const duplicateEditWebsite = await EditWebsiteRequest.findOne({
@@ -575,13 +941,21 @@ export const updateWebsite = async (req, res) => {
     });
 
     if (duplicateEditWebsite) {
-      return apiResponseErr(null, false, statusCode.exist, 'Website name already exists in Edit Request', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        "Website name already exists in Edit Request",
+        res
+      );
     }
 
     // Create updatedTransactionData using a ternary operator
     const updatedTransactionData = {
       websiteId: editWebsite.websiteId,
-      websiteName: websiteName ? websiteName.replace(/\s+/g, '') : editWebsite.websiteName.replace(/\s+/g, ''),
+      websiteName: websiteName
+        ? websiteName.replace(/\s+/g, "")
+        : editWebsite.websiteName.replace(/\s+/g, ""),
     };
 
     // Insert edit request into the database
@@ -589,15 +963,27 @@ export const updateWebsite = async (req, res) => {
       websiteId: updatedTransactionData.websiteId,
       websiteName: updatedTransactionData.websiteName,
       message: "Website Detail's has been edited",
-      type: 'Edit',
+      type: "Edit",
       changedFields: changedFields, // Store the array of objects directly
       isApproved: false, // Assuming this corresponds to the 'isApproved' column
     });
 
     // Send success response
-    return apiResponseSuccess(null, true, statusCode.create, "Website Detail's Sent to Super Admin For Approval", res);
+    return apiResponseSuccess(
+      null,
+      true,
+      statusCode.success,
+      "Website Detail's Sent to Super Admin For Approval",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -606,14 +992,28 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
     const { requestId } = req.params;
     const { isApproved } = req.body;
 
-    if (typeof isApproved !== 'boolean') {
-      return apiResponseErr(null, false, statusCode.badRequest, 'isApproved field must be a boolean value', res);
+    if (typeof isApproved !== "boolean") {
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "isApproved field must be a boolean value",
+        res
+      );
     }
 
-    const editRequest = await EditWebsiteRequest.findOne({ where: { websiteId: requestId } });
+    const editRequest = await EditWebsiteRequest.findOne({
+      where: { websiteId: requestId },
+    });
 
     if (!editRequest) {
-      return apiResponseSuccess([], true, statusCode.success, 'Edit request not found', res);
+      return apiResponseSuccess(
+        [],
+        true,
+        statusCode.success,
+        "Edit request not found",
+        res
+      );
     }
 
     if (!editRequest.isApproved) {
@@ -626,30 +1026,60 @@ export const approveWebsiteDetailEditRequest = async (req, res) => {
         });
 
         if (websiteExists) {
-          return apiResponseErr(null, false, statusCode.exist, 'Website with the same name already exists', res);
+          return apiResponseErr(
+            null,
+            false,
+            statusCode.exist,
+            "Website with the same name already exists",
+            res
+          );
         }
 
         await Website.update(
           {
-            websiteName: editRequest.websiteName.replace(/\s+/g, ''),
+            websiteName: editRequest.websiteName.replace(/\s+/g, ""),
           },
-          { where: { websiteId: editRequest.websiteId } },
+          { where: { websiteId: editRequest.websiteId } }
         );
 
         editRequest.isApproved = true;
         await editRequest.save();
         await EditWebsiteRequest.destroy({ where: { websiteId: requestId } });
 
-        return apiResponseSuccess(null, true, statusCode.success, 'Edit request approved and data updated', res);
+        return apiResponseSuccess(
+          null,
+          true,
+          statusCode.success,
+          "Edit request approved and data updated",
+          res
+        );
       } else {
         await EditWebsiteRequest.destroy({ where: { websiteId: requestId } });
-        return apiResponseSuccess(null, true, statusCode.success, 'Edit request rejected', res);
+        return apiResponseSuccess(
+          null,
+          true,
+          statusCode.success,
+          "Edit request rejected",
+          res
+        );
       }
     } else {
-      return apiResponseSuccess(null, true, statusCode.badRequest, 'Edit request has already been processed', res);
+      return apiResponseSuccess(
+        null,
+        true,
+        statusCode.badRequest,
+        "Edit request has already been processed",
+        res
+      );
     }
   } catch (error) {
-    apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
+    apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.errMessage,
+      res
+    );
   }
 };
 
@@ -679,8 +1109,9 @@ export const getWebsiteBalance = async (websiteId) => {
 
     // Calculate balance from other transactions
     for (const transaction of transactions) {
-      if (transaction.transactionType === 'Deposit') {
-        balance -= parseFloat(transaction.bonus) + parseFloat(transaction.amount);
+      if (transaction.transactionType === "Deposit") {
+        balance -=
+          parseFloat(transaction.bonus) + parseFloat(transaction.amount);
       } else {
         balance += parseFloat(transaction.amount);
       }
@@ -688,38 +1119,52 @@ export const getWebsiteBalance = async (websiteId) => {
 
     return balance;
   } catch (error) {
-    apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
+    apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.errMessage,
+      res
+    );
   }
 };
 
 export const getWebsiteDetails = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const { page = 1, pageSize = 10, search = "" } = req.query;
     const limit = parseInt(pageSize);
     const offset = (page - 1) * limit;
 
     // Fetch website data with pagination
-    const { count: totalItems, rows: websiteDataArray } = await Website.findAndCountAll({
-      where: {
-        websiteName: {
-          [Op.like]: `%${search}%`,
+    const { count: totalItems, rows: websiteDataArray } =
+      await Website.findAndCountAll({
+        where: {
+          websiteName: {
+            [Op.like]: `%${search}%`,
+          },
         },
-      },
-      offset,
-      limit,
-      order: [['createdAt', 'DESC']],
-    });
+        offset,
+        limit,
+        order: [["createdAt", "DESC"]],
+      });
 
-    let websiteData = websiteDataArray
+    let websiteData = websiteDataArray;
     if (websiteData.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No website details found', {}, res);
+      return apiResponsePagination(
+        [],
+        true,
+        statusCode.success,
+        "No website details found",
+        {},
+        res
+      );
     }
 
     const totalPages = Math.ceil(totalItems / limit);
 
     const userRole = req.user.roles;
 
-    if (userRole.includes('superAdmin')) {
+    if (userRole.includes("superAdmin")) {
       const balancePromises = websiteData.map(async (website) => {
         website.dataValues.balance = await getWebsiteBalance(website.websiteId);
         const subAdmins = await WebsiteSubAdmins.findAll({
@@ -732,7 +1177,7 @@ export const getWebsiteDetails = async (req, res) => {
       await Promise.all(balancePromises);
     } else {
       const userSubAdminId = req.user.userName;
-      console.log('userSubAdminId', userSubAdminId);
+      console.log("userSubAdminId", userSubAdminId);
 
       if (userSubAdminId) {
         const filteredWebsitePromises = websiteData.map(async (website) => {
@@ -743,10 +1188,14 @@ export const getWebsiteDetails = async (req, res) => {
           if (subAdmins && subAdmins.length > 0) {
             website.dataValues.subAdmins = subAdmins;
 
-            const userSubAdmin = subAdmins.find((subAdmin) => subAdmin.subAdminId === userSubAdminId);
+            const userSubAdmin = subAdmins.find(
+              (subAdmin) => subAdmin.subAdminId === userSubAdminId
+            );
 
             if (userSubAdmin) {
-              website.dataValues.balance = await getWebsiteBalance(website.websiteId);
+              website.dataValues.balance = await getWebsiteBalance(
+                website.websiteId
+              );
               website.dataValues.isDeposit = userSubAdmin.isDeposit;
               website.dataValues.isWithdraw = userSubAdmin.isWithdraw;
               website.dataValues.isRenew = userSubAdmin.isRenew;
@@ -766,7 +1215,7 @@ export const getWebsiteDetails = async (req, res) => {
         const filteredWebsites = await Promise.all(filteredWebsitePromises);
         websiteData = filteredWebsites.filter((website) => website !== null);
       } else {
-        console.error('SubAdminId not found in req.user');
+        console.error("SubAdminId not found in req.user");
       }
     }
 
@@ -777,17 +1226,23 @@ export const getWebsiteDetails = async (req, res) => {
       websiteData,
       true,
       statusCode.success,
-      'Website details fetched successfully',
+      "Website details fetched successfully",
       {
         page: parseInt(page),
         limit,
         totalPages,
         totalItems,
       },
-      res,
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -798,39 +1253,42 @@ export const manualUserWebsiteAccountSummary = async (req, res) => {
 
     const websiteSummary = await WebsiteTransaction.findAll({
       where: { websiteId },
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
     });
 
     const accountSummary = await Transaction.findAll({
       where: { websiteId },
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
     });
 
-    const allTransactions = [...accountSummary, ...websiteSummary].sort((a, b) => {
-      const dateA = new Date(a.createdAt);
-      const dateB = new Date(b.createdAt);
-      return dateB - dateA;
-    });
+    const allTransactions = [...accountSummary, ...websiteSummary].sort(
+      (a, b) => {
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
+        return dateB - dateA;
+      }
+    );
 
     let allData = JSON.parse(JSON.stringify(allTransactions));
     allData
       .slice(0)
       .reverse()
       .map((data) => {
-        if (data.transactionType === 'Manual-Website-Deposit') {
+        if (data.transactionType === "Manual-Website-Deposit") {
           balances += parseFloat(data.depositAmount);
           data.balance = balances;
         }
-        if (data.transactionType === 'Manual-Website-Withdraw') {
+        if (data.transactionType === "Manual-Website-Withdraw") {
           balances -= parseFloat(data.withdrawAmount);
           data.balance = balances;
         }
-        if (data.transactionType === 'Deposit') {
-          const netAmount = balances - parseFloat(data.bonus) - parseFloat(data.amount);
+        if (data.transactionType === "Deposit") {
+          const netAmount =
+            balances - parseFloat(data.bonus) - parseFloat(data.amount);
           balances = netAmount;
           data.balance = balances;
         }
-        if (data.transactionType === 'Withdraw') {
+        if (data.transactionType === "Withdraw") {
           let totalAmount = 0;
           totalAmount += parseFloat(data.amount);
           balances += totalAmount;
@@ -842,11 +1300,16 @@ export const manualUserWebsiteAccountSummary = async (req, res) => {
       allData,
       true,
       statusCode.success,
-      'success',
-      res,
+      "success",
+      res
     );
   } catch (error) {
-    apiResponseErr(null, false, statusCode.internalServerError, error.errMessage, res);
+    apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.errMessage,
+      res
+    );
   }
-}
-
+};

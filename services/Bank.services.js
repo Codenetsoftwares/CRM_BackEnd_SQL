@@ -163,7 +163,7 @@ export const updateBank = async (req, res) => {
       res,
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -217,7 +217,7 @@ export const approveBankDetailEditRequest = async (req, res) => {
       return apiResponseSuccess(null, true, statusCode.success, 'Edit request is already approved', res);
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
 
@@ -407,13 +407,7 @@ export const getSingleBankDetails = async (req, res) => {
       balance: bankBalance,
     };
 
-    return apiResponseSuccess(
-      response,
-      true,
-      statusCode.success,
-      'Bank Details retrieved successfully',
-      res,
-    );
+    return apiResponseSuccess(response, true, statusCode.success, 'Bank Details retrieved successfully', res);
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
@@ -880,7 +874,6 @@ export const getBankDetails = async (req, res) => {
   }
 };
 
-
 export const manualUserBankSummary = async (req, res) => {
   try {
     const { page = 1, pageSize = 10 } = req.query;
@@ -960,7 +953,6 @@ export const manualUserBankSummary = async (req, res) => {
   }
 };
 
-
 export const getBankBalance = async (bankId) => {
   try {
     const bankTransactions = await BankTransaction.findAll({
@@ -992,8 +984,6 @@ export const getBankBalance = async (bankId) => {
 
     return balance;
   } catch (error) {
-    throw new CustomError(error.message, null, statusCode.internalServerError)
+    throw new CustomError(error.message, null, statusCode.internalServerError);
   }
-}
-
-
+};

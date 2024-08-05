@@ -1,27 +1,42 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { database } from '../services/database.service.js';
-import { v4 as uuidv4 } from 'uuid';
-import IntroducerUser from '../models/introducerUser.model.js';
-import { apiResponseErr, apiResponsePagination, apiResponseSuccess } from '../utils/response.js';
-import { statusCode } from '../utils/statusCodes.js';
-import CustomError from '../utils/extendError.js';
-import { IntroducerBalance, introducerLiveBalance } from './Account.Services.js';
-import User from '../models/user.model.js';
-import UserTransactionDetail from '../models/userTransactionDetail.model.js';
-import { Sequelize } from 'sequelize';
-import { string } from '../constructor/string.js';
-import IntroducerTransaction from '../models/introducerTransaction.model.js';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { database } from "../services/database.service.js";
+import { v4 as uuidv4 } from "uuid";
+import IntroducerUser from "../models/introducerUser.model.js";
+import {
+  apiResponseErr,
+  apiResponsePagination,
+  apiResponseSuccess,
+} from "../utils/response.js";
+import { statusCode } from "../utils/statusCodes.js";
+import CustomError from "../utils/extendError.js";
+import {
+  IntroducerBalance,
+  introducerLiveBalance,
+} from "./Account.Services.js";
+import User from "../models/user.model.js";
+import UserTransactionDetail from "../models/userTransactionDetail.model.js";
+import { Sequelize } from "sequelize";
+import { string } from "../constructor/string.js";
+import IntroducerTransaction from "../models/introducerTransaction.model.js";
 
 export const createIntroducerUser = async (req, res) => {
   try {
     const { firstName, lastName, userName, password } = req.body;
     const user = req.user;
 
-    const existingIntroducerUser = await IntroducerUser.findOne({ where: { userName } });
+    const existingIntroducerUser = await IntroducerUser.findOne({
+      where: { userName },
+    });
 
     if (existingIntroducerUser) {
-      return apiResponseErr(null, false, statusCode.exist, `User already exists: ${userName}`, res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        `User already exists: ${userName}`,
+        res
+      );
     }
 
     const passwordSalt = await bcrypt.genSalt();
@@ -43,14 +58,26 @@ export const createIntroducerUser = async (req, res) => {
         newIntroducerUser,
         true,
         statusCode.create,
-        'Introducer User registered successfully!',
-        res,
+        "Introducer User registered successfully!",
+        res
       );
     } else {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Failed to create new Introducer User', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Failed to create new Introducer User",
+        res
+      );
     }
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -62,7 +89,13 @@ export const updateIntroducerProfile = async (req, res) => {
     const existingUser = await IntroducerUser.findOne({ where: { introId } });
 
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, `Introducer User not found with id: ${introId}`, res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        `Introducer User not found with id: ${introId}`,
+        res
+      );
     }
 
     existingUser.firstName = firstName || existingUser.firstName;
@@ -70,9 +103,21 @@ export const updateIntroducerProfile = async (req, res) => {
 
     await existingUser.save();
 
-    return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
+    return apiResponseSuccess(
+      existingUser,
+      true,
+      statusCode.success,
+      "Profile updated successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -81,28 +126,52 @@ export const introducerPasswordResetCode = async (req, res) => {
     const { userName, password } = req.body;
     const existingUser = await IntroducerUser.findOne({ where: { userName } });
     if (!existingUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "User not found",
+        res
+      );
     }
 
-    const newPasswordIsDuplicate = await bcrypt.compare(password, existingUser.password);
+    const newPasswordIsDuplicate = await bcrypt.compare(
+      password,
+      existingUser.password
+    );
     if (newPasswordIsDuplicate) {
       return apiResponseErr(
         null,
         false,
         statusCode.exist,
-        'New Password cannot be the same as existing password',
-        res,
+        "New Password cannot be the same as existing password",
+        res
       );
     }
 
     const passwordSalt = await bcrypt.genSalt();
     const encryptedPassword = await bcrypt.hash(password, passwordSalt);
 
-    const resetIntroducer = await IntroducerUser.update({ password: encryptedPassword }, { where: { userName } });
+    const resetIntroducer = await IntroducerUser.update(
+      { password: encryptedPassword },
+      { where: { userName } }
+    );
 
-    return apiResponseSuccess(resetIntroducer, true, statusCode.success, 'Password reset successfully', res);
+    return apiResponseSuccess(
+      resetIntroducer,
+      true,
+      statusCode.success,
+      "Password reset successfully",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -111,7 +180,13 @@ export const getIntroducerProfile = async (req, res) => {
     const id = req.user.introId;
     const introUser = await IntroducerUser.findOne({ where: { introId: id } });
     if (!introUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer user not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "Introducer user not found",
+        res
+      );
     }
 
     const TPDLT = await IntroducerBalance(id, res);
@@ -128,10 +203,22 @@ export const getIntroducerProfile = async (req, res) => {
     const currentDue = liveBalance - response.balance;
     response.currentDue = currentDue;
 
-    return apiResponseSuccess(response, true, statusCode.success, 'success', res);
+    return apiResponseSuccess(
+      response,
+      true,
+      statusCode.success,
+      "success",
+      res
+    );
   } catch (error) {
-    console.error(':err');
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    console.error(":err");
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -147,7 +234,13 @@ export const listIntroducerUsers = async (req, res) => {
     // Fetch the introducer user
     const introducerUser = await IntroducerUser.findOne({ where: { introId } });
     if (!introducerUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'IntroducerUser not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "IntroducerUser not found",
+        res
+      );
     }
 
     const introducerUserName = introducerUser.userName;
@@ -182,17 +275,23 @@ export const listIntroducerUsers = async (req, res) => {
       usersWithTransactionDetails,
       true,
       statusCode.success,
-      'success',
+      "success",
       {
         page: parseInt(page),
         limit,
         totalPages,
         totalItems: count,
       },
-      res,
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -202,18 +301,24 @@ export const getIntroducerUserData = async (req, res) => {
     const user = req.user;
     const introUser = user.userName;
 
-    console.log('Intro User:', introUser);
+    console.log("Intro User:", introUser);
 
     // Fetch the user by user_id
     const introducerUser = await User.findOne({ where: { userId: id } });
 
     if (!introducerUser) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'User not found', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "User not found",
+        res
+      );
     }
 
-    console.log('Fetched Introducer User:', introducerUser);
+    console.log("Fetched Introducer User:", introducerUser);
 
-    console.log('Introducer User Fields:', {
+    console.log("Introducer User Fields:", {
       introducersUserName: introducerUser.introducersUserName,
       introducersUserName1: introducerUser.introducersUserName1,
       introducersUserName2: introducerUser.introducersUserName2,
@@ -250,21 +355,40 @@ export const getIntroducerUserData = async (req, res) => {
       matchedIntroducerPercentage = introducerUser.introducerPercentage2;
     }
 
-    console.log('Matched Introducers UserName:', matchedIntroducersUserName);
-    console.log('Matched Introducer Percentage:', matchedIntroducerPercentage);
+    console.log("Matched Introducers UserName:", matchedIntroducersUserName);
+    console.log("Matched Introducer Percentage:", matchedIntroducerPercentage);
 
-    // If matched introducersUserName found, include it along with percentage in the response 
-    
+    // If matched introducersUserName found, include it along with percentage in the response
+
     if (matchedIntroducersUserName) {
-      filteredIntroducerUser.matchedIntroducersUserName = matchedIntroducersUserName;
+      filteredIntroducerUser.matchedIntroducersUserName =
+        matchedIntroducersUserName;
       filteredIntroducerUser.introducerPercentage = matchedIntroducerPercentage;
-      return apiResponseSuccess(filteredIntroducerUser, true, statusCode.success, 'success', res);
+      return apiResponseSuccess(
+        filteredIntroducerUser,
+        true,
+        statusCode.success,
+        "success",
+        res
+      );
     } else {
-      return apiResponseErr(null, true, statusCode.badRequest, 'Introducer User Data Not Found', res);
+      return apiResponseErr(
+        null,
+        true,
+        statusCode.badRequest,
+        "Introducer User Data Not Found",
+        res
+      );
     }
   } catch (error) {
-    console.error('Error in getIntroducerUserData:', error);
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    console.error("Error in getIntroducerUserData:", error);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -276,14 +400,32 @@ export const getIntroducerLiveBalance = async (req, res) => {
     const introducerUser = await IntroducerUser.findOne({ where: { introId } });
 
     if (!introducerUser) {
-      return apiResponseSuccess(null, true, statusCode.badRequest, 'IntroducerUser not found', res);
+      return apiResponseSuccess(
+        null,
+        true,
+        statusCode.badRequest,
+        "IntroducerUser not found",
+        res
+      );
     }
 
     const data = await introducerLiveBalance(introId);
-    console.log('data', data);
-    return apiResponseSuccess({ LiveBalance: data }, true, statusCode.success, 'success', res);
+    console.log("data", data);
+    return apiResponseSuccess(
+      { LiveBalance: data },
+      true,
+      statusCode.success,
+      "success",
+      res
+    );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -297,12 +439,13 @@ export const introducerAccountSummary = async (req, res) => {
     const offset = (parseInt(page, 10) - 1) * limit;
 
     // Fetch records with pagination
-    const { count, rows: introSummary } = await IntroducerTransaction.findAndCountAll({
-      where: { introUserId },
-      order: [['createdAt', 'ASC']],
-      limit,
-      offset,
-    });
+    const { count, rows: introSummary } =
+      await IntroducerTransaction.findAndCountAll({
+        where: { introUserId },
+        order: [["createdAt", "ASC"]],
+        limit,
+        offset,
+      });
 
     // Calculate total pages
     const totalPages = Math.ceil(count / limit);
@@ -311,17 +454,23 @@ export const introducerAccountSummary = async (req, res) => {
       introSummary,
       true,
       statusCode.success,
-      'success',
+      "success",
       {
         page: parseInt(page),
         limit,
         totalPages,
         totalItems: count,
       },
-      res,
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 
@@ -344,16 +493,23 @@ export const getIntroducerUserAccountSummary = async (req, res) => {
     });
 
     if (!users.length) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'No users found for the given introducer', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.badRequest,
+        "No users found for the given introducer",
+        res
+      );
     }
 
     // Fetch and paginate user transactions
     const userNames = users.map((user) => user.userName);
-    const { count, rows: transactions } = await UserTransactionDetail.findAndCountAll({
-      where: { userName: { [Sequelize.Op.in]: userNames } },
-      limit,
-      offset,
-    });
+    const { count, rows: transactions } =
+      await UserTransactionDetail.findAndCountAll({
+        where: { userName: { [Sequelize.Op.in]: userNames } },
+        limit,
+        offset,
+      });
 
     const formattedTransactions = transactions.map((transaction) => ({
       AccountNumber: transaction.accountNumber,
@@ -376,17 +532,23 @@ export const getIntroducerUserAccountSummary = async (req, res) => {
       formattedTransactions,
       true,
       statusCode.success,
-      'success',
+      "success",
       {
         page: parseInt(page),
         limit,
         totalItems: count,
         totalPages,
       },
-      res,
+      res
     );
   } catch (error) {
-    return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
+    return apiResponseErr(
+      null,
+      false,
+      error.responseCode ?? statusCode.internalServerError,
+      error.message,
+      res
+    );
   }
 };
 

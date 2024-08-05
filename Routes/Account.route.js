@@ -162,11 +162,7 @@ const AccountRoute = (app) => {
     '/api/admin/introducer-profile-edit/:introId',
     updateIntroducerValidationSchema,
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.profileView,
-      string.introducerProfileView
-    ]),
+    Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     updateIntroducerProfile,
   );
 
@@ -175,11 +171,7 @@ const AccountRoute = (app) => {
     '/api/introducer/client-data/:introId',
     validateIntroId,
     customErrorHandler,
-    Authorize([
-      string.superAdmin,
-      string.profileView,
-      string.introducerProfileView
-    ]),
+    Authorize([string.superAdmin, string.profileView, string.introducerProfileView]),
     getClientData,
   );
 
@@ -298,7 +290,7 @@ const AccountRoute = (app) => {
     introducerPasswordResetCode,
   );
 
-  // 
+  //
   app.post(
     '/api/admin/create/introducer/deposit-transaction',
     createIntroducerDepositTransactionValidator,

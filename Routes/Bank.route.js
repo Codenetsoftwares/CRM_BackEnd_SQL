@@ -65,7 +65,13 @@ const BankRoutes = (app) => {
   );
 
   // Testing Done
-  app.get('/api/superAdmin/view-bank-requests', validatePagination, customErrorHandler, Authorize([string.superAdmin]), viewBankRequests);
+  app.get(
+    '/api/superAdmin/view-bank-requests',
+    validatePagination,
+    customErrorHandler,
+    Authorize([string.superAdmin]),
+    viewBankRequests,
+  );
 
   // Testing Done
   app.get(
