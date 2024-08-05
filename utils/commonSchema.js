@@ -840,7 +840,7 @@ export const validateWebsiteActive = [
 ];
 
 export const updateWebsitePermissionsValidator = [
-  param("websiteId").isInt().withMessage("websiteId must be an integer"),
+  param("websiteId").isUUID(4).withMessage("Website ID must be a valid ID"),
   body("subAdmins")
     .isArray()
     .withMessage("subAdmins must be an array")
