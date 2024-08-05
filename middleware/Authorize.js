@@ -25,7 +25,6 @@ export const Authorize = (roles) => {
       let user;
       try {
         user = jwt.verify(tokenParts[1], process.env.JWT_SECRET_KEY);
-        console.log('Decoded user:', user); // Log decoded user for debugging
       } catch (err) {
         console.error('JWT Verification Error:', err.message);
         return apiResponseErr(

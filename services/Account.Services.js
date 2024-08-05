@@ -400,11 +400,18 @@ export const editSubAdminRoles = async (req, res) => {
       return apiResponseErr(null, false, statusCode.badRequest, 'SubAdmin not found with the given Id', res);
     }
 
-    return apiResponseSuccess(roles, true, statusCode.success, 'SubAdmin roles updated successfully', res);
+    return apiResponseSuccess(
+      roles,
+      true,
+      statusCode.success,
+      'SubAdmin roles updated successfully',
+      res
+    );
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const getIntroducerUserSingleData = async (req, res) => {
   try {
@@ -523,7 +530,13 @@ export const subAdminPasswordResetCode = async (req, res) => {
     // Compare new password with the existing password
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      return apiResponseErr(null, false, statusCode.exist, 'New Password cannot be the same as existing password', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        'New Password cannot be the same as existing password',
+        res,
+      );
     }
 
     // Hash the new password
@@ -569,22 +582,19 @@ export const getIntroducerAccountSummary = async (req, res) => {
     const totalPages = Math.ceil(count / pageSize);
 
     return apiResponsePagination(
-      accountData,
-      true,
-      statusCode.success,
-      'success',
-      {
-        page: parseInt(page),
-        limit,
-        totalPages,
-        totalItems: count,
-      },
-      res,
+      accountData, true, statusCode.success, 'success', {
+      page: parseInt(page),
+      limit,
+      totalPages,
+      totalItems: count,
+    },
+      res
     );
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const SuperAdminPasswordResetCode = async (req, res) => {
   try {
@@ -611,7 +621,13 @@ export const SuperAdminPasswordResetCode = async (req, res) => {
 
     const passwordIsDuplicate = await bcrypt.compare(password, existingUser.password);
     if (passwordIsDuplicate) {
-      return apiResponseErr(null, false, statusCode.exist, 'New Password cannot be the same as existing password', res);
+      return apiResponseErr(
+        null,
+        false,
+        statusCode.exist,
+        'New Password cannot be the same as existing password',
+        res,
+      );
     }
 
     // Hash the new password
@@ -643,7 +659,7 @@ export const getSingleUserProfile = async (req, res) => {
 
     const userTransactionDetailResult = await UserTransactionDetail.findAndCountAll({
       where: {
-        userName,
+        userName
       },
       limit,
       offset,
@@ -745,55 +761,60 @@ const columnExists = async (model, column) => {
   return describe.hasOwnProperty(column);
 };
 
+const buildWhereCondition = async (model, filterObj) => {
+  const conditions = {};
+  for (const [key, value] of Object.entries(filterObj)) {
+    if (value && await columnExists(model, key)) {
+      conditions[key] = value;
+    }
+  }
+  return conditions;
+};
+
+const applyFilters = (results, filters) => {
+  return results.filter(item => 
+    Object.entries(filters).every(([key, value]) => 
+      !value || item[key] === value
+    )
+  );
+};
+
 export const accountSummary = async (req, res) => {
   try {
     const { page = 1, pageSize = 10 } = req.query;
     const { filters } = req.body;
-    const limit = parseInt(pageSize);
+    const limit = parseInt(pageSize, 10);
     const offset = (page - 1) * limit;
 
-    const buildWhereCondition = async (model, filterObj) => {
-      const conditions = {};
-      for (const [key, value] of Object.entries(filterObj)) {
-        if (value !== undefined && value !== null && value !== '') {
-          if (await columnExists(model, key)) {
-            conditions[key] = value;
-          }
-        }
-      }
-      return conditions;
-    };
+    // Fetch data for each model with their respective conditions
+    const [transactions, websiteTransactions, bankTransactions] = await Promise.all([
+      Transaction.findAll({ where: await buildWhereCondition(Transaction, filters), order: [['createdAt', 'DESC']] }),
+      WebsiteTransaction.findAll({ where: await buildWhereCondition(WebsiteTransaction, filters), order: [['createdAt', 'DESC']] }),
+      BankTransaction.findAll({ where: await buildWhereCondition(BankTransaction, filters), order: [['createdAt', 'DESC']] })
+    ]);
 
-    const transactions = await Transaction.findAll({
-      where: await buildWhereCondition(Transaction, filters),
-      order: [['createdAt', 'DESC']],
-    });
+    // Combine results
+    const combinedResults = [
+      ...transactions.map(tx => ({ ...tx.dataValues, type: 'Transaction' })),
+      ...websiteTransactions.map(wt => ({ ...wt.dataValues, type: 'WebsiteTransaction' })),
+      ...bankTransactions.map(bt => ({ ...bt.dataValues, type: 'BankTransaction' }))
+    ];
 
-    const websiteTransactions = await WebsiteTransaction.findAll({
-      where: await buildWhereCondition(WebsiteTransaction, filters),
-      order: [['createdAt', 'DESC']],
-    });
+    // Apply additional filters if provided
+    const filteredResults = applyFilters(combinedResults, filters);
 
-    const bankTransactions = await BankTransaction.findAll({
-      where: await buildWhereCondition(BankTransaction, filters),
-      order: [['createdAt', 'DESC']],
-    });
-
-    const allTransactions = [...transactions, ...websiteTransactions, ...bankTransactions];
-
-    allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    const paginatedTransactions = allTransactions.slice(offset, offset + limit);
-    const totalItems = allTransactions.length;
+    // Sort and paginate results
+    const paginatedResults = filteredResults.slice(offset, offset + limit);
+    const totalItems = filteredResults.length;
     const totalPages = Math.ceil(totalItems / limit);
 
     return apiResponsePagination(
-      paginatedTransactions,
+      paginatedResults,
       true,
       statusCode.success,
       'success',
       {
-        page: parseInt(page),
+        page: parseInt(page, 10),
         limit,
         totalPages,
         totalItems,
@@ -804,6 +825,8 @@ export const accountSummary = async (req, res) => {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
+
 
 export const introducerLiveBalance = async (introUserId) => {
   try {
