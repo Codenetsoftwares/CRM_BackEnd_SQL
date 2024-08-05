@@ -756,22 +756,42 @@ export const viewSubAdminTransactions = async (req, res) => {
   }
 };
 
+const columnExists = async (model, column) => {
+  const describe = await model.describe();
+  return describe.hasOwnProperty(column);
+};
 
 export const accountSummary = async (req, res) => {
   try {
     const { page = 1, pageSize = 10 } = req.query;
+    const { filters } = req.body;
     const limit = parseInt(pageSize);
     const offset = (page - 1) * limit;
 
+    const buildWhereCondition = async (model, filterObj) => {
+      const conditions = {};
+      for (const [key, value] of Object.entries(filterObj)) {
+        if (value !== undefined && value !== null && value !== '') {
+          if (await columnExists(model, key)) {
+            conditions[key] = value;
+          }
+        }
+      }
+      return conditions;
+    };
+
     const transactions = await Transaction.findAll({
+      where: await buildWhereCondition(Transaction, filters),
       order: [['createdAt', 'DESC']],
     });
 
     const websiteTransactions = await WebsiteTransaction.findAll({
+      where: await buildWhereCondition(WebsiteTransaction, filters),
       order: [['createdAt', 'DESC']],
     });
 
     const bankTransactions = await BankTransaction.findAll({
+      where: await buildWhereCondition(BankTransaction, filters),
       order: [['createdAt', 'DESC']],
     });
 
@@ -794,7 +814,7 @@ export const accountSummary = async (req, res) => {
         totalPages,
         totalItems,
       },
-      res,
+      res
     );
   } catch (error) {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
