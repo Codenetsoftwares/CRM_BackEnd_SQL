@@ -152,19 +152,19 @@ export const handleApproveWebsite = async (req, res) => {
         subAdmins
       );
 
-      if (rowsInserted > 0) {
-        await WebsiteRequest.destroy({
-          where: { websiteId },
-        });
-      } else {
-        return apiResponseErr(
-          null,
-          false,
-          statusCode.badRequest,
-          "Failed to insert rows into Website table.",
-          res
-        );
-      }
+      // if (rowsInserted > 0) {
+      await WebsiteRequest.destroy({
+        where: { websiteId },
+      });
+      // } else {
+      //   return apiResponseErr(
+      //     null,
+      //     false,
+      //     statusCode.badRequest,
+      //     "Failed to insert rows into Website table.",
+      //     res
+      //   );
+      // }
     } else {
       return apiResponseErr(
         null,

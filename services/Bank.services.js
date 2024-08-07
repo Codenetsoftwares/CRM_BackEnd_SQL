@@ -306,23 +306,25 @@ export const approveBankAndAssignSubAdmin = async (approvedBankRequest, subAdmin
       { transaction },
     );
 
-    await Promise.all(
-      subAdmins.map(async (subAdmin) => {
-        const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
-        await BankSubAdmins.create(
-          {
-            bankId: approvedBankRequest.bankId,
-            subAdminId,
-            isDeposit,
-            isWithdraw,
-            isEdit,
-            isRenew,
-            isDelete,
-          },
-          { transaction },
-        );
-      }),
-    );
+    if (subAdmins && subAdmins.length) {
+      await Promise.all(
+        subAdmins.map(async (subAdmin) => {
+          const { subAdminId, isWithdraw, isDeposit, isEdit, isRenew, isDelete } = subAdmin;
+          await BankSubAdmins.create(
+            {
+              bankId: approvedBankRequest.bankId,
+              subAdminId,
+              isDeposit,
+              isWithdraw,
+              isEdit,
+              isRenew,
+              isDelete,
+            },
+            { transaction },
+          );
+        }),
+      );
+    }
 
     await transaction.commit();
     return subAdmins.length;
@@ -347,11 +349,11 @@ export const handleApproveBank = async (req, res) => {
 
     if (isApproved) {
       const rowsInserted = await approveBankAndAssignSubAdmin(approvedBankRequests[0], subAdmins);
-      if (rowsInserted > 0) {
-        await BankRequest.destroy({ where: { bankId } });
-      } else {
-        return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Bank table.', res);
-      }
+      // if (rowsInserted > 0) {
+      await BankRequest.destroy({ where: { bankId } });
+      // } else {
+      //   return apiResponseErr(null, false, statusCode.badRequest, 'Failed to insert rows into Bank table.', res);
+      // }
     } else {
       return apiResponseErr(null, false, statusCode.badRequest, 'Bank approval was not granted.', res);
     }
@@ -381,7 +383,7 @@ export const viewBankRequests = async (req, res) => {
 
     // Send response with pagination details
     return apiResponsePagination(
-       bankRequests ,
+      bankRequests,
       true,
       statusCode.success,
       'Bank requests retrieved successfully',
