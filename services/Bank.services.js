@@ -89,6 +89,15 @@ export const updateBank = async (req, res) => {
       return apiResponseSuccess([], true, statusCode.success, 'Bank not found', res);
     }
 
+    // Check if there is already a pending edit request for this bank
+    const pendingEditRequest = await EditBankRequest.findOne({
+      where: { bankId: bankId, isApproved: false }
+    });
+
+    if (pendingEditRequest) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'An edit request for this bank is already pending.', res);
+    }
+
     // Update logic
     let changedFields = [];
 
@@ -166,6 +175,7 @@ export const updateBank = async (req, res) => {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const approveBankDetailEditRequest = async (req, res) => {
   try {
@@ -371,7 +381,7 @@ export const viewBankRequests = async (req, res) => {
 
     // Send response with pagination details
     return apiResponsePagination(
-      { bankRequests },
+       bankRequests ,
       true,
       statusCode.success,
       'Bank requests retrieved successfully',
