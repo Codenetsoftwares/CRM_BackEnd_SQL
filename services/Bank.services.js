@@ -874,17 +874,47 @@ export const getBankDetails = async (req, res) => {
   }
 };
 
+// check the column information is include in schema
+const columnExists = async (model, column) => {
+  const describe = await model.describe();
+  return describe.hasOwnProperty(column);
+};
+
+const buildWhereCondition = async (model, filterObj) => {
+  const conditions = {};
+  for (const [key, value] of Object.entries(filterObj)) {
+    if (value && await columnExists(model, key)) {
+      conditions[key] = value;
+    }
+  }
+  return conditions;
+};
+
+const applyFilters = (results, filters) => {
+  return results.filter(item =>
+    Object.entries(filters).every(([key, value]) =>
+      !value || item[key] === value
+    )
+  );
+};
+
 export const manualUserBankSummary = async (req, res) => {
   try {
     const { page = 1, pageSize = 10 } = req.query;
-    const limit = parseInt(pageSize);
-    const offset = (page - 1) * limit;
+    const limit = parseInt(pageSize, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
     const bankId = req.params.bankId;
+    const { filters } = req.body;
+
     let balances = 0;
+
+    // Build filtering conditions for each model
+    const bankTransactionFilters = await buildWhereCondition(BankTransaction, filters);
+    const accountTransactionFilters = await buildWhereCondition(Transaction, filters);
 
     // Fetch bank transactions with pagination
     const bankSummary = await BankTransaction.findAndCountAll({
-      where: { bankId },
+      where: { ...bankTransactionFilters, bankId },
       order: [['createdAt', 'DESC']],
       limit,
       offset,
@@ -892,21 +922,23 @@ export const manualUserBankSummary = async (req, res) => {
 
     // Fetch account transactions with pagination
     const accountSummary = await Transaction.findAndCountAll({
-      where: { bankId },
+      where: { ...accountTransactionFilters, bankId },
       order: [['createdAt', 'DESC']],
       limit,
       offset,
     });
+
     // Combine bank and account transactions
     const allTransactions = [...accountSummary.rows, ...bankSummary.rows];
 
+    // Apply additional filters if provided
+    const filteredResults = applyFilters(allTransactions, filters);
+
     // Sort all transactions by createdAt in descending order
-    allTransactions.sort((a, b) => {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    filteredResults.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Calculate balances
-    let allData = JSON.parse(JSON.stringify(allTransactions));
+    let allData = JSON.parse(JSON.stringify(filteredResults));
     allData
       .slice(0)
       .reverse()
@@ -941,7 +973,7 @@ export const manualUserBankSummary = async (req, res) => {
       statusCode.success,
       'success',
       {
-        page: parseInt(page),
+        page: parseInt(page, 10),
         limit,
         totalPages,
         totalItems,

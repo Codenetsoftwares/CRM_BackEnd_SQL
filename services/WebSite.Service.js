@@ -202,10 +202,10 @@ export const viewWebsiteRequests = async (req, res) => {
 
     const whereCondition = search
       ? {
-          websiteName: {
-            [Op.like]: `%${search}%`,
-          },
-        }
+        websiteName: {
+          [Op.like]: `%${search}%`,
+        },
+      }
       : {};
 
     const { count, rows: websiteRequests } =
@@ -1246,30 +1246,69 @@ export const getWebsiteDetails = async (req, res) => {
   }
 };
 
+// check the column information is include in schema
+const columnExists = async (model, column) => {
+  const describe = await model.describe();
+  return describe.hasOwnProperty(column);
+};
+
+const buildWhereCondition = async (model, filterObj) => {
+  const conditions = {};
+  for (const [key, value] of Object.entries(filterObj)) {
+    if (value && await columnExists(model, key)) {
+      conditions[key] = value;
+    }
+  }
+  return conditions;
+};
+
+const applyFilters = (results, filters) => {
+  return results.filter(item =>
+    Object.entries(filters).every(([key, value]) =>
+      !value || item[key] === value
+    )
+  );
+};
+
 export const manualUserWebsiteAccountSummary = async (req, res) => {
   try {
     let balances = 0;
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
     const websiteId = req.params.websiteId;
+    const { filters } = req.body;
 
-    const websiteSummary = await WebsiteTransaction.findAll({
-      where: { websiteId },
+    // Build filtering conditions for each model
+    const websiteTransactionFilters = await buildWhereCondition(WebsiteTransaction, filters);
+    const accountTransactionFilters = await buildWhereCondition(Transaction, filters);
+
+    // Fetch website transactions
+    const websiteSummary = await WebsiteTransaction.findAndCountAll({
+      where: { ...websiteTransactionFilters, websiteId },
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
 
-    const accountSummary = await Transaction.findAll({
-      where: { websiteId },
+    // Fetch account transactions
+    const accountSummary = await Transaction.findAndCountAll({
+      where: { ...accountTransactionFilters, websiteId },
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
 
-    const allTransactions = [...accountSummary, ...websiteSummary].sort(
-      (a, b) => {
-        const dateA = new Date(a.createdAt);
-        const dateB = new Date(b.createdAt);
-        return dateB - dateA;
-      }
+    // Combine and sort transactions
+    const allTransactions = [...accountSummary.rows, ...websiteSummary.rows].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
-    let allData = JSON.parse(JSON.stringify(allTransactions));
+    // Apply additional filters if provided
+    const filteredResults = applyFilters(allTransactions, filters);
+
+    // Calculate balances
+    let allData = JSON.parse(JSON.stringify(filteredResults));
     allData
       .slice(0)
       .reverse()
@@ -1295,20 +1334,28 @@ export const manualUserWebsiteAccountSummary = async (req, res) => {
           data.balance = balances;
         }
       });
+    const totalItems = websiteSummary.count + accountSummary.count;
+    const totalPages = Math.ceil(totalItems / limit);
 
-    return apiResponseSuccess(
+    return apiResponsePagination(
       allData,
       true,
       statusCode.success,
-      "success",
-      res
+      'success',
+      {
+        page: parseInt(page, 10),
+        limit,
+        totalPages,
+        totalItems,
+      },
+      res,
     );
   } catch (error) {
-    apiResponseErr(
+    return apiResponseErr(
       null,
       false,
       statusCode.internalServerError,
-      error.errMessage,
+      error.message,
       res
     );
   }

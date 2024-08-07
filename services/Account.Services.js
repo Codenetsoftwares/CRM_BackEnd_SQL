@@ -709,53 +709,7 @@ export const updateSubAdminProfile = async (req, res) => {
   }
 };
 
-export const viewSubAdminTransactions = async (req, res) => {
-  try {
-    const userId = req.params.subAdminId;
-    const { page = 1, pageSize = 10 } = req.query;
-    const limit = parseInt(pageSize);
-    const offset = (parseInt(page) - 1) * limit;
-
-    // Fetch all transactions
-    const transactions = await Transaction.findAll({
-      where: { subAdminId: userId },
-      order: [['createdAt', 'DESC']],
-    });
-
-    const bankTransactions = await BankTransaction.findAll({
-      where: { subAdminId: userId },
-      order: [['createdAt', 'DESC']],
-    });
-
-    const websiteTransactions = await WebsiteTransaction.findAll({
-      where: { subAdminId: userId },
-      order: [['createdAt', 'DESC']],
-    });
-
-    if (transactions.length === 0 && bankTransactions.length === 0 && websiteTransactions.length === 0) {
-      return apiResponsePagination([], true, statusCode.success, 'No transactions found', {}, res);
-    }
-
-    const allTransactions = [...transactions, ...bankTransactions, ...websiteTransactions];
-    allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    const paginatedTransactions = allTransactions.slice(offset, offset + limit);
-    const totalItems = allTransactions.length;
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return apiResponsePagination(
-      paginatedTransactions,
-      true,
-      statusCode.success,
-      'success',
-      { page: parseInt(page), limit, totalPages, totalItems },
-      res,
-    );
-  } catch (error) {
-    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
-  }
-};
-
+// check the column information is include in schema
 const columnExists = async (model, column) => {
   const describe = await model.describe();
   return describe.hasOwnProperty(column);
@@ -772,12 +726,75 @@ const buildWhereCondition = async (model, filterObj) => {
 };
 
 const applyFilters = (results, filters) => {
-  return results.filter(item => 
-    Object.entries(filters).every(([key, value]) => 
+  return results.filter(item =>
+    Object.entries(filters).every(([key, value]) =>
       !value || item[key] === value
     )
   );
 };
+
+export const viewSubAdminTransactions = async (req, res) => {
+  try {
+    const userId = req.params.subAdminId;
+    const { page = 1, pageSize = 10 } = req.query;
+    const limit = parseInt(pageSize, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
+    const { filters } = req.body;
+    
+    // Build filtering conditions for each model
+    const transactionFilters = await buildWhereCondition(Transaction, filters);
+    const bankTransactionFilters = await buildWhereCondition(BankTransaction, filters);
+    const websiteTransactionFilters = await buildWhereCondition(WebsiteTransaction, filters);
+
+    // Fetch transactions based on filtering conditions
+    const transactions = await Transaction.findAll({
+      where: { ...transactionFilters, subAdminId: userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const bankTransactions = await BankTransaction.findAll({  
+      where: { ...bankTransactionFilters, subAdminId: userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const websiteTransactions = await WebsiteTransaction.findAll({
+      where: { ...websiteTransactionFilters, subAdminId: userId },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (transactions.length === 0 && bankTransactions.length === 0 && websiteTransactions.length === 0) {
+      return apiResponsePagination([], true, statusCode.success, 'No transactions found', {}, res);
+    }
+
+    // Combine results
+    const allTransactions = [
+      ...transactions.map(tx => ({ ...tx.dataValues, type: 'Transaction' })),
+      ...bankTransactions.map(bt => ({ ...bt.dataValues, type: 'BankTransaction' })),
+      ...websiteTransactions.map(wt => ({ ...wt.dataValues, type: 'WebsiteTransaction' }))
+    ];
+
+    // Apply additional filters if provided
+    const filteredResults = applyFilters(allTransactions, filters);
+
+    // Sort and paginate results
+    const sortedResults = filteredResults.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const paginatedTransactions = sortedResults.slice(offset, offset + limit);
+    const totalItems = filteredResults.length;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return apiResponsePagination(
+      paginatedTransactions,
+      true,
+      statusCode.success,
+      'success',
+      { page: parseInt(page, 10), limit, totalPages, totalItems },
+      res,
+    );
+  } catch (error) {
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+  }
+};
+
 
 export const accountSummary = async (req, res) => {
   try {
@@ -825,8 +842,6 @@ export const accountSummary = async (req, res) => {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
-
-
 
 export const introducerLiveBalance = async (introUserId) => {
   try {

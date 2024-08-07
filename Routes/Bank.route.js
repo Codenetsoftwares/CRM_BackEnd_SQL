@@ -195,7 +195,7 @@ const BankRoutes = (app) => {
   );
 
   // no need to refactor this
-  app.get(
+  app.post(
     '/api/admin/manual-user-bank-account-summary/:bankId',
     validatedBankId,
     customErrorHandler,

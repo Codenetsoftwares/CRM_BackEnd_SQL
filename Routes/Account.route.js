@@ -361,7 +361,7 @@ const AccountRoute = (app) => {
   );
 
   // done
-  app.get(
+  app.post(
     '/api/view-subAdmin-transaction/:subAdminId', // In the subAdmin ID field, we are expecting the username.
     validateSubAdminId,
     customErrorHandler,
