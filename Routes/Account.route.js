@@ -371,7 +371,7 @@ const AccountRoute = (app) => {
 
   // done
   // no need to refactor this
-  app.get(
+  app.post(
     '/api/admin/account-summary',
     validatePagination,
     customErrorHandler,

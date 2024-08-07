@@ -24,6 +24,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { string } from '../constructor/string.js';
 import {
+  paginationAndSearch,
   updateWebsitePermissionsValidator,
   validateAddWebsiteBalance,
   validateApproval,
@@ -59,7 +60,7 @@ const WebsiteRoutes = (app) => {
   // API To View Website-Requests
   app.get(
     '/api/superAdmin/view-website-requests',
-    validatePagination,
+    paginationAndSearch,
     customErrorHandler,
     Authorize([string.superAdmin]),
     viewWebsiteRequests,
@@ -187,6 +188,7 @@ const WebsiteRoutes = (app) => {
   app.put(
     '/api/website/edit-request/:websiteId',
     updateWebsitePermissionsValidator,
+    customErrorHandler,
     Authorize([string.superAdmin, string.requestAdmin, string.bankView]),
     updateWebsitePermissions,
   );
@@ -194,6 +196,8 @@ const WebsiteRoutes = (app) => {
   // no need to refactor this
   app.get(
     '/api/get-website-name',
+    paginationAndSearch,
+    customErrorHandler,
     Authorize([
       string.superAdmin,
       string.bankView,
