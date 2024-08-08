@@ -589,7 +589,6 @@ export const updateBankPermissionsValidator = [
     .isUUID(4)
     .withMessage("Bank ID must be a valid ID "),
   body("subAdmins").isArray().withMessage("subAdmins must be an array"),
-  
 ];
 
 export const validatePasswordReset = [
@@ -668,39 +667,6 @@ export const updateUserProfileValidators = [
     .optional()
     .isString()
     .withMessage("Last name must be a string"),
-
-  body("introducersUserName")
-    .optional()
-    .isString()
-    .withMessage("Introducer user name must be a string"),
-
-  body("introducerPercentage")
-    .notEmpty()
-    .withMessage("Introducer percentage is required")
-    .isFloat({ min: 0, max: 100 })
-    .withMessage("Introducer percentage must be a number between 0 and 100"),
-
-  body("introducersUserName1")
-    .optional()
-    .isString()
-    .withMessage("Introducer user name 1 must be a string"),
-
-  body("introducerPercentage1")
-    .notEmpty()
-    .withMessage("Introducer percentage 1 is required")
-    .isFloat({ min: 0, max: 100 })
-    .withMessage("Introducer percentage 1 must be a number between 0 and 100"),
-
-  body("introducersUserName2")
-    .optional()
-    .isString()
-    .withMessage("Introducer user name 2 must be a string"),
-
-  body("introducerPercentage2")
-    .notEmpty()
-    .withMessage("Introducer percentage 2 is required")
-    .isFloat({ min: 0, max: 100 })
-    .withMessage("Introducer percentage 2 must be a number between 0 and 100"),
 ];
 
 export const validateWebsite = [

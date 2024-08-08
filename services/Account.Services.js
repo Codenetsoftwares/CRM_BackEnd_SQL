@@ -51,58 +51,85 @@ export const createAdmin = async (req, res) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-  const { userId } = req.params;
-  const {
-    firstName,
-    lastName,
-    introducersUserName,
-    introducerPercentage,
-    introducersUserName1,
-    introducerPercentage1,
-    introducersUserName2,
-    introducerPercentage2,
-  } = req.body;
-
   try {
+    const { userId } = req.params;
+    const {
+      firstName,
+      lastName,
+      introducersUserName,
+      introducerPercentage,
+      introducersUserName1,
+      introducerPercentage1,
+      introducersUserName2,
+      introducerPercentage2,
+      contactNumber,
+      Bank_Details,
+      Upi_Details,
+      Websites_Details,
+    } = req.body;
+
+    // Log incoming data for debugging
+    console.log('Request body:', req.body);
+
     const existingUser = await User.findOne({ where: { userId } });
 
     if (!existingUser) {
       return apiResponseErr(null, false, statusCode.badRequest, `User not found with id: ${userId}`, res);
     }
 
-    const validatePercentage = (percentage) => {
-      return typeof percentage === 'number' && !isNaN(percentage) && percentage >= 0 && percentage <= 100;
-    };
+    // Convert percentages to float and validate
+    const newIntroducerPercentage =
+      introducerPercentage !== undefined ? parseFloat(introducerPercentage) : existingUser.introducerPercentage;
+    const newIntroducerPercentage1 =
+      introducerPercentage1 !== undefined ? parseFloat(introducerPercentage1) : existingUser.introducerPercentage1;
+    const newIntroducerPercentage2 =
+      introducerPercentage2 !== undefined ? parseFloat(introducerPercentage2) : existingUser.introducerPercentage2;
 
-    if (
-      !validatePercentage(introducerPercentage) ||
-      !validatePercentage(introducerPercentage1) ||
-      !validatePercentage(introducerPercentage2)
-    ) {
+    if (isNaN(newIntroducerPercentage) || isNaN(newIntroducerPercentage1) || isNaN(newIntroducerPercentage2)) {
+      return apiResponseErr(null, false, statusCode.badRequest, 'Introducer percentages must be valid numbers.', res);
+    }
+
+    const totalIntroducerPercentage = newIntroducerPercentage + newIntroducerPercentage1 + newIntroducerPercentage2;
+
+    if (totalIntroducerPercentage < 0 || totalIntroducerPercentage > 100) {
       return apiResponseErr(
         null,
         false,
         statusCode.badRequest,
-        'Introducer percentages must be valid numbers between 0 and 100.',
+        'The sum of introducer percentages must be between 0 and 100.',
         res,
       );
     }
 
-    existingUser.firstName = firstName || existingUser.firstName;
-    existingUser.lastName = lastName || existingUser.lastName;
-    existingUser.introducersUserName = introducersUserName || existingUser.introducersUserName;
-    existingUser.introducerPercentage = introducerPercentage || existingUser.introducerPercentage;
-    existingUser.introducersUserName1 = introducersUserName1 || existingUser.introducersUserName1;
-    existingUser.introducerPercentage1 = introducerPercentage1 || existingUser.introducerPercentage1;
-    existingUser.introducersUserName2 = introducersUserName2 || existingUser.introducersUserName2;
-    existingUser.introducerPercentage2 = introducerPercentage2 || existingUser.introducerPercentage2;
+    // Construct updated data
+    const updatedUserData = {
+      introducersUserName1: introducersUserName1 || existingUser.introducersUserName1,
+      introducerPercentage1: newIntroducerPercentage1,
+      introducersUserName2: introducersUserName2 || existingUser.introducersUserName2,
+      introducerPercentage2: newIntroducerPercentage2,
+      firstName: firstName || existingUser.firstName,
+      lastName: lastName || existingUser.lastName,
+      contactNumber: contactNumber || existingUser.contactNumber,
+      Bank_Details: Bank_Details || existingUser.Bank_Details,
+      Upi_Details: Upi_Details || existingUser.Upi_Details,
+      introducerPercentage: newIntroducerPercentage,
+      introducersUserName: introducersUserName || existingUser.introducersUserName,
+      Websites_Details: Websites_Details || existingUser.Websites_Details,
+    };
 
-    await existingUser.save();
-    return apiResponseSuccess(existingUser, true, statusCode.success, 'Profile updated successfully', res);
+    // Log updated data for debugging
+    console.log('Updated User Data:', updatedUserData);
+
+    // Update user
+    const response = await existingUser.update(updatedUserData);
+
+    return apiResponseSuccess(response, true, statusCode.success, 'Profile updated successfully', res);
   } catch (error) {
+    console.error('Error updating user profile:', error); // Log error for debugging
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
 
 export const getUserProfile = async (req, res) => {
   const page = parseInt(req.params.page);
