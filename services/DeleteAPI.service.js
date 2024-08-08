@@ -455,7 +455,7 @@ export const deleteIntroducerTransaction = async (req, res) => {
     return apiResponseSuccess(
       deleteIntroducerTransaction,
       true,
-      statusCode.create,
+      statusCode.success,
       'Introducer Transaction Move to trash request sent to Super Admin',
       res,
     );
