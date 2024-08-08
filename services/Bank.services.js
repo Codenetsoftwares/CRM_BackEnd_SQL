@@ -749,47 +749,19 @@ export const getActiveVisibleBankAndWebsite = async (req, res) => {
 
 export const getActiveBanks = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, search = '' } = req.query;
-
-    // Convert pagination parameters to integers
-    const limit = parseInt(pageSize, 10);
-    const offset = (parseInt(page, 10) - 1) * limit;
-
-    // Define search condition
-    const whereCondition = {
-      isActive: true,
-      bankName: {
-        [Op.like]: `%${search}%`,
-      },
-    };
-
-    // Fetch active banks with pagination and search
-    const { count, rows: activeBanks } = await Bank.findAndCountAll({
+    const { rows: activeBanks } = await Bank.findAndCountAll({
       attributes: ['bankName', 'isActive'],
-      where: whereCondition,
-      limit,
-      offset,
     });
 
-    // Check if active banks exist
     if (activeBanks.length === 0) {
       return apiResponsePagination([], true, statusCode.success, 'No active banks found', {}, res);
     }
 
-    // Calculate total pages
-    const totalPages = Math.ceil(count / limit);
-
-    return apiResponsePagination(
+    return apiResponseSuccess(
       activeBanks,
       true,
       statusCode.success,
-      'Active banks fetched successfully',
-      {
-        page: parseInt(page, 10),
-        limit,
-        totalItems: count,
-        totalPages,
-      },
+     'Active banks fetched successfully',
       res,
     );
   } catch (error) {

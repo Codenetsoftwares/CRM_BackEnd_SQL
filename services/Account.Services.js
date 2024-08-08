@@ -68,9 +68,6 @@ export const updateUserProfile = async (req, res) => {
       Websites_Details,
     } = req.body;
 
-    // Log incoming data for debugging
-    console.log('Request body:', req.body);
-
     const existingUser = await User.findOne({ where: { userId } });
 
     if (!existingUser) {
@@ -132,13 +129,14 @@ export const updateUserProfile = async (req, res) => {
 
 
 export const getUserProfile = async (req, res) => {
-  const page = parseInt(req.params.page);
+  const page = parseInt(req.params.page, 10);
   const searchQuery = req.query.search;
   const { pageSize = 10 } = req.query;
 
   try {
     let users;
 
+    // Fetch users based on search query
     if (searchQuery) {
       users = await User.findAll({
         where: {
@@ -151,33 +149,57 @@ export const getUserProfile = async (req, res) => {
       users = await User.findAll();
     }
 
+    // Pagination logic
     const offset = (page - 1) * pageSize;
-    const paginatedUsers = users.slice(offset, offset + pageSize);
+    const paginatedUsers = users.slice(offset, offset + parseInt(pageSize, 10));
 
-    const SecondArray = [];
+    // Fetch additional details for paginated users
+    const detailedUsers = [];
     for (const user of paginatedUsers) {
-      const userWithTransaction = await User.findOne({
+      const userWithDetails = await User.findOne({
         where: { userName: user.userName },
         include: { model: UserTransactionDetail, as: 'transactionDetails' },
+        attributes: [
+          'id',
+          'userId',
+          'firstName',
+          'lastName',
+          'contactNumber',
+          'userName',
+          'introducersUserName',
+          'introducerPercentage',
+          'introducersUserName1',
+          'introducerPercentage1',
+          'introducersUserName2',
+          'introducerPercentage2',
+          'wallet',
+          'profilePicture',
+          'role',
+          'Websites_Details',
+          'Bank_Details',
+          'Upi_Details',
+          'createdAt',
+          'updatedAt',
+        ],
       });
-      SecondArray.push(userWithTransaction);
+      detailedUsers.push(userWithDetails);
     }
 
     const totalItems = users.length;
     const totalPages = Math.ceil(totalItems / pageSize);
 
-    if (SecondArray.length === 0) {
+    if (detailedUsers.length === 0) {
       return apiResponsePagination([], true, statusCode.success, 'No data found for the selected criteria.', {}, res);
     }
 
     return apiResponsePagination(
-      SecondArray,
+      detailedUsers,
       true,
       statusCode.success,
       'Profile retrieved successfully',
       {
-        page: parseInt(page),
-        limit: parseInt(pageSize),
+        page: parseInt(page, 10),
+        limit: parseInt(pageSize, 10),
         totalItems,
         totalPages,
       },
