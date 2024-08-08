@@ -5,6 +5,7 @@ import { apiResponseErr, apiResponseSuccess } from '../utils/response.js';
 import { statusCode } from '../utils/statusCodes.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import CustomError from '../utils/extendError.js';
 
 export const loginAdmin = async (req, res) => {
   try {
@@ -130,7 +131,7 @@ export const loginUser = async (req, res) => {
   try {
     const { userName, password } = req.body;
 
-    const accessToken = await generateAccessToken(userName, password, false, res);
+    const accessToken = await generateAccessToken(userName, password, false);
 
     if (!accessToken) {
       return apiResponseErr(null, false, statusCode.badRequest, 'Failed to generate access token', res);
@@ -141,7 +142,7 @@ export const loginUser = async (req, res) => {
     if (!user) {
       return apiResponseSuccess(null, true, statusCode.success, 'User not found', res);
     }
-    return apiResponseSuccess({ token: accessToken.accessToken }, true, statusCode.success, 'Login successful', res);
+    return apiResponseSuccess({ token: accessToken }, true, statusCode.success, 'Login successfully', res);
   } catch (error) {
     return apiResponseErr(
       null,
@@ -153,17 +154,17 @@ export const loginUser = async (req, res) => {
   }
 };
 
-export const generateAccessToken = async (userName, password, persist, res) => {
+export const generateAccessToken = async (userName, password, persist) => {
   try {
     const user = await User.findOne({ where: { userName } });
 
     if (!user) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid User Name', res);
+      throw new CustomError("Invalid User Name", null, statusCode.badRequest);
     }
     const passwordValid = await bcrypt.compare(password, user.password);
 
     if (!passwordValid) {
-      return apiResponseErr(null, false, statusCode.badRequest, 'Invalid Password', res);
+      throw new CustomError("Invalid Password", null, statusCode.badRequest);
     }
 
     const accessTokenResponse = {
@@ -176,25 +177,9 @@ export const generateAccessToken = async (userName, password, persist, res) => {
     const expiresIn = persist ? '1y' : '8h';
     const accessToken = jwt.sign(accessTokenResponse, process.env.JWT_SECRET_KEY, { expiresIn });
 
-    return apiResponseSuccess(
-      {
-        userName: user.userName,
-        accessToken: accessToken,
-        role: user.role,
-        userId: user.userId,
-      },
-      true,
-      statusCode.success,
-      'Login successful',
-      res,
-    );
+    return accessToken
+
   } catch (error) {
-    return apiResponseErr(
-      null,
-      false,
-      error.responseCode ?? statusCode.internalServerError,
-      error.errMessage ?? error.message,
-      res,
-    );
+    throw error
   }
 };
