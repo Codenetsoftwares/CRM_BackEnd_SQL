@@ -89,7 +89,7 @@ export const generateIntroducerAccessToken = async (req, res) => {
     const passwordValid = await bcrypt.compare(password, existingUser.password);
 
     if (!passwordValid) {
-      return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid  Password', res);
+      return apiResponseErr(null, false, statusCode.unauthorize, 'Invalid Password', res);
     }
 
     const accessTokenResponse = {

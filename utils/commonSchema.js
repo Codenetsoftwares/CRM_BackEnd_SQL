@@ -757,9 +757,15 @@ export const validateWebsiteName = [
 ];
 
 export const validateAddUpiDetails = [
-  body("upi_details").isArray().withMessage("UPI details must be an array"),
-  body("upi_details.*.upi_id").notEmpty().withMessage("UPI ID is required"),
-  body("upi_details.*.upi_app").notEmpty().withMessage("UPI App is required"),
+  body("upi_details")
+    .isArray({ min: 1 })
+    .withMessage("UPI details must be a non-empty array"),
+  body("upi_details.*.upi_id")
+    .notEmpty()
+    .withMessage("UPI ID is required"),
+  body("upi_details.*.upi_app")
+    .notEmpty()
+    .withMessage("UPI App is required"),
   body("upi_details.*.upi_number")
     .notEmpty()
     .withMessage("UPI Number is required"),

@@ -320,9 +320,7 @@ export const addUpiDetails = async (req, res) => {
       );
     }
 
-    let upiDetails = existingUser.Upi_Details
-      ? JSON.parse(existingUser.Upi_Details)
-      : [];
+    let upiDetails = existingUser.Upi_Details ?? []
 
     if (!Array.isArray(upiDetailsArray)) {
       return apiResponseErr(
@@ -355,7 +353,7 @@ export const addUpiDetails = async (req, res) => {
       });
     }
 
-    existingUser.Upi_Details = JSON.stringify(upiDetails);
+    existingUser.Upi_Details = upiDetails;
     await existingUser.save();
 
     console.log("Saved UPI details:", existingUser.Upi_Details);
@@ -363,7 +361,7 @@ export const addUpiDetails = async (req, res) => {
     return apiResponseSuccess(
       upiDetails,
       true,
-      statusCode.create,
+      statusCode.success,
       "User UPI details added successfully",
       res
     );

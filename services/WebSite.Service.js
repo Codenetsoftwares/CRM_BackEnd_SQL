@@ -369,13 +369,17 @@ export const getActiveWebsiteNames = async (req, res) => {
       },
     });
 
-    return apiResponseSuccess(
-      activeWebsites,
-      true,
-      statusCode.success,
-      "Active websites fetched successfully",
-      res
-    );
+    if (activeWebsites?.rows) {
+      return apiResponseSuccess(
+        activeWebsites?.rows,
+        true,
+        statusCode.success,
+        "Active websites fetched successfully",
+        res
+      );
+    } else {
+      throw new Error("Something went wrong")
+    }
   } catch (error) {
     return apiResponseErr(
       null,
