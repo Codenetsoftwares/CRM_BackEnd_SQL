@@ -1080,7 +1080,6 @@ export const rejectDeleteRequest = async (req, res) => {
 
     // Delete record from EditRequest table
     const deletedRows = await EditRequest.destroy({
-      // id correction
       where: { editId: id },
     });
 

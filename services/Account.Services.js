@@ -144,9 +144,12 @@ export const getUserProfile = async (req, res) => {
             [Op.like]: `%${searchQuery}%`,
           },
         },
+        order: [['createdAt', 'DESC']],
       });
     } else {
-      users = await User.findAll();
+      users = await User.findAll({
+        order: [['createdAt', 'DESC']],
+      });
     }
 
     // Pagination logic
@@ -1008,7 +1011,7 @@ export const introducerProfile = async (req, res) => {
 
   try {
     // Fetch all introducer users
-    const introducerUsers = await IntroducerUser.findAll();
+    const introducerUsers = await IntroducerUser.findAll({ order: [['createdAt', 'DESC']], });
 
     // Filter introducer user data based on the search query
     let introData = introducerUsers;
@@ -1130,6 +1133,7 @@ export const viewSubAdmins = async (req, res) => {
 
     const { count, rows } = await Admin.findAndCountAll({
       where: whereCondition,
+      order: [['createdAt', 'DESC']],
       limit,
       offset,
     });
