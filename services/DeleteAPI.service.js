@@ -1120,7 +1120,7 @@ export const moveTransactionDeleteRequest = async (req, res) => {
     let transaction;
     let deletedData;
     let existingRequest
-
+    const editId = uuidv4();
     switch (type) {
       case 'BankTransaction':
         transaction = await BankTransaction.findOne({ where: { bankTransactionId: requestId } });
@@ -1155,6 +1155,7 @@ export const moveTransactionDeleteRequest = async (req, res) => {
             subAdminName: deletedData.subAdminName,
             createdAt: deletedData.createdAt,
             isSubmit: deletedData.isSubmit,
+            editId
           });
         }
         break;
@@ -1184,6 +1185,7 @@ export const moveTransactionDeleteRequest = async (req, res) => {
             subAdminId: deletedData.subAdminId,
             subAdminName: deletedData.subAdminName,
             createdAt: deletedData.createdAt,
+            editId
           });
         }
         break;
@@ -1222,6 +1224,7 @@ export const moveTransactionDeleteRequest = async (req, res) => {
             createdAt: deletedData.createdAt,
             Transaction_Id: deletedData.Transaction_Id,
             accountNumber: deletedData.accountNumber,
+            editId
           });
         }
         break;
