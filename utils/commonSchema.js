@@ -909,3 +909,15 @@ export const validateIntroducerAccountSummary = [
     .isInt({ min: 1 })
     .withMessage("Page size must be an integer greater than or equal to 1"),
 ];
+
+export const validateMoveTransactionTrash = [
+  body('requestId')
+    .isUUID(4)
+    .withMessage("Request ID must be valid ID")
+    .notEmpty().withMessage('Request ID is required'),
+
+  body('type')
+    .isString().withMessage('Transaction type must be a string')
+    .isIn(["BankTransaction","WebsiteTransaction","Transaction"])
+    .withMessage('Invalid Transaction Type'),
+]

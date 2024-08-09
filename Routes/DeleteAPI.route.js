@@ -12,6 +12,7 @@ import {
   deleteTrashTransaction,
   deleteWebsite,
   deleteWebsiteTransaction,
+  moveTransactionDeleteRequest,
   moveWebsiteTransactionToTrash,
   rejectBankDetail,
   rejectDeleteRequest,
@@ -40,6 +41,7 @@ import {
   validateIntroEditID,
   validateIntroTransactionId,
   validateMoveToTrash,
+  validateMoveTransactionTrash,
   validateRejectBankDetail,
   validateRejectWebsiteDetail,
   validates,
@@ -257,6 +259,13 @@ const DeleteAPIRoute = (app) => {
     Authorize([string.superAdmin, string.requestAdmin]),
     deleteTrashTransaction,
   );
+
+  app.delete('/api/admin/move-transaction-to-delete-request',
+    validateMoveTransactionTrash,
+    customErrorHandler,
+    Authorize([string.superAdmin, string.requestAdmin]),
+    moveTransactionDeleteRequest
+  )
 };
 
 export default DeleteAPIRoute;

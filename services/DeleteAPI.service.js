@@ -1111,4 +1111,133 @@ export const deleteTrashTransaction = async (req, res) => {
   } catch (error) {
     return apiResponseErr(null, false, error.responseCode ?? statusCode.internalServerError, error.message, res);
   }
+
 };
+export const moveTransactionDeleteRequest = async (req, res) => {
+  const { requestId, type } = req.body;
+
+  try {
+    let transaction;
+    let deletedData;
+    let existingRequest
+
+    switch (type) {
+      case 'BankTransaction':
+        transaction = await BankTransaction.findOne({ where: { bankTransactionId: requestId } });
+
+        existingRequest = await EditRequest.findOne({
+          where: {
+            bankTransactionId: requestId,
+          }
+        });
+
+        if (existingRequest) {
+          return apiResponseErr(null, false, statusCode.exist, `A deletion request for ${type} is already pending.`, res);
+        }
+
+        if (transaction) {
+          deletedData = transaction.dataValues;
+          await EditRequest.create({
+            bankId: deletedData.bankId,
+            bankTransactionId: deletedData.bankTransactionId,
+            accountHolderName: deletedData.accountHolderName,
+            bankName: deletedData.bankName,
+            accountNumber: deletedData.accountNumber,
+            ifscCode: deletedData.ifscCode,
+            transactionType: deletedData.transactionType,
+            remarks: deletedData.remarks,
+            upiId: deletedData.upiId,
+            upiAppName: deletedData.upiAppName,
+            upiNumber: deletedData.upiNumber,
+            withdrawAmount: deletedData.withdrawAmount,
+            depositAmount: deletedData.depositAmount,
+            subAdminId: deletedData.subAdminId,
+            subAdminName: deletedData.subAdminName,
+            createdAt: deletedData.createdAt,
+            isSubmit: deletedData.isSubmit,
+          });
+        }
+        break;
+
+      case 'WebsiteTransaction':
+        transaction = await WebsiteTransaction.findOne({ where: { websiteTransactionId: requestId } });
+        existingRequest = await EditRequest.findOne({
+          where: {
+            websiteTransactionId: requestId,
+          }
+        });
+
+        if (existingRequest) {
+          return apiResponseErr(null, false, statusCode.exist, `A deletion request for ${type} is already pending.`, res);
+        }
+
+        if (transaction) {
+          deletedData = transaction.dataValues;
+          await EditRequest.create({
+            websiteId: deletedData.websiteId,
+            websiteTransactionId: deletedData.websiteTransactionId,
+            websiteName: deletedData.websiteName,
+            remarks: deletedData.remarks,
+            transactionType: deletedData.transactionType,
+            withdrawAmount: deletedData.withdrawAmount,
+            depositAmount: deletedData.depositAmount,
+            subAdminId: deletedData.subAdminId,
+            subAdminName: deletedData.subAdminName,
+            createdAt: deletedData.createdAt,
+          });
+        }
+        break;
+
+      case 'Transaction':
+        transaction = await Transaction.findOne({ where: { Transaction_Id: requestId } });
+        existingRequest = await EditRequest.findOne({
+          where: {
+            Transaction_Id: requestId,
+          }
+        });
+
+        if (existingRequest) {
+          return apiResponseErr(null, false, statusCode.exist, `A deletion request for ${type} is already pending.`, res);
+        }
+        
+        if (transaction) {
+          deletedData = transaction.dataValues;
+          await EditRequest.create({
+            bankId: deletedData.bankId,
+            websiteId: deletedData.websiteId,
+            transactionID: deletedData.transactionID,
+            transactionType: deletedData.transactionType,
+            remarks: deletedData.remarks,
+            amount: deletedData.amount,
+            subAdminId: deletedData.subAdminId,
+            subAdminName: deletedData.subAdminName,
+            introducersUserName2: deletedData.introducersUserName2,
+            userId: deletedData.userId,
+            userName: deletedData.userName,
+            paymentMethod: deletedData.paymentMethod,
+            websiteName: deletedData.websiteName,
+            bankName: deletedData.bankName,
+            bonus: deletedData.bonus,
+            bankCharges: deletedData.bankCharges,
+            createdAt: deletedData.createdAt,
+            Transaction_Id: deletedData.Transaction_Id,
+            accountNumber: deletedData.accountNumber,
+          });
+        }
+        break;
+
+      default:
+        return apiResponseErr(null, false, statusCode.badRequest, 'Invalid transaction type.', res);
+    }
+
+    if (!transaction) {
+      return apiResponseErr(null, false, statusCode.notFound, `${type} with not found.`, res);
+    }
+
+    return apiResponseSuccess(transaction, true, statusCode.success, `The ${type} has been successfully requested for deletion.`, res);
+
+  } catch (error) {
+    return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
+  }
+};
+

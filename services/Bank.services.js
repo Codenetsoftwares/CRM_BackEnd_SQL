@@ -144,9 +144,6 @@ export const updateBank = async (req, res) => {
     existingBank.upiAppName = upiAppName !== undefined ? upiAppName : existingBank.upiAppName;
     existingBank.upiNumber = upiNumber !== undefined ? upiNumber : existingBank.upiNumber;
 
-    // Save updated bank details
-    await existingBank.save();
-
     // Create edit request record
     const editRequest = await EditBankRequest.create({
       bankId: existingBank.bankId,
@@ -874,13 +871,36 @@ const buildWhereCondition = async (model, filterObj) => {
   return conditions;
 };
 
+// Function to apply additional filters, including amount range
 const applyFilters = (results, filters) => {
-  return results.filter(item =>
-    Object.entries(filters).every(([key, value]) =>
-      !value || item[key] === value
-    )
-  );
+  const { minAmount, maxAmount } = filters;
+
+  return results.filter(item => {
+    const amountFields = ['withdrawAmount', 'depositAmount', 'amount'];
+    let withinAmountRange = true;
+
+    // Check amount range for each relevant field
+    for (const field of amountFields) {
+      if (item[field] !== null && item[field] !== undefined) {
+        if (minAmount !== undefined && item[field] < minAmount) {
+          withinAmountRange = false;
+          break;
+        }
+        if (maxAmount !== undefined && item[field] > maxAmount) {
+          withinAmountRange = false;
+          break;
+        }
+      }
+    }
+
+    const otherFiltersValid = Object.entries(filters).every(([key, value]) =>
+      key === 'minAmount' || key === 'maxAmount' || !value || item[key] === value
+    );
+
+    return withinAmountRange && otherFiltersValid;
+  });
 };
+
 
 export const manualUserBankSummary = async (req, res) => {
   try {

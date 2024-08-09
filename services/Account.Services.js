@@ -758,12 +758,13 @@ export const updateSubAdminProfile = async (req, res) => {
   }
 };
 
-// check the column information is include in schema
+// Helper function to check if a column exists in the schema
 const columnExists = async (model, column) => {
   const describe = await model.describe();
   return describe.hasOwnProperty(column);
 };
 
+// Function to build where conditions based on provided filters
 const buildWhereCondition = async (model, filterObj) => {
   const conditions = {};
   for (const [key, value] of Object.entries(filterObj)) {
@@ -774,14 +775,38 @@ const buildWhereCondition = async (model, filterObj) => {
   return conditions;
 };
 
+// Function to apply additional filters, including amount range
 const applyFilters = (results, filters) => {
-  return results.filter(item =>
-    Object.entries(filters).every(([key, value]) =>
-      !value || item[key] === value
-    )
-  );
+  const { minAmount, maxAmount } = filters;
+
+  return results.filter(item => {
+    const amountFields = ['withdrawAmount', 'depositAmount', 'amount'];
+    let withinAmountRange = true;
+
+    // Check amount range for each relevant field
+    for (const field of amountFields) {
+      if (item[field] !== null && item[field] !== undefined) {
+        if (minAmount !== undefined && item[field] < minAmount) {
+          withinAmountRange = false;
+          break;
+        }
+        if (maxAmount !== undefined && item[field] > maxAmount) {
+          withinAmountRange = false;
+          break;
+        }
+      }
+    }
+
+    const otherFiltersValid = Object.entries(filters).every(([key, value]) =>
+      key === 'minAmount' || key === 'maxAmount' || !value || item[key] === value
+    );
+
+    return withinAmountRange && otherFiltersValid;
+  });
 };
 
+
+// View Sub-Admin Transactions with pagination and amount range filter
 export const viewSubAdminTransactions = async (req, res) => {
   try {
     const userId = req.params.subAdminId;
@@ -789,7 +814,7 @@ export const viewSubAdminTransactions = async (req, res) => {
     const limit = parseInt(pageSize, 10);
     const offset = (parseInt(page, 10) - 1) * limit;
     const { filters } = req.body;
-    
+
     // Build filtering conditions for each model
     const transactionFilters = await buildWhereCondition(Transaction, filters);
     const bankTransactionFilters = await buildWhereCondition(BankTransaction, filters);
@@ -801,7 +826,7 @@ export const viewSubAdminTransactions = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
-    const bankTransactions = await BankTransaction.findAll({  
+    const bankTransactions = await BankTransaction.findAll({
       where: { ...bankTransactionFilters, subAdminId: userId },
       order: [['createdAt', 'DESC']],
     });
@@ -822,7 +847,7 @@ export const viewSubAdminTransactions = async (req, res) => {
       ...websiteTransactions.map(wt => ({ ...wt.dataValues, type: 'WebsiteTransaction' }))
     ];
 
-    // Apply additional filters if provided
+    // Apply additional filters, including amount range
     const filteredResults = applyFilters(allTransactions, filters);
 
     // Sort and paginate results
@@ -843,6 +868,9 @@ export const viewSubAdminTransactions = async (req, res) => {
     return apiResponseErr(null, false, statusCode.internalServerError, error.message, res);
   }
 };
+
+// Models for Transaction, BankTransaction, and WebsiteTransaction are unchanged
+
 
 
 export const accountSummary = async (req, res) => {
