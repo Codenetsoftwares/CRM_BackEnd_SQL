@@ -1081,7 +1081,7 @@ export const rejectDeleteRequest = async (req, res) => {
     // Delete record from EditRequest table
     const deletedRows = await EditRequest.destroy({
       // id correction
-      where: { bankId: id },
+      where: { editId: id },
     });
 
     if (deletedRows === 1) {
